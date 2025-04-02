@@ -2,5 +2,12 @@
   "name": "kQuery",
   "author": "ryunosuke",
   "license": "MIT",
-  "type": "module"
+  "type": "module",
+  "devDependencies": {
+    "esbuild": "0.25.*",
+    "documentation": "14.*"
+  },
+  "scripts": {
+    "build": "node bin/build.js"
+  }
 }
