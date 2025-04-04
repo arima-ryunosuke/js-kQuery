@@ -1,0 +1,1142 @@
+<html lang="">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link id="example-css" rel="stylesheet" href="./example.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sakura.css/css/sakura.css" type="text/css">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jasmine/5.4.0/jasmine.css"/>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jasmine/5.4.0/jasmine.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jasmine/5.4.0/jasmine-html.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jasmine/5.4.0/boot0.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jasmine/5.4.0/boot1.js"></script>
+
+    <title>kQuery</title>
+
+    <style>
+        .jasmine_html-reporter {
+            display: none;
+        }
+
+        body[data-testing] .jasmine_html-reporter {
+                display: block;
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+            }
+
+        body {
+            max-width: 80vw;
+        }
+
+        label {
+            display: inline;
+        }
+
+        select {
+            vertical-align: top;
+        }
+
+        :disabled {
+            background-color: #ccc;
+        }
+
+        ul {
+            margin: unset;
+        }
+
+        .resize {
+            overflow: hidden;
+            resize: both;
+            border: 1px solid #aaa;
+        }
+
+        output {
+            white-space: pre-wrap;
+            display: block;
+            background: #ddd;
+            font-size: 14px;
+        }
+
+        .kQuery-example-hidden {
+            display: none !important;
+        }
+    </style>
+    <!-- for dist
+    <script src="../dist/kQuery-full.min.js" data-kQuery-debug="true" data-kQuery-log-level="7"></script>
+    -->
+    <script type="module" src="../index-full.js?kQuery-debug=true&amp;kQuery-logLevel=7"></script>
+    <script id="example-js" type="module" src="./example.js"></script>
+    <script type="module">
+        window.$ = window.$query;
+    </script>
+    <script type="module" src="./test.js"></script>
+</head>
+
+<body>
+
+<section>
+    <div>
+        Test:
+        <a href="./index.html?test=all&amp;random=false" target="test">All</a>,
+        <a href="./index.html?test=unit&amp;random=false" target="test">Unit</a>,
+        <a href="./index.html?test=example&amp;random=false" target="test">Example</a>
+    </div>
+    <div>
+        Benchmark:
+        <a href="./index.html?bench=all" target="benchmark">All</a>,
+        <a href="./index.html?bench=object" target="benchmark">Object assign</a>,
+        <a href="./index.html?bench=prototype" target="benchmark">Prototype</a>,
+        <a href="./index.html?bench=blob" target="benchmark">Files</a>,
+        <a href="./index.html?bench=property" target="benchmark">Access property</a>
+    </div>
+</section>
+
+<main>
+    <h1>kQuery</h1>
+
+    <section class="property">
+        <h2>property</h2>
+
+        <div>
+            <button type="button" class="disable">disable-1</button>
+            <button type="button" class="attrs-apply">attrs apply</button>
+            <button type="button" class="attrs-assign">attrs assign</button>
+            <br>
+            <button type="button" class="class">class</button>
+            <button type="button" class="class-apply">class apply</button>
+            <button type="button" class="class-assign">class assign</button>
+            <br>
+            <button type="button" class="data">data</button>
+            <button type="button" class="data-apply">data apply</button>
+            <button type="button" class="data-assign">data assign</button>
+            <button type="button" class="data-function">data function</button>
+            <br>
+            <button type="button" class="style">style</button>
+            <button type="button" class="style-apply">style apply</button>
+            <button type="button" class="style-assign">style assign</button>
+            <br>
+            <button type="button" class="remove">remove</button>
+        </div>
+
+        <div class="input">
+            <input type="text">
+            <input type="text">
+            <input type="text">
+            <input type="text">
+        </div>
+
+        <output class="output"></output>
+
+        <script type="module">
+            (async function () {
+                const container = document.$$('.property');
+                const input = container.$('.input');
+                const output = container.$('.output');
+                output.textContent = input.innerHTML;
+
+                container.$on('style', 'input', function (e) {
+                    console.log(e);
+                }, {
+                    cssName: 'color',
+                });
+                container.$on('style', 'input', function (e) {
+                    console.log(e);
+                }, {
+                    cssName: 'background-color',
+                });
+
+                container.$on('click', '.disable', function () {
+                    container.$$('input').disabled = function (node, i) {
+                        return i === 1;
+                    };
+                    output.textContent = input.innerHTML;
+                });
+                container.$on('click', '.attrs-apply', function () {
+                    container.$$('input').$attrs({
+                        attr1: 'hoge',
+                        attr2: 'fuga',
+                    });
+                    output.textContent = input.innerHTML;
+                });
+                container.$on('click', '.attrs-assign', function () {
+                    container.$$('input').$attrs = {
+                        attr3: 'foo',
+                        attr4: 'bar',
+                    };
+                    container.$$('input').$attrs.attr5 = (node, i) => i === 1;
+                    output.textContent = input.innerHTML;
+                });
+                container.$on('click', '.class', function () {
+                    container.$$('input').$class.toggle('hoge', (node, i) => i > 1);
+                    container.$$('input')[2].$class.remove('hoge');
+                    output.textContent = input.innerHTML;
+                });
+                container.$on('click', '.class-apply', function () {
+                    container.$$('input').$class(['a1', 'b1', '', 'c1 d1', {x1: false, y1: true}]);
+                    output.textContent = input.innerHTML;
+                });
+                container.$on('click', '.class-assign', function () {
+                    container.$$('input').$class = ['a2', 'b2', '', 'c2 d2', {x2: false, y2: true}];
+                    container.$$('input').$class.x = (node, i) => i === 1;
+                    output.textContent = input.innerHTML;
+                });
+                container.$on('click', '.data', function () {
+                    container.$$('input').$data.hoge = 'HOGE';
+                    container.$$('input')[1].$data.hoge = 'FUGA';
+                    output.textContent = input.innerHTML;
+                });
+                container.$on('click', '.data-apply', function () {
+                    container.$$('input').$data({
+                        foo: 'foo',
+                        fooBar: 'fooBar',
+                        'foo-bar': 'foo-bar',
+                    });
+                    output.textContent = input.innerHTML;
+                });
+                container.$on('click', '.data-assign', function () {
+                    container.$$('input').$data = {
+                        bar: 'bar',
+                        barBaz: 'barBaz',
+                        'bar-baz': 'bar-baz',
+                    };
+                    container.$$('input').$data.x = (node, i) => i === 1 ? 'X' : undefined;
+                    output.textContent = input.innerHTML;
+                });
+                container.$on('click', '.data-function', function () {
+                    container.$$('input').$data = function (node, i) {
+                        return i === 1 ? {
+                            hogeyo: {
+                                index: i, values: [1, 2, 3],
+                            },
+                        } : undefined;
+                    };
+                    output.textContent = input.innerHTML;
+                    console.log(container.$$('input')[1].$data('hogeyo'));
+                });
+                container.$on('click', '.style', function () {
+                    container.$$('input').$style.backgroundColor = 'red';
+                    container.$$('input')[2].$style.backgroundColor = 'pink';
+                    output.textContent = input.innerHTML;
+                });
+                container.$on('click', '.style-apply', function () {
+                    container.$$('input').$style({
+                        opacity: 0.5,
+                        color: 'red',
+                        backgroundColor: 'green!important',
+                    });
+                    container.$$('input')[3].$style.backgroundColor = 'blue';
+                    output.textContent = input.innerHTML;
+                });
+                container.$on('click', '.style-assign', function () {
+                    container.$$('input').$style = {
+                        color: 'green!important',
+                    };
+                    output.textContent = input.innerHTML;
+                });
+                container.$on('click', '.remove', function () {
+                    container.$$('input').remove();
+                    output.textContent = input.innerHTML;
+                });
+            })();
+        </script>
+    </section>
+
+    <section class="dom">
+        <h2>dom</h2>
+
+        <div>
+            <button type="button" class="before">before</button>
+            <button type="button" class="after">after</button>
+            <br>
+            <button type="button" class="prepend">prepend</button>
+            <button type="button" class="insert">insert</button>
+            <button type="button" class="append">append</button>
+            <br>
+            <button type="button" class="create">create</button>
+            <br>
+            <button type="button" class="childElements">childElements</button>
+            <button type="button" class="texts">texts</button>
+            <br>
+            <button type="button" class="replace">replace</button>
+            <br>
+            <button type="button" class="render">render</button>
+        </div>
+
+        <div class="input">
+            <div class="dom-container">
+                first node
+            </div>
+        </div>
+
+        <table>
+            <thead>
+            <tr>
+                <th>th1</th>
+                <th>th2</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                <td>first td1</td>
+                <td>first td2</td>
+            </tr>
+            <template data-slot-name="tr" id="tr-template">
+                <tr data-id="${this.$index}" data-logical1="${this.$first}" data-logical2="${this.$last}">
+                    <template data-slot-name="td">
+                        <td>
+                            td [
+                            <template data-slot-name="texts">"${this.$parent.$parent.$index}/${this.$parent.$index}/${this.$index} ${this}",</template>
+                            ]
+                        </td>
+                    </template>
+                </tr>
+            </template>
+            <tr>
+                <td>last td1</td>
+                <td>last td2</td>
+            </tr>
+            </tbody>
+        </table>
+
+        <output class="output"></output>
+
+        <script type="module">
+            (async function () {
+                const container = document.$('.dom');
+                const input = container.$('.input');
+                const output = container.$('.output');
+                output.textContent = input.innerHTML;
+
+                container.$on('click', '.before', function () {
+                    container.$('.dom-container').$before('before-text\n', document.$createNodeListFromHTML('<strong>before-strong</strong>\n'));
+                    output.textContent = input.innerHTML;
+                });
+                container.$on('click', '.prepend', function () {
+                    container.$('.dom-container').$prepend('prepend-text\n', document.$createNodeListFromHTML('<strong>prepend-strong</strong>\n'));
+                    output.textContent = input.innerHTML;
+                });
+                container.$on('click', '.insert', function () {
+                    container.$('.dom-container').$insert(1, 'insert-text\n', document.$createNodeListFromHTML('<strong>insert-strong</strong>\n'));
+                    output.textContent = input.innerHTML;
+                });
+                container.$on('click', '.append', function () {
+                    container.$('.dom-container').$append('append-text\n', document.$createNodeListFromHTML('<strong>append-strong</strong>\n'));
+                    output.textContent = input.innerHTML;
+                });
+                container.$on('click', '.after', function () {
+                    container.$('.dom-container').$after('after-text\n', document.$createNodeListFromHTML('<strong>after-strong</strong>\n'));
+                    output.textContent = input.innerHTML;
+                });
+                container.$on('click', '.create', function () {
+                    container.$('.dom-container').append(document.$createElement('a', {
+                        href: 'javascript:void(0)',
+                        title: 'Title',
+                        class: ['a', 'b', 'c'],
+                        data: {
+                            hoge: 'hoge',
+                            fuga: 'fuga',
+                        },
+                        hidden: false,
+                        visible: true,
+                    }, 'create-text\n', '<strong>create-strong</strong>\n'));
+                    output.textContent = input.innerHTML;
+                });
+                container.$on('click', '.childElements', function () {
+                    console.log(container.$('.dom-container').$childElements());
+                });
+                container.$on('click', '.texts', function () {
+                    console.log(container.$('.input').$textNodes());
+                });
+                container.$on('click', '.replace', function () {
+                    container.$('.dom-container').$replace('replace-text\n', document.$createNodeListFromHTML('<strong>replace-strong</strong>\n'));
+                    output.textContent = input.innerHTML;
+                });
+                container.$on('click', '.render', function () {
+                    $('#tr-template').$render([
+                        {
+                            // object
+                            td: {
+                                texts: ['simple', '<b>escaped</b>'],
+                            },
+                        },
+                        {
+                            // array
+                            td: [
+                                {
+                                    texts: [$('<b>no escaped</b>')],
+                                },
+                                {
+                                    texts: new Date(),
+                                },
+                            ],
+                        },
+                    ]);
+                });
+            })();
+        </script>
+    </section>
+
+    <section class="event">
+        <h2>event</h2>
+
+        <div>
+            <button type="button" class="add">add</button>
+            <button type="button" class="events">all events</button>
+            <button type="button" class="off">off all</button>
+            <button type="button" class="change-cookie" data-cookie-name="test">change cookie(test)</button>
+            <button type="button" class="change-cookie" data-cookie-name="dummy">change cookie(dummy)</button>
+        </div>
+
+        <div class="input">
+            <template class="row-template">
+                <div class="row">
+                    <span class="click">normal-click</span>
+                    <span class="once-click">once-click</span>
+                    <span class="once-click">once-click</span>
+                    <span class="native-once-click">native-once-click</span>
+                    <input class="debounce" value="debounce-input">
+
+                    <div class="parent">
+                        <span class="child">child1
+                            <span class="child">child2
+                                <span class="child">child3
+                                </span>
+                            </span>
+                        </span>
+                    </div>
+
+                    <div class="resize">throttle-resize</div>
+
+                    <div style="overflow-x:scroll; border:1px solid #aaa; white-space: nowrap">
+                        <div style="display:inline-block; width:2000px">dummy</div>
+                        <span class="intersect">intersect</span>&nbsp;
+                    </div>
+
+                    <div class="slide" style="
+                        position: relative;
+                        touch-action: none;
+                        height: 30vh;
+                        background-color: #fff;">
+                        slide area
+                        <pre style="
+                            position: absolute;
+                            bottom: 0;
+                            margin: 0;
+                            width: 100%;
+                            box-sizing: border-box;
+                        ">
+                        </pre>
+                    </div>
+
+                    <div>
+                        <label><input type="checkbox" class="fieldset-disabled">fieldset disabled</label>
+                        <fieldset>
+                            <label><input type="checkbox" class="switch-disabled" value="1">disabled</label>
+                            <label><input type="checkbox" class="switch-readonly" value="2">readonly</label>
+                            <label><input type="checkbox" class="switch-visible" value="3">toggle</label>
+                            <input class="attribute" value="example">
+                        </fieldset>
+                    </div>
+                    <button type="button" class="remove">remove</button>
+                </div>
+            </template>
+        </div>
+
+        <output class="output"></output>
+
+        <script type="module">
+            (async function () {
+                const container = document.$('.event');
+                const input = container.$('.input');
+                const output = container.$('.output');
+
+                const addrow = function () {
+                    const row = document.$createNodeListFromHTML(input.$('.row-template').innerHTML);
+                    input.$append(row);
+                    row.$('.native-once-click').$on('click', function (e) {
+                        console.log(e);
+                        output.textContent += `${e.type}-${e.detail?.subtype ?? '(none)'}: ${e.target.outerHTML}\n`;
+                    }, {
+                        once: true,
+                    });
+                };
+
+                container.$on('child', '.input', function (e) {
+                    console.log(e);
+                    output.textContent += `${e.type}-${e.detail.subtype ?? '(none)'}: ${JSON.stringify(e.detail)}\n`;
+                });
+
+                container.$on('click', '.add', function () {
+                    addrow();
+                });
+                container.$on('click', '.remove', function (e) {
+                    e.target.closest('.row').remove();
+                });
+                container.$on('change', '.fieldset-disabled', function (e) {
+                    e.target.closest('div').$('fieldset').disabled = e.target.checked;
+                });
+                container.$on('change', '.switch-disabled', function (e) {
+                    e.target.closest('div').$('.attribute').disabled = e.target.checked;
+                });
+                container.$on('change', '.switch-readonly', function (e) {
+                    e.target.closest('div').$('.attribute').readOnly = e.target.checked;
+                });
+                container.$on('click', '.switch-visible', function (e) {
+                    e.target.closest('div').$('.attribute').hidden = e.target.checked;
+                });
+                container.$on('click', '.events', function (e) {
+                    console.log(container.$('.once-click').$events(null, true));
+                    console.log(container.$events());
+                });
+                container.$on('click', '.off', function (e) {
+                    container.$off();
+                    document.$off();
+                });
+
+                container.$on('click', '.click', function (e) {
+                    console.log(e);
+                    output.textContent += `${e.type}-${e.detail?.subtype ?? '(none)'}: ${e.target.outerHTML}\n`;
+                });
+                container.$on('click', '.once-click', function (e) {
+                    console.log(e);
+                    output.textContent += `${e.type}-${e.detail?.subtype ?? '(none)'}: ${e.target.outerHTML}\n`;
+                }, {
+                    once: true,
+                });
+                container.$on('input', '.debounce', function (e) {
+                    console.log(e);
+                    output.textContent += `${e.type}-${e.detail?.subtype ?? '(none)'}: ${e.target.outerHTML}\n`;
+                }, {
+                    debounce: 1000,
+                    leading: true,
+                    trailing: true,
+                });
+                container.$on('click', '.parent', function (e) {
+                    console.log(this);
+                    console.log(e.target);
+                    console.log(e.currentTarget);
+                    console.log(e.$delegateTarget);
+                    output.textContent += `${e.type}-${e.detail?.subtype ?? '(none)'}: ${e.target.outerHTML}\n`;
+                });
+                container.$on('click', '.child', function (e) {
+                    console.log(e);
+                    output.textContent += `${e.type}-${e.detail?.subtype ?? '(none)'}: ${e.target.outerHTML}\n`;
+                });
+                container.$on('resize', '.resize', function (e) {
+                    console.log(e);
+                    output.textContent += `${e.type}-${e.detail?.subtype ?? '(none)'}: ${e.target.outerHTML}\n`;
+                }, {
+                    first: false,
+                    throttle: 1000,
+                    leading: true,
+                    trailing: true,
+                });
+                container.$on('intersect', '.intersect', function (e) {
+                    console.log(e);
+                    output.textContent += `${e.type}-${e.detail.subtype ?? '(none)'}: ${e.detail.oldValue} => ${e.detail.newValue}\n`;
+                }, {
+                    first: false,
+                    threshold: [0, 1],
+                });
+                container.$on('swipe', '.slide', function (e) {
+                    console.log(e);
+                    output.textContent += `${e.type}-${e.detail.subtype ?? '(none)'}: ${JSON.stringify(e.detail)}\n`;
+                }, {
+                    throttle: 100,
+                });
+                container.$on('flick', '.slide', function (e) {
+                    console.log(e);
+                    output.textContent += `${e.type}-${e.detail.subtype ?? '(none)'}: ${JSON.stringify(e.detail)}\n`;
+                    container.$('.slide pre').textContent = `${e.type}-${e.detail.subtype ?? '(none)'}: ${JSON.stringify(e.detail)}\n`;
+                }, {
+                    threshold: 50,
+                });
+                container.$on('attribute', '.attribute', function (e) {
+                    console.log(e);
+                    output.textContent += `${e.type}-${e.detail.subtype ?? '(none)'}: ${e.detail.oldValue} => ${e.detail.newValue}\n`;
+                });
+                container.$on('attribute', '.attribute', function (e) {
+                    console.log(e);
+                    output.textContent += `${e.type}-${e.detail.subtype ?? '(none)'}: ${e.detail.oldValue} => ${e.detail.newValue}\n`;
+                }, {
+                    attributeName: 'readonly',
+                });
+                container.$on('disable', '.attribute', function (e) {
+                    console.log(e);
+                    output.textContent += `${e.type}-${e.detail.subtype ?? '(none)'}: ${e.detail.oldValue} => ${e.detail.newValue}\n`;
+                });
+                container.$on('visible', '.attribute', function (e) {
+                    console.log(e);
+                    output.textContent += `${e.type}-${e.detail?.subtype ?? '(none)'}: ${e.detail.oldValue} => ${e.detail.newValue}\n`;
+                }, {
+                    first: false,
+                });
+                container.$on('click', '.change-cookie', function (e) {
+                    document.cookie = e.target.dataset.cookieName + '=' + Date.now();
+                });
+                document.$on('cookie', function (e) {
+                    console.log(e);
+                    output.textContent += `${e.type}-${e.detail?.subtype ?? '(none)'}: ${e.detail.oldValue} => ${e.detail.newValue}\n`;
+                }, {
+                    cookieName: ['test'],
+                    interval: 500,
+                });
+
+                addrow();
+            })();
+        </script>
+    </section>
+
+    <section class="element">
+        <h2>element</h2>
+
+        <div>
+            <button type="button" class="get-value">get value</button>
+            <button type="button" class="set-value">set value</button>
+            <button type="button" class="set-invalid">set invalid</button>
+            <button type="button" class="clear-value">clear value</button>
+            <button type="button" class="file-files">file to files</button>
+            <button type="button" class="resetAttribute">reset attribute</button>
+            <br>
+            <button type="submit" class="request" name="submit" value="" form="form">request</button>
+            <button type="submit" class="request" name="submit" value="get" form="form" formaction="response.php?method=get" formmethod="get" formenctype="application/x-www-form-urlencoded">request GET</button>
+            <button type="submit" class="request" name="submit" value="post" form="form" formaction="response.php?method=post" formmethod="post" formenctype="application/x-www-form-urlencoded">request POST</button>
+            <button type="submit" class="request" name="submit" value="post" form="form" formaction="response.php?method=post" formmethod="post" formenctype="application/json">request JSON</button>
+            <br>
+            <a href="response.php?a=1&amp;x[]=1&amp;x[]=2" class="postable" target="postable">postable</a>
+            <a href="response.php?a=1&amp;x[]=1&amp;x[]=2" class="postable-async">postable async</a>
+            <a href="response.php?a=1&amp;x[]=1&amp;x[]=2" class="postable" download="response.json">postable download</a>
+            <a href="response.php?a=1&amp;x[]=1&amp;x[]=2" class="postable-form" target="postable">postable form</a>
+            <a href="response.php?a=1&amp;x[]=1&amp;x[]=2" class="postable-form-async">postable form async</a>
+            <a href="response.php?a=1&amp;x[]=1&amp;x[]=2" class="postable-form" download="response.json" target="postable">postable form download</a>
+            <br>
+            <button type="button" class="show-dialog-a">dialog A</button>
+        </div>
+
+        <dialog class="dialog-a">
+            <form method="dialog">
+                <button type="button" class="show-dialog-b">dialog B</button>
+                <button type="submit" value="a">close</button>
+            </form>
+        </dialog>
+        <dialog class="dialog-b">
+            <form method="dialog">
+                <button type="submit" value="b1">close 1</button>
+                <button type="submit" value="b2">close 2</button>
+            </form>
+        </dialog>
+
+        <form id="form" class="input" action="response.php?dummy=DUMMY" method="post" enctype="multipart/form-data">
+            <input name="text" type="text" value="text">
+            <textarea name="textarea">textarea</textarea>
+            <br>
+            <input type="checkbox" id="checkboxAll"><label for="checkboxAll">all</label>
+            <input name="checkbox[]" type="checkbox" value="a" id="checkboxA" checked><label for="checkboxA">checkboxA</label>
+            <input name="checkbox[]" type="checkbox" value="b" id="checkboxB"><label for="checkboxB">checkboxB</label>
+            <br>
+            <input name="radio" type="radio" value="a" id="radioA" checked><label for="radioA">radioA</label>
+            <input name="radio" type="radio" value="b" id="radioB"><label for="radioB">radioB</label>
+            <br>
+            <select name="select">
+                <option value="a" selected>A</option>
+                <option value="b">B</option>
+            </select>
+            <select name="selects[]" multiple>
+                <option value="a" selected>A</option>
+                <option value="b">B</option>
+            </select>
+            <br>
+            <input name="file" type="file">
+            <input name="files[]" type="file" multiple>
+            <br>
+            <button name="submit" value="submit" formenctype="application/x-www-form-urlencoded">submit urlencoded</button>
+            <button name="submit" value="submit" formenctype="multipart/form-data">submit form-data</button>
+            <br>
+            <input name="texts[]" type="text" value="texts1">
+            <input name="texts[]" type="text" value="texts2">
+            <br>
+            <input name="rows[0][a]" type="text" value="row0a">
+            <input name="rows[0][b]" type="text" value="row0b">
+            <input name="rows[1][a]" type="text" value="row1a">
+            <input name="rows[1][b]" type="text" value="row1b">
+            <input name="rows[2][]" type="text" value="row2">
+            <input name="rows[2][]" type="text" value="row2">
+        </form>
+
+        <output class="output"></output>
+
+        <script type="module">
+            (async function () {
+                const container = document.$('.element');
+                const input = container.$('.input');
+                const output = container.$('.output');
+                output.textContent = input.innerHTML;
+
+                container.$on('change', '#checkboxAll', async function (e) {
+                    input.$$('[name][type="checkbox"]').checked = e.target.checked;
+                    input.$('[name=radio]').$radioNodeList.$indeterminate = !e.target.checked;
+                });
+                container.$on('change', '[name][type="checkbox"]', async function () {
+                    input.$('#checkboxAll').$indeterminate = input.$$('[name][type="checkbox"]').checked;
+                });
+                container.$on('click', '.get-value', async function () {
+                    console.log(input.$$('input, textarea, select').$value);
+                    output.textContent = input.innerHTML;
+                });
+                container.$on('click', '.set-value', async function () {
+                    input.$$('input, textarea, select').$value = 'b';
+                    output.textContent = input.innerHTML;
+                });
+                container.$on('click', '.set-invalid', async function () {
+                    input.$$('input, textarea, select').$value = 'invalid value';
+                    output.textContent = input.innerHTML;
+                });
+                container.$on('click', '.clear-value', async function () {
+                    input.$$('input, textarea, select').$clear();
+                    output.textContent = input.innerHTML;
+                });
+                container.$on('click', '.file-files', async function () {
+                    input.$('[name="files[]"]').$value = input.$('[name="file"]').$value;
+                    output.textContent = input.innerHTML;
+                });
+                container.$on('click', '.resetAttribute', async function () {
+                    input.$$('input, textarea, select').$resetAttribute();
+                    output.textContent = input.innerHTML;
+                });
+                container.$on('click', '.request', async function (e) {
+                    e.preventDefault();
+                    const response = await input.$request({
+                        headers: {
+                            hoge: 'fuga',
+                        },
+                        data: {
+                            additional: 'data',
+                        },
+                        submitter: e.target,
+                    });
+                    output.textContent = `status: ${response.status} ${await response.text()}`;
+                    console.log(response);
+                });
+                container.$on('click', '.postable', async function (e) {
+                    e.preventDefault();
+                    e.target.$submit({
+                        data: {
+                            additional: 'data',
+                        },
+                    });
+                });
+                container.$on('click', '.postable-async', async function (e) {
+                    e.preventDefault();
+                    output.textContent = JSON.stringify(await (await e.target.$submit({
+                        async: true,
+                        data: {
+                            additional: 'data',
+                        },
+                    })).json(), null, 2);
+                });
+                container.$on('click', '.postable-form', async function (e) {
+                    e.preventDefault();
+                    e.target.$submit({
+                        form: $('#form'),
+                        data: {
+                            additional: 'data',
+                        },
+                    });
+                });
+                container.$on('click', '.postable-form-async', async function (e) {
+                    e.preventDefault();
+                    output.textContent = JSON.stringify(await (await e.target.$submit({
+                        async: true,
+                        form: $('#form'),
+                        data: {
+                            additional: 'data',
+                        },
+                    })).json(), null, 2);
+                });
+                container.$on('click', '.show-dialog-a', async function (e) {
+                    console.log(await container.$('.dialog-a').$showModal({escape: true, outside: true}));
+                });
+                container.$on('click', '.show-dialog-b', async function (e) {
+                    console.log(await container.$('.dialog-b').$showModal({escape: false, outside: false}));
+                });
+            })();
+        </script>
+    </section>
+
+    <section class="dimension">
+        <h2>dimension</h2>
+
+        <div>
+            <button type="button" class="offset">offset</button>
+            <button type="button" class="offset" data-box-margin="true">margin offset</button>
+            <button type="button" class="offset" data-box-relative="true">relative offset</button>
+            <button type="button" class="offset" data-box-margin="true" data-box-relative="true">relative margin offset</button>
+            <br>
+            <button type="button" class="size">size</button>
+            <button type="button" class="size" data-box-scrollbar="true">scrollbar size</button>
+            <button type="button" class="size" data-box-scrollbar="true" data-box-padding="true">padding size</button>
+            <button type="button" class="size" data-box-scrollbar="true" data-box-padding="true" data-box-border="true">border size</button>
+            <button type="button" class="size" data-box-scrollbar="true" data-box-padding="true" data-box-border="true" data-box-margin="true">margin size</button>
+            <br>
+            <button type="button" class="scroll" data-width="true" data-height="true">scroll parent</button>
+            <button type="button" class="scroll" data-width="true" data-height="">scroll parent(width)</button>
+            <button type="button" class="scroll" data-width="" data-height="true">scroll parent(height)</button>
+        </div>
+
+        <div class="input">
+            <div style="position:relative;top:1px;left:1px;width:600px;">
+                <div class="box" style="margin:3px; border:red 5px solid; padding:7px; width:200px;overflow:scroll; scrollbar-width:thin; background:blue;">
+                    <div style="background:green;">
+                        <span style="margin:3px; border:red 5px solid; padding:7px;">a<br>bb<br>ccc</span>
+                        <div style="box-sizing:border-box; width:500px;"> zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="scroll-parent" style="box-sizing:border-box; width:200px; height:100px; overflow:scroll;">
+                <textarea class="scroll-child">1
+2</textarea>
+            </div>
+        </div>
+
+        <output class="output"></output>
+
+        <script type="module">
+            (async function () {
+                const container = document.$('.dimension');
+                const input = container.$('.input');
+                const output = container.$('.output');
+
+                container.$on('click', '.offset', function (e) {
+                    const box = input.$('.box');
+                    const options = {
+                        relative: !!e.target.dataset.boxRelative,
+                        margin: !!e.target.dataset.boxMargin,
+                    };
+                    output.textContent += `$offset(${JSON.stringify(options)}): ${JSON.stringify(box.$offset(options))}\n`;
+                });
+                container.$on('click', '.size', function (e) {
+                    const box = input.$('.box');
+                    const options = {
+                        padding: !!e.target.dataset.boxPadding,
+                        border: !!e.target.dataset.boxBorder,
+                        margin: !!e.target.dataset.boxMargin,
+                        scrollbar: !!e.target.dataset.boxScrollbar,
+                    };
+                    output.textContent += `$size(${JSON.stringify(options)}): ${JSON.stringify(box.$size(options))}\n`;
+                });
+                container.$on('click', '.scroll', function (e) {
+                    const options = {
+                        width: !!e.target.dataset.width,
+                        height: !!e.target.dataset.height,
+                    };
+                    const parent = input.$('.scroll-child').$scrollParent(options);
+                    output.textContent += `$scrollParent(${JSON.stringify(options)}): ${parent?.tagName}.${parent?.classList}\n`;
+                });
+            })();
+        </script>
+    </section>
+
+    <section class="effect">
+        <style>
+            .transition {
+                width: 90%;
+                height: 240px;
+            }
+        </style>
+        <h2>effect</h2>
+
+        <div>
+            duration <input type="range" id="duration" name="duration" min="100" max="10000" value="1000" oninput="this.nextElementSibling.textContent=this.value">
+            <span>1000</span>
+            <br>
+            <button type="button" class="fade">fade</button>
+            <button type="button" class="slide-vertical">slide vertical</button>
+            <button type="button" class="slide-horizontal">slide horizontal</button>
+            <button type="button" class="parallel">parallel</button>
+            <button type="button" class="serial">serial</button>
+        </div>
+
+        <div class="input">
+            <div class="transition" style="background:white; margin:12px; padding:8px;">
+                <p>
+                    Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+                </p>
+                <span>text1</span>
+                <span>text2</span>
+                <span>text3</span>
+                <span>text4</span>
+                <span>text5</span>
+            </div>
+        </div>
+
+        <output class="output"></output>
+
+        <script type="module">
+            (async function () {
+                const container = document.$('.effect');
+                const input = container.$('.input');
+                const output = container.$('.output');
+
+                container.$on('click', '.fade', async function (e) {
+                    const transition = input.$('.transition');
+                    output.textContent += `fade: start\n`;
+                    if (transition.hidden) {
+                        transition.hidden = false;
+                        await transition.$fadeIn(+duration.value);
+                    }
+                    else {
+                        await transition.$fadeOut(+duration.value);
+                        transition.hidden = true;
+                    }
+                    output.textContent += `fade: end\n`;
+                });
+                container.$on('click', '.slide-vertical', async function (e) {
+                    const transition = input.$('.transition');
+                    output.textContent += `slide-vertical: start\n`;
+                    if (transition.hidden) {
+                        transition.hidden = false;
+                        await transition.$slideDown(+duration.value);
+                    }
+                    else {
+                        await transition.$slideUp(+duration.value);
+                        transition.hidden = true;
+                    }
+                    output.textContent += `slide-vertical: end\n`;
+                });
+                container.$on('click', '.slide-horizontal', async function (e) {
+                    const transition = input.$('.transition');
+                    output.textContent += `slide-horizontal: start\n`;
+                    if (transition.hidden) {
+                        transition.hidden = false;
+                        await transition.$slideRight(+duration.value);
+                    }
+                    else {
+                        await transition.$slideLeft(+duration.value);
+                        transition.hidden = true;
+                    }
+                    output.textContent += `slide-horizontal: end\n`;
+                });
+                container.$on('click', '.parallel', async function (e) {
+                    const transition = input.$('.transition');
+                    output.textContent += `parallel: start\n`;
+                    if (transition.hidden) {
+                        transition.hidden = false;
+                        await Promise.all([
+                            transition.$fadeIn(+duration.value),
+                            transition.$slideRight(+duration.value),
+                            transition.$slideDown(+duration.value),
+                        ]);
+                    }
+                    else {
+                        await Promise.all([
+                            transition.$fadeOut(+duration.value),
+                            transition.$slideLeft(+duration.value),
+                            transition.$slideUp(+duration.value),
+                        ]);
+                        transition.hidden = true;
+                    }
+                    output.textContent += `parallel: end\n`;
+                });
+                container.$on('click', '.serial', async function (e) {
+                    const transition = input.$('.transition');
+                    output.textContent += `serial: start\n`;
+                    if (transition.hidden) {
+                        transition.hidden = false;
+                        await transition.$transition({width: '100%'}, {initial: {overflow: 'hidden'}, duration: +duration.value});
+                        await transition.$transition({height: '240px'}, {initial: {overflow: 'hidden'}, duration: +duration.value});
+                    }
+                    else {
+                        await transition.$transition({width: '10px'}, {initial: {overflow: 'hidden'}, duration: +duration.value});
+                        await transition.$transition({height: '10px'}, {initial: {overflow: 'hidden'}, duration: +duration.value});
+                        transition.hidden = true;
+                    }
+                    output.textContent += `serial: end\n`;
+                });
+            })();
+        </script>
+    </section>
+
+    <section class="network">
+        <h2>network</h2>
+
+        <div>
+            <button type="button" class="load-get">load(GET)</button>
+            <button type="button" class="load-gets">load(GETs)</button>
+            <button type="button" class="load-posts">load(POSTs)</button>
+        </div>
+
+        <div class="input">
+            <span data-index="1">initial span1</span><br>
+            <span data-index="2">initial span2</span><br>
+            <span data-index="3">initial span3</span><br>
+        </div>
+
+        <output class="output"></output>
+
+        <script type="module">
+            (async function () {
+                const container = document.$('.network');
+                const input = container.$('.input');
+                const output = container.$('.output');
+
+                container.$on('click', '.load-get', async function () {
+                    await input.$$('span')[0].$load('response.php');
+                    output.textContent += `$load: done\n`;
+                });
+                container.$on('click', '.load-gets', async function () {
+                    await input.$$('span').$load('response.php', {
+                        data: {
+                            index: (node) => node.dataset.index,
+                        },
+                    });
+                    output.textContent += `$load: done\n`;
+                });
+                container.$on('click', '.load-posts', async function () {
+                    await input.$$('span').$load('response.php', {
+                        method: 'post',
+                        data: {
+                            additional: 'data',
+                            index: (node) => node.dataset.index,
+                        },
+                    });
+                    output.textContent += `$load: done\n`;
+                });
+            })();
+        </script>
+    </section>
+
+    <section class="utility">
+        <style>
+            .utility {
+                .styled {
+                    color: red;
+                }
+            }
+        </style>
+        <h2>utility</h2>
+
+        <div>
+            <button type="button" class="window-open">window open</button>
+            <br>
+            <button type="button" class="scroll-resolve">scroll(resolve)</button>
+            <button type="button" class="scroll-ifNeeded">scroll(ifNeeded)</button>
+            <button type="button" class="scroll-reject">scroll(reject)</button>
+            <br>
+            <button type="button" class="image-dataurl">image dataURL</button>
+            <button type="button" class="image-blob">image blob</button>
+            <button type="button" class="image-download">image download</button>
+            <br>
+            <button type="button" class="file-text">file text</button>
+            <button type="button" class="file-dataurl">file dataURL</button>
+            <br>
+            <button type="button" class="link-contents">link contents</button>
+            <button type="button" class="script-contents">script contents</button>
+            <br>
+            <button type="button" class="search-text">search text</button>
+            <button type="button" class="cancel-text">cancel text</button>
+        </div>
+
+        <div>
+            <div style="overflow:scroll; height: 70px; border:1px solid #aaa; white-space: nowrap">
+                <br>
+                <br>
+                <br>
+                <br>
+                <div style="display:inline-block; width:2000px">dummy</div>
+                <span class="scrollIntoView1">scrollIntoView</span>
+                <span class="scrollIntoView2" hidden>scrollIntoView</span>
+            </div>
+            <div class="styled">
+            </div>
+            <img alt="" class="img" src="example.png">
+        </div>
+
+        <img alt="" class="preview">
+
+        <div class="search">
+            this is simple text
+            <span>this is child text</span>
+            <span>this is context text</span>
+            <span>this is &lt;brackets&gt;</span>
+            <span>日本の日本語</span>
+        </div>
+
+        <output class="output"></output>
+
+        <script type="module">
+            (async function () {
+                const container = document.$('.utility');
+                const output = container.$('.output');
+
+                container.$on('click', '.window-open', async function () {
+                    window.$open({url: document.location.href});
+                });
+                container.$on('click', '.scroll-resolve', async function () {
+                    const result = await container.$('.scrollIntoView1').$scrollIntoView({
+                        behavior: 'smooth',
+                    });
+                    output.textContent += `scroll complete: ${result}\n`;
+                });
+                container.$on('click', '.scroll-ifNeeded', async function () {
+                    const result = await container.$('.scrollIntoView1').$scrollIntoView({
+                        behavior: 'smooth',
+                        ifNeeded: true,
+                    });
+                    output.textContent += `scroll complete: ${result}\n`;
+                });
+                container.$on('click', '.scroll-reject', async function () {
+                    const result = await container.$('.scrollIntoView2').$scrollIntoView({
+                        behavior: 'smooth',
+                        timeout: 1000,
+                    });
+                });
+                container.$on('click', '.image-dataurl', async function () {
+                    const dataurl = await container.$('.img').$dataURL();
+                    output.textContent += `dataurl: ${dataurl}\n`;
+                });
+                container.$on('click', '.image-blob', async function () {
+                    const blob = await container.$('.img').$blob();
+                    output.textContent += `blob: ${blob}\n`;
+                });
+                container.$on('click', '.image-download', async function () {
+                    const file = await container.$('.img').$contents();
+                    console.log(file);
+                    file.$download();
+                });
+                container.$on('click', '.file-text', function () {
+                    const file = document.$createElement('input', {type: 'file', multiple: true});
+                    file.$on('change', async function () {
+                        output.textContent += `text: ${await this.files.$text()}\n`;
+                    });
+                    file.dispatchEvent(new MouseEvent('click'));
+                });
+                container.$on('click', '.file-dataurl', function () {
+                    const file = document.$createElement('input', {type: 'file', multiple: true});
+                    file.$on('change', async function () {
+                        const dataurls = await this.files.$dataURL();
+                        output.textContent += `dataurl: ${dataurls}\n`;
+                        container.$('.preview').src = dataurls[0];
+                    });
+                    file.dispatchEvent(new MouseEvent('click'));
+                });
+                container.$on('click', '.link-contents', async function () {
+                    output.textContent += `link contents: ${await document.$('#example-css').$contents()}\n`;
+                });
+                container.$on('click', '.script-contents', async function () {
+                    output.textContent += `script contents: ${await document.$('#example-js').$contents()}\n`;
+                });
+                container.$on('click', '.search-text', function () {
+                    container.$('.search').$markText(/text|<brackets>|日本/, 'mark.marker');
+                });
+                container.$on('click', '.cancel-text', function () {
+                    container.$('.search').$$('.marker').$unwrapChildren();
+                });
+            })();
+        </script>
+    </section>
+</main>
+
+</body>
