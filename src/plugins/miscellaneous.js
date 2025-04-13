@@ -90,6 +90,18 @@ export function miscellaneous(kQuery) {
         },
         [[Element.name, $NodeList.name]]: /** @lends Element.prototype */{
             /**
+             * is metadata content
+             *
+             * @see https://html.spec.whatwg.org/multipage/dom.html#metadata-content
+             *
+             * @descriptor get
+             *
+             * @return {Boolean}
+             */
+            get $isMetadataContent() {
+                return ['base', 'link', 'meta', 'noscript', 'script', 'style', 'template', 'title'].includes(this.localName.toLowerCase());
+            },
+            /**
              * get no content outerHTML
              *
              * @param {Boolean} [withClose=true]
@@ -141,11 +153,9 @@ export function miscellaneous(kQuery) {
                     wrapper = this.$document.$createElement(wrapper ?? 'mark');
                 }
 
-                // @see https://html.spec.whatwg.org/multipage/dom.html#metadata-content
-                const metadataTags = ['base', 'link', 'meta', 'noscript', 'script', 'style', 'template', 'title'];
                 const core = (node) => {
                     for (const child of node.children) {
-                        if (metadataTags.includes(child.localName) || (notSelectorFn != null && child.$matches(notSelectorFn)) || child.$outerTag(false) === wrapper.$outerTag(false)) {
+                        if (child.$isMetadataContent || (notSelectorFn != null && child.$matches(notSelectorFn)) || child.$outerTag(false) === wrapper.$outerTag(false)) {
                             continue;
                         }
                         core(child);
