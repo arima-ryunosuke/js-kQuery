@@ -67,6 +67,12 @@
       }
       return !["object", "function"].includes(typeof value);
     },
+    anyIsStringable(value) {
+      if (F.anyIsPrimitive(value)) {
+        return true;
+      }
+      return value?.toString && value.toString !== Object.prototype.toString;
+    },
     stringToKebabCase(string) {
       return ("" + string).replaceAll(/([A-Z])/g, (...m) => "-" + m[1].toLowerCase());
     },
@@ -455,6 +461,25 @@
         }
         return func.call(this, ...args);
       };
+    },
+    async fetch(url, options = {}) {
+      if (options.timeout) {
+        const ctrl = new AbortController();
+        setTimeout(() => ctrl.abort(), options.timeout);
+        if (options.signal) {
+          options.signal = AbortSignal.any([options.signal, ctrl.signal]);
+        } else {
+          options.signal = ctrl.signal;
+        }
+        delete options.timeout;
+      }
+      const response = await GT.fetch(url, options);
+      if (!(options.ok ?? false) && !response.ok) {
+        throw new Error(`${response.status}: ${response.statusText}`, {
+          cause: response
+        });
+      }
+      return response;
     }
   };
   var Configuration = class _Configuration {
@@ -507,6 +532,9 @@
       if (prototype !== Object && typeof prototype === "function" && Object(value) instanceof prototype) {
         return true;
       }
+      if (prototype === Boolean && F.anyIsPrimitive(value)) {
+        return true;
+      }
       if (prototype === Number && (Object(value) instanceof prototype || !isNaN(value))) {
         return true;
       }
@@ -552,10 +580,8 @@
       };
       this.assertElementsInstanceOf = !debug ? noop2 : (actual, ...expecteds) => {
         for (const expected of expecteds) {
-          for (const v of Object.values(actual)) {
-            if (_Logger.anyIsInstanceOf(v, expected)) {
-              return noop;
-            }
+          if (Object.values(actual).every((v) => _Logger.anyIsInstanceOf(v, expected))) {
+            return noop;
           }
         }
         return console.assert.bind(this, false, prefix, `${_Logger.anyToDisplayName(actual)} type must be ${expecteds.map(_Logger.anyToDisplayName).join("|")}`);
@@ -570,10 +596,8 @@
       };
       this.assertElementsOf = !debug ? noop2 : (actual, ...expecteds) => {
         for (const expected of expecteds) {
-          for (const v of Object.values(actual)) {
-            if (expected.includes(v)) {
-              return noop;
-            }
+          if (Object.values(actual).every((v) => expected.includes(v))) {
+            return noop;
           }
         }
         return console.assert.bind(this, false, prefix, `${_Logger.anyToDisplayName(actual)} must be one of ${expecteds.map(_Logger.anyToDisplayName).join("|")}`);
@@ -695,23 +719,18 @@
       });
     }
   };
-  var WeakMap = class extends GT.WeakMap {
+  var WeakMap = class {
     static {
       __name(this, "WeakMap");
     }
     constructor() {
-      super();
       this.map = new GT.Map();
     }
-    _refresh() {
-      for (const [id, ref] of this.map.entries()) {
-        const object = ref.deref();
-        if (object === void 0) {
-          this.map.delete(id);
-          super.delete(object);
-        }
-      }
-      return this;
+    has(key) {
+      return this.map.has(F.objectId(key));
+    }
+    get(key) {
+      return this.map.get(F.objectId(key))?.value;
     }
     getOrSet(key, provider) {
       if (!this.has(key)) {
@@ -720,8 +739,10 @@
       return this.get(key);
     }
     set(key, value) {
-      this.map.set(F.objectId(key), new WeakRef(key));
-      return super.set(key, value);
+      return this.map.set(F.objectId(key), {
+        ref: new WeakRef(key),
+        value
+      });
     }
     reset(key, converter) {
       const oldValue = this.get(key);
@@ -729,17 +750,23 @@
       return oldValue;
     }
     delete(key) {
-      this.map.delete(F.objectId(key));
-      return super.delete(key);
+      return this.map.delete(F.objectId(key));
     }
     clear() {
-      return this._refresh().map.clear();
+      return this.map.clear();
     }
     *entries() {
-      yield* this._refresh().map.entries().map(([id, ref]) => [ref.deref(), this.get(ref.deref())]);
+      for (const obj of this.map.values()) {
+        const object = obj.ref.deref();
+        if (object === void 0) {
+          this.map.delete(object);
+          continue;
+        }
+        yield [object, obj.value];
+      }
     }
     get size() {
-      return this._refresh().map.size;
+      return [...this.entries()].length;
     }
   };
   var ObjectStorage = class {
@@ -1260,7 +1287,7 @@
       const kQuery = this;
       this.API = API_exports;
       this.config = new Configuration(function() {
-        if (F.objectIsPlain(meta)) {
+        if (F.objectIsPlain(meta) && !meta.url) {
           return meta;
         }
         const result = {};
@@ -1345,8 +1372,7 @@
   function autoproperties(kQuery) {
     const ignoreProperties = {
       EventTarget: ["dispatchEvent"],
-      Element: ["computedStyleMap", "elementTiming", "getInnerHTML", "onbeforecopy", "onbeforecut", "onbeforepaste", "onfullscreenchange", "onfullscreenerror", "onsearch", "onwebkitfullscreenchange", "onwebkitfullscreenerror", "scrollIntoViewIfNeeded", "webkitMatchesSelector", "webkitRequestFullScreen", "webkitRequestFullscreen"],
-      File: ["webkitRelativePath"],
+      Element: ["computedStyleMap", "elementTiming", "getInnerHTML", "onbeforecopy", "onbeforecut", "onbeforepaste", "onfullscreenchange", "onfullscreenerror", "onsearch", "scrollIntoViewIfNeeded"],
       HTMLAnchorElement: ["attributionSrc", "charset", "coords", "name", "rev", "shape"],
       HTMLAreaElement: ["noHref"],
       HTMLBRElement: ["clear"],
@@ -1354,7 +1380,7 @@
       HTMLDListElement: ["compact"],
       HTMLDirectoryElement: ["*"],
       HTMLDivElement: ["align"],
-      HTMLElement: ["attributeStyleMap", "editContext", "onabort", "onanimationend", "onanimationiteration", "onanimationstart", "onauxclick", "onbeforeinput", "onbeforematch", "onbeforetoggle", "onbeforexrselect", "onblur", "oncancel", "oncanplay", "oncanplaythrough", "onchange", "onclick", "onclose", "oncontentvisibilityautostatechange", "oncontextlost", "oncontextmenu", "oncontextrestored", "oncopy", "oncuechange", "oncut", "ondblclick", "ondrag", "ondragend", "ondragenter", "ondragleave", "ondragover", "ondragstart", "ondrop", "ondurationchange", "onemptied", "onended", "onerror", "onfocus", "onformdata", "ongotpointercapture", "oninput", "oninvalid", "onkeydown", "onkeypress", "onkeyup", "onload", "onloadeddata", "onloadedmetadata", "onloadstart", "onlostpointercapture", "onmousedown", "onmouseenter", "onmouseleave", "onmousemove", "onmouseout", "onmouseover", "onmouseup", "onmousewheel", "onpaste", "onpause", "onplay", "onplaying", "onpointercancel", "onpointerdown", "onpointerenter", "onpointerleave", "onpointermove", "onpointerout", "onpointerover", "onpointerrawupdate", "onpointerup", "onprogress", "onratechange", "onreset", "onresize", "onscroll", "onscrollend", "onscrollsnapchange", "onscrollsnapchanging", "onsecuritypolicyviolation", "onseeked", "onseeking", "onselect", "onselectionchange", "onselectstart", "onslotchange", "onstalled", "onsubmit", "onsuspend", "ontimeupdate", "ontoggle", "ontransitioncancel", "ontransitionend", "ontransitionrun", "ontransitionstart", "onvolumechange", "onwaiting", "onwebkitanimationend", "onwebkitanimationiteration", "onwebkitanimationstart", "onwebkittransitionend", "onwheel", "virtualKeyboardPolicy", "writingSuggestions"],
+      HTMLElement: ["attributeStyleMap", "editContext", "onabort", "onanimationend", "onanimationiteration", "onanimationstart", "onauxclick", "onbeforeinput", "onbeforematch", "onbeforetoggle", "onbeforexrselect", "onblur", "oncancel", "oncanplay", "oncanplaythrough", "onchange", "onclick", "onclose", "oncontentvisibilityautostatechange", "oncontextlost", "oncontextmenu", "oncontextrestored", "oncopy", "oncuechange", "oncut", "ondblclick", "ondrag", "ondragend", "ondragenter", "ondragleave", "ondragover", "ondragstart", "ondrop", "ondurationchange", "onemptied", "onended", "onerror", "onfocus", "onformdata", "ongotpointercapture", "oninput", "oninvalid", "onkeydown", "onkeypress", "onkeyup", "onload", "onloadeddata", "onloadedmetadata", "onloadstart", "onlostpointercapture", "onmousedown", "onmouseenter", "onmouseleave", "onmousemove", "onmouseout", "onmouseover", "onmouseup", "onmousewheel", "onpaste", "onpause", "onplay", "onplaying", "onpointercancel", "onpointerdown", "onpointerenter", "onpointerleave", "onpointermove", "onpointerout", "onpointerover", "onpointerrawupdate", "onpointerup", "onprogress", "onratechange", "onreset", "onresize", "onscroll", "onscrollend", "onscrollsnapchange", "onscrollsnapchanging", "onsecuritypolicyviolation", "onseeked", "onseeking", "onselect", "onselectionchange", "onselectstart", "onslotchange", "onstalled", "onsubmit", "onsuspend", "ontimeupdate", "ontoggle", "ontransitioncancel", "ontransitionend", "ontransitionrun", "ontransitionstart", "onvolumechange", "onwaiting", "onwheel", "virtualKeyboardPolicy", "writingSuggestions"],
       HTMLEmbedElement: ["align", "name"],
       HTMLFencedFrameElement: ["*"],
       HTMLFontElement: ["color", "face", "size"],
@@ -1366,12 +1392,12 @@
       HTMLHtmlElement: ["version"],
       HTMLIFrameElement: ["adAuctionHeaders", "align", "allowPaymentRequest", "credentialless", "csp", "featurePolicy", "frameBorder", "longDesc", "marginHeight", "marginWidth", "privateToken", "sharedStorageWritable", "scrolling"],
       HTMLImageElement: ["align", "attributionSrc", "border", "fetchPriority", "hspace", "longDesc", "name", "sharedStorageWritable", "vspace"],
-      HTMLInputElement: ["align", "incremental", "useMap", "webkitEntries", "webkitdirectory"],
+      HTMLInputElement: ["align", "incremental", "useMap", "webkitdirectory"],
       HTMLLIElement: ["type"],
       HTMLLegendElement: ["align"],
       HTMLLinkElement: ["charset", "blocking", "fetchPriority", "rev", "target"],
       HTMLMarqueeElement: ["*"],
-      HTMLMediaElement: ["captureStream", "controller", "controlsList", "disableRemotePlayback", "mediaGroup", "onencrypted", "onwaitingforkey", "remote", "setSinkId", "sinkId", "webkitAudioDecodedByteCount", "webkitVideoDecodedByteCount"],
+      HTMLMediaElement: ["captureStream", "controller", "controlsList", "disableRemotePlayback", "mediaGroup", "onencrypted", "onwaitingforkey", "remote", "setSinkId", "sinkId"],
       HTMLMenuElement: ["compact"],
       HTMLMetaElement: ["scheme"],
       HTMLOListElement: ["compact"],
@@ -1388,7 +1414,7 @@
       HTMLTableRowElement: ["align", "bgColor", "ch", "chOff", "vAlign"],
       HTMLTableSectionElement: ["align", "ch", "chOff", "vAlign"],
       HTMLUListElement: ["compact", "type"],
-      HTMLVideoElement: ["cancelVideoFrameCallback", "onenterpictureinpicture", "onleavepictureinpicture", "playsInline", "requestPictureInPicture", "requestVideoFrameCallback", "webkitDecodedFrameCount", "webkitDroppedFrameCount"]
+      HTMLVideoElement: ["cancelVideoFrameCallback", "onenterpictureinpicture", "onleavepictureinpicture", "playsInline", "requestPictureInPicture", "requestVideoFrameCallback"]
     };
     const targetProperties = {
       // https://developer.mozilla.org/docs/Web/API/Blob
@@ -1505,6 +1531,9 @@
         const prototype = globalThis[name];
         for (const property in prototype.prototype) {
           if (property.toUpperCase() === property) {
+            continue;
+          }
+          if (property.match(/^(webkit|moz)[A-Z]/) || property.startsWith("onwebkit")) {
             continue;
           }
           if (!Object.prototype.hasOwnProperty.call(prototype.prototype, property)) {
@@ -1679,7 +1708,7 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
                   }
                 }
               }
-              return [...result];
+              return result;
             }, "querySelectorThisAndAll");
             this.nodeSelectorCallback = new WeakMap();
             this.observer = new MutationObserver((entry) => {

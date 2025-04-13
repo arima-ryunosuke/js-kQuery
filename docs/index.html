@@ -456,6 +456,12 @@
                         <small>mass assign DOMTokenList(classList)</small></li>
                       
                       <li><a
+                        href='#elementwillchange'
+                        class='regular pre-open'>
+                        $willChange</a>
+                        <small>change css will-change property</small></li>
+                      
+                      <li><a
                         href='#elementtransition'
                         class='regular pre-open'>
                         $transition</a>
@@ -496,6 +502,12 @@
                         class='regular pre-open'>
                         $slideLeft</a>
                         <small>slide to left element</small></li>
+                      
+                      <li><a
+                        href='#elementget__ismetadatacontent'
+                        class='regular pre-open'>
+                        get $isMetadataContent</a>
+                        <small>is metadata content</small></li>
                       
                       <li><a
                         href='#elementoutertag'
@@ -942,6 +954,33 @@
               
                 
                 <li><a
+                  href='#htmloptionableelement'
+                  class=" toggle-sibling">
+                  HTMLOptionableElement
+                  <span class='icon'>▾</span>
+                </a>
+                
+                <div class='toggle-target'>
+                  
+                  
+                    <ul class='list-reset py1-ul pl1'>
+                      
+                      <li><a
+                        href='#htmloptionableelementoptions'
+                        class='regular pre-open'>
+                        $options</a>
+                        <small>set option elements</small></li>
+                      
+                    </ul>
+                  
+                  
+                  
+                </div>
+                
+                </li>
+              
+                
+                <li><a
                   href='#radionodelist'
                   class=" toggle-sibling">
                   RadioNodeList
@@ -1054,6 +1093,12 @@
                         class='regular pre-open'>
                         $dataURL</a>
                         <small>read as dataURL</small></li>
+                      
+                      <li><a
+                        href='#blobupload'
+                        class='regular pre-open'>
+                        $upload</a>
+                        <small>upload file</small></li>
                       
                     </ul>
                   
@@ -3940,7 +3985,7 @@ $(<span class="hljs-string">&#x27;div&#x27;</span>).$unwrapChildren();
 
   <p>get all textnodes</p>
 
-    <div class='pre p1 fill-light mt0'>$textNodes(selector: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a>&#x3C;<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>>): <a href="#nodelist">NodeList</a></div>
+    <div class='pre p1 fill-light mt0'>$textNodes(selector: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a>&#x3C;(<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a> | <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>)>): <a href="#nodelist">NodeList</a></div>
   
   
 
@@ -3957,7 +4002,7 @@ $(<span class="hljs-string">&#x27;div&#x27;</span>).$unwrapChildren();
       
         <div class='space-bottom0'>
           <div>
-            <span class='code bold'>selector</span> <code class='quiet'>(<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a>&#x3C;<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>>
+            <span class='code bold'>selector</span> <code class='quiet'>(<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a>&#x3C;(<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a> | <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>)>
             = <code>[Node.TEXT_NODE,Node.COMMENT_NODE,Node.CDATA_SECTION_NODE]</code>)</code>
 	    
           </div>
@@ -5241,6 +5286,85 @@ $$(<span class="hljs-string">&#x27;input&#x27;</span>).<span class="hljs-propert
       </div>
     </div>
   
+    <div class='border-bottom' id='elementwillchange'>
+      <div class="clearfix small pointer toggle-sibling">
+        <div class="py1 contain">
+            <a class='icon pin-right py1 dark-link caret-right'>▸</a>
+            <span class='code strong strong truncate'>$willChange(value, timeout)</span>
+        </div>
+      </div>
+      <div class="clearfix display-none toggle-target">
+        <section class='p2 mb2 clearfix bg-white minishadow'>
+
+  
+
+  <p>change css will-change property</p>
+<p>changes are undone after a certain amount of time</p>
+
+    <div class='pre p1 fill-light mt0'>$willChange(value: (<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">String</a> | <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a>), timeout: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>): this</div>
+  
+  
+
+  
+  
+  
+  
+  
+  
+
+  
+    <div class='py1 quiet mt1 prose-big'>Parameters</div>
+    <div class='prose'>
+      
+        <div class='space-bottom0'>
+          <div>
+            <span class='code bold'>value</span> <code class='quiet'>((<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">String</a> | <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a>))</code>
+	    
+          </div>
+          
+        </div>
+      
+        <div class='space-bottom0'>
+          <div>
+            <span class='code bold'>timeout</span> <code class='quiet'>(<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>
+            = <code>1000</code>)</code>
+	    
+          </div>
+          
+        </div>
+      
+    </div>
+  
+
+  
+
+  
+    
+      <div class='py1 quiet mt1 prose-big'>Returns</div>
+      <code>this</code>:
+        
+      
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+</section>
+
+      </div>
+    </div>
+  
     <div class='border-bottom' id='elementtransition'>
       <div class="clearfix small pointer toggle-sibling">
         <div class="py1 contain">
@@ -5799,6 +5923,70 @@ node.<span class="hljs-property">hidden</span> = <span class="hljs-literal">true
     
   
 
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+</section>
+
+      </div>
+    </div>
+  
+    <div class='border-bottom' id='elementget__ismetadatacontent'>
+      <div class="clearfix small pointer toggle-sibling">
+        <div class="py1 contain">
+            <a class='icon pin-right py1 dark-link caret-right'>▸</a>
+            <span class='code strong strong truncate'>get $isMetadataContent</span>
+        </div>
+      </div>
+      <div class="clearfix display-none toggle-target">
+        <section class='p2 mb2 clearfix bg-white minishadow'>
+
+  
+
+  <p>is metadata content</p>
+
+    <div class='pre p1 fill-light mt0'>get $isMetadataContent</div>
+  
+  
+
+  
+  
+  
+  
+  
+  
+
+  
+
+  
+
+  
+    
+      <div class='py1 quiet mt1 prose-big'>Returns</div>
+      <code><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean">Boolean</a></code>:
+        
+      
+    
+  
+
+  
+    <div class='py1 quiet mt1 prose-big'>Related</div>
+    
+      
+        <a href="https://html.spec.whatwg.org/multipage/dom.html#metadata-content">https://html.spec.whatwg.org/multipage/dom.html#metadata-content</a>
+
+      
+    
   
 
   
@@ -8862,6 +9050,150 @@ if specified insert:null, no inserted</p>
   
   <div class='clearfix'>
     
+    <h3 class='fl m0' id='htmloptionableelement'>
+      HTMLOptionableElement
+    </h3>
+    
+    
+  </div>
+  
+
+  
+    <div class='pre p1 fill-light mt0'>HTMLOptionableElement</div>
+  
+    <p>
+      Type:
+      (<a href="https://developer.mozilla.org/docs/Web/API/HTMLSelectElement">HTMLSelectElement</a> | HTMLDataListElement)
+    </p>
+  
+  
+
+  
+  
+  
+  
+  
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <div class='py1 quiet mt1 prose-big'>Instance Members</div>
+    <div class="clearfix">
+  
+    <div class='border-bottom' id='htmloptionableelementoptions'>
+      <div class="clearfix small pointer toggle-sibling">
+        <div class="py1 contain">
+            <a class='icon pin-right py1 dark-link caret-right'>▸</a>
+            <span class='code strong strong truncate'>$options(options, preserveValue = undefined)</span>
+        </div>
+      </div>
+      <div class="clearfix display-none toggle-target">
+        <section class='p2 mb2 clearfix bg-white minishadow'>
+
+  
+
+  <p>set option elements</p>
+<p>preserveValue</p>
+<ul>
+<li>false: fully replace all options, selection state is lost</li>
+<li>true: fully replace all options, selection state is kept</li>
+<li>String: keep selected options and insertion method</li>
+</ul>
+
+    <div class='pre p1 fill-light mt0'>$options(options: (<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a>&#x3C;<a href="https://developer.mozilla.org/docs/Web/API/HTMLOptionElement">HTMLOptionElement</a>> | <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a>&#x3C;<a href="https://developer.mozilla.org/docs/Web/API/HTMLOptGroupElement">HTMLOptGroupElement</a>> | <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>), preserveValue: (<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean">Boolean</a> | <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>)?): this</div>
+  
+  
+
+  
+  
+  
+  
+  
+  
+
+  
+    <div class='py1 quiet mt1 prose-big'>Parameters</div>
+    <div class='prose'>
+      
+        <div class='space-bottom0'>
+          <div>
+            <span class='code bold'>options</span> <code class='quiet'>((<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a>&#x3C;<a href="https://developer.mozilla.org/docs/Web/API/HTMLOptionElement">HTMLOptionElement</a>> | <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a>&#x3C;<a href="https://developer.mozilla.org/docs/Web/API/HTMLOptGroupElement">HTMLOptGroupElement</a>> | <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>))</code>
+	    
+          </div>
+          
+        </div>
+      
+        <div class='space-bottom0'>
+          <div>
+            <span class='code bold'>preserveValue</span> <code class='quiet'>((<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean">Boolean</a> | <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>)?
+            = <code>undefined</code>)</code>
+	    
+          </div>
+          
+        </div>
+      
+    </div>
+  
+
+  
+
+  
+    
+      <div class='py1 quiet mt1 prose-big'>Returns</div>
+      <code>this</code>:
+        
+      
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+</section>
+
+      </div>
+    </div>
+  
+</div>
+
+  
+
+  
+
+  
+</section>
+
+          
+        
+          
+          <section class='p2 mb2 clearfix bg-white minishadow'>
+
+  
+  <div class='clearfix'>
+    
     <h3 class='fl m0' id='radionodelist'>
       RadioNodeList
     </h3>
@@ -9620,6 +9952,84 @@ if specified insert:null, no inserted</p>
     
       <div class='py1 quiet mt1 prose-big'>Returns</div>
       <code><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise">Promise</a>&#x3C;<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>></code>:
+        
+      
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+</section>
+
+      </div>
+    </div>
+  
+    <div class='border-bottom' id='blobupload'>
+      <div class="clearfix small pointer toggle-sibling">
+        <div class="py1 contain">
+            <a class='icon pin-right py1 dark-link caret-right'>▸</a>
+            <span class='code strong strong truncate'>$upload(urlOrOptions, options)</span>
+        </div>
+      </div>
+      <div class="clearfix display-none toggle-target">
+        <section class='p2 mb2 clearfix bg-white minishadow'>
+
+  
+
+  <p>upload file</p>
+
+    <div class='pre p1 fill-light mt0'>$upload(urlOrOptions: (<a href="https://developer.mozilla.org/docs/Web/API/URL/URL">URL</a> | <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">String</a> | RequestInit), options: RequestInit): <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise">Promise</a>&#x3C;<a href="https://developer.mozilla.org/docs/Web/Guide/HTML/HTML5">Response</a>></div>
+  
+  
+
+  
+  
+  
+  
+  
+  
+
+  
+    <div class='py1 quiet mt1 prose-big'>Parameters</div>
+    <div class='prose'>
+      
+        <div class='space-bottom0'>
+          <div>
+            <span class='code bold'>urlOrOptions</span> <code class='quiet'>((<a href="https://developer.mozilla.org/docs/Web/API/URL/URL">URL</a> | <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">String</a> | RequestInit))</code>
+	    
+          </div>
+          
+        </div>
+      
+        <div class='space-bottom0'>
+          <div>
+            <span class='code bold'>options</span> <code class='quiet'>(RequestInit
+            = <code>{}</code>)</code>
+	    
+          </div>
+          
+        </div>
+      
+    </div>
+  
+
+  
+
+  
+    
+      <div class='py1 quiet mt1 prose-big'>Returns</div>
+      <code><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise">Promise</a>&#x3C;<a href="https://developer.mozilla.org/docs/Web/Guide/HTML/HTML5">Response</a>></code>:
         
       
     

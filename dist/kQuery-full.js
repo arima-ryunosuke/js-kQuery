@@ -67,6 +67,12 @@
       }
       return !["object", "function"].includes(typeof value);
     },
+    anyIsStringable(value) {
+      if (F.anyIsPrimitive(value)) {
+        return true;
+      }
+      return value?.toString && value.toString !== Object.prototype.toString;
+    },
     stringToKebabCase(string) {
       return ("" + string).replaceAll(/([A-Z])/g, (...m) => "-" + m[1].toLowerCase());
     },
@@ -455,6 +461,25 @@
         }
         return func.call(this, ...args);
       };
+    },
+    async fetch(url, options = {}) {
+      if (options.timeout) {
+        const ctrl = new AbortController();
+        setTimeout(() => ctrl.abort(), options.timeout);
+        if (options.signal) {
+          options.signal = AbortSignal.any([options.signal, ctrl.signal]);
+        } else {
+          options.signal = ctrl.signal;
+        }
+        delete options.timeout;
+      }
+      const response = await GT.fetch(url, options);
+      if (!(options.ok ?? false) && !response.ok) {
+        throw new Error(`${response.status}: ${response.statusText}`, {
+          cause: response
+        });
+      }
+      return response;
     }
   };
   var Configuration = class _Configuration {
@@ -507,6 +532,9 @@
       if (prototype !== Object && typeof prototype === "function" && Object(value) instanceof prototype) {
         return true;
       }
+      if (prototype === Boolean && F.anyIsPrimitive(value)) {
+        return true;
+      }
       if (prototype === Number && (Object(value) instanceof prototype || !isNaN(value))) {
         return true;
       }
@@ -552,10 +580,8 @@
       };
       this.assertElementsInstanceOf = !debug ? noop2 : (actual, ...expecteds) => {
         for (const expected of expecteds) {
-          for (const v of Object.values(actual)) {
-            if (_Logger.anyIsInstanceOf(v, expected)) {
-              return noop;
-            }
+          if (Object.values(actual).every((v) => _Logger.anyIsInstanceOf(v, expected))) {
+            return noop;
           }
         }
         return console.assert.bind(this, false, prefix, `${_Logger.anyToDisplayName(actual)} type must be ${expecteds.map(_Logger.anyToDisplayName).join("|")}`);
@@ -570,10 +596,8 @@
       };
       this.assertElementsOf = !debug ? noop2 : (actual, ...expecteds) => {
         for (const expected of expecteds) {
-          for (const v of Object.values(actual)) {
-            if (expected.includes(v)) {
-              return noop;
-            }
+          if (Object.values(actual).every((v) => expected.includes(v))) {
+            return noop;
           }
         }
         return console.assert.bind(this, false, prefix, `${_Logger.anyToDisplayName(actual)} must be one of ${expecteds.map(_Logger.anyToDisplayName).join("|")}`);
@@ -695,23 +719,18 @@
       });
     }
   };
-  var WeakMap = class extends GT.WeakMap {
+  var WeakMap = class {
     static {
       __name(this, "WeakMap");
     }
     constructor() {
-      super();
       this.map = new GT.Map();
     }
-    _refresh() {
-      for (const [id, ref] of this.map.entries()) {
-        const object = ref.deref();
-        if (object === void 0) {
-          this.map.delete(id);
-          super.delete(object);
-        }
-      }
-      return this;
+    has(key) {
+      return this.map.has(F.objectId(key));
+    }
+    get(key) {
+      return this.map.get(F.objectId(key))?.value;
     }
     getOrSet(key, provider) {
       if (!this.has(key)) {
@@ -720,8 +739,10 @@
       return this.get(key);
     }
     set(key, value) {
-      this.map.set(F.objectId(key), new WeakRef(key));
-      return super.set(key, value);
+      return this.map.set(F.objectId(key), {
+        ref: new WeakRef(key),
+        value
+      });
     }
     reset(key, converter) {
       const oldValue = this.get(key);
@@ -729,17 +750,23 @@
       return oldValue;
     }
     delete(key) {
-      this.map.delete(F.objectId(key));
-      return super.delete(key);
+      return this.map.delete(F.objectId(key));
     }
     clear() {
-      return this._refresh().map.clear();
+      return this.map.clear();
     }
     *entries() {
-      yield* this._refresh().map.entries().map(([id, ref]) => [ref.deref(), this.get(ref.deref())]);
+      for (const obj of this.map.values()) {
+        const object = obj.ref.deref();
+        if (object === void 0) {
+          this.map.delete(object);
+          continue;
+        }
+        yield [object, obj.value];
+      }
     }
     get size() {
-      return this._refresh().map.size;
+      return [...this.entries()].length;
     }
   };
   var ObjectStorage = class {
@@ -1299,7 +1326,10 @@
       });
       this.eventId = MutationObserver.getOptionsKey(options);
       this.observer = this.constructor.observers[this.eventId] ??= new MutationObserver((entry, last) => {
-        for (const child of [...entry.addedNodes].filter((node) => node instanceof Element)) {
+        for (const child of entry.addedNodes) {
+          if (!(child instanceof Element)) {
+            continue;
+          }
           trigger(entry.target, {
             subtype: "insert",
             node: child
@@ -1311,7 +1341,10 @@
           });
           this.constructor.observers["attribute" + this.eventId]?.observe?.(child);
         }
-        for (const child of [...entry.removedNodes].filter((node) => node instanceof Element)) {
+        for (const child of entry.removedNodes) {
+          if (!(child instanceof Element)) {
+            continue;
+          }
           trigger(entry.target, {
             subtype: "remove",
             node: child
@@ -1445,6 +1478,7 @@
       __name(this, "default");
     }
     constructor(target, selector, options, trigger) {
+      options.buttons ??= 1;
       this.starting = false;
       this.vectors = [];
       this.down = (e) => {
@@ -1453,7 +1487,7 @@
         this.vectors.splice(0);
       };
       this.move = (e) => {
-        if (this.starting) {
+        if (e.buttons & options.buttons && this.starting) {
           this.vectors.push(new Vector2(e.offsetX, e.offsetY, e.timeStamp));
         }
       };
@@ -1568,13 +1602,14 @@
       __name(this, "default");
     }
     constructor(target, selector, options, trigger) {
+      options.buttons ??= 1;
       this.firstVector = null;
       this.down = (e) => {
         e.target.setPointerCapture(e.pointerId);
         this.firstVector = new Vector2(e.offsetX, e.offsetY, e.timeStamp);
       };
       this.move = (e) => {
-        if (this.firstVector) {
+        if (e.buttons & options.buttons && this.firstVector) {
           const currentVector = new Vector2(e.offsetX, e.offsetY, e.timeStamp);
           const distance = this.firstVector.distance(currentVector);
           if (distance !== 0) {
@@ -1653,7 +1688,7 @@
       const kQuery = this;
       this.API = API_exports;
       this.config = new Configuration(function() {
-        if (F.objectIsPlain(meta)) {
+        if (F.objectIsPlain(meta) && !meta.url) {
           return meta;
         }
         const result = {};
@@ -1738,8 +1773,7 @@
   function autoproperties(kQuery) {
     const ignoreProperties = {
       EventTarget: ["dispatchEvent"],
-      Element: ["computedStyleMap", "elementTiming", "getInnerHTML", "onbeforecopy", "onbeforecut", "onbeforepaste", "onfullscreenchange", "onfullscreenerror", "onsearch", "onwebkitfullscreenchange", "onwebkitfullscreenerror", "scrollIntoViewIfNeeded", "webkitMatchesSelector", "webkitRequestFullScreen", "webkitRequestFullscreen"],
-      File: ["webkitRelativePath"],
+      Element: ["computedStyleMap", "elementTiming", "getInnerHTML", "onbeforecopy", "onbeforecut", "onbeforepaste", "onfullscreenchange", "onfullscreenerror", "onsearch", "scrollIntoViewIfNeeded"],
       HTMLAnchorElement: ["attributionSrc", "charset", "coords", "name", "rev", "shape"],
       HTMLAreaElement: ["noHref"],
       HTMLBRElement: ["clear"],
@@ -1747,7 +1781,7 @@
       HTMLDListElement: ["compact"],
       HTMLDirectoryElement: ["*"],
       HTMLDivElement: ["align"],
-      HTMLElement: ["attributeStyleMap", "editContext", "onabort", "onanimationend", "onanimationiteration", "onanimationstart", "onauxclick", "onbeforeinput", "onbeforematch", "onbeforetoggle", "onbeforexrselect", "onblur", "oncancel", "oncanplay", "oncanplaythrough", "onchange", "onclick", "onclose", "oncontentvisibilityautostatechange", "oncontextlost", "oncontextmenu", "oncontextrestored", "oncopy", "oncuechange", "oncut", "ondblclick", "ondrag", "ondragend", "ondragenter", "ondragleave", "ondragover", "ondragstart", "ondrop", "ondurationchange", "onemptied", "onended", "onerror", "onfocus", "onformdata", "ongotpointercapture", "oninput", "oninvalid", "onkeydown", "onkeypress", "onkeyup", "onload", "onloadeddata", "onloadedmetadata", "onloadstart", "onlostpointercapture", "onmousedown", "onmouseenter", "onmouseleave", "onmousemove", "onmouseout", "onmouseover", "onmouseup", "onmousewheel", "onpaste", "onpause", "onplay", "onplaying", "onpointercancel", "onpointerdown", "onpointerenter", "onpointerleave", "onpointermove", "onpointerout", "onpointerover", "onpointerrawupdate", "onpointerup", "onprogress", "onratechange", "onreset", "onresize", "onscroll", "onscrollend", "onscrollsnapchange", "onscrollsnapchanging", "onsecuritypolicyviolation", "onseeked", "onseeking", "onselect", "onselectionchange", "onselectstart", "onslotchange", "onstalled", "onsubmit", "onsuspend", "ontimeupdate", "ontoggle", "ontransitioncancel", "ontransitionend", "ontransitionrun", "ontransitionstart", "onvolumechange", "onwaiting", "onwebkitanimationend", "onwebkitanimationiteration", "onwebkitanimationstart", "onwebkittransitionend", "onwheel", "virtualKeyboardPolicy", "writingSuggestions"],
+      HTMLElement: ["attributeStyleMap", "editContext", "onabort", "onanimationend", "onanimationiteration", "onanimationstart", "onauxclick", "onbeforeinput", "onbeforematch", "onbeforetoggle", "onbeforexrselect", "onblur", "oncancel", "oncanplay", "oncanplaythrough", "onchange", "onclick", "onclose", "oncontentvisibilityautostatechange", "oncontextlost", "oncontextmenu", "oncontextrestored", "oncopy", "oncuechange", "oncut", "ondblclick", "ondrag", "ondragend", "ondragenter", "ondragleave", "ondragover", "ondragstart", "ondrop", "ondurationchange", "onemptied", "onended", "onerror", "onfocus", "onformdata", "ongotpointercapture", "oninput", "oninvalid", "onkeydown", "onkeypress", "onkeyup", "onload", "onloadeddata", "onloadedmetadata", "onloadstart", "onlostpointercapture", "onmousedown", "onmouseenter", "onmouseleave", "onmousemove", "onmouseout", "onmouseover", "onmouseup", "onmousewheel", "onpaste", "onpause", "onplay", "onplaying", "onpointercancel", "onpointerdown", "onpointerenter", "onpointerleave", "onpointermove", "onpointerout", "onpointerover", "onpointerrawupdate", "onpointerup", "onprogress", "onratechange", "onreset", "onresize", "onscroll", "onscrollend", "onscrollsnapchange", "onscrollsnapchanging", "onsecuritypolicyviolation", "onseeked", "onseeking", "onselect", "onselectionchange", "onselectstart", "onslotchange", "onstalled", "onsubmit", "onsuspend", "ontimeupdate", "ontoggle", "ontransitioncancel", "ontransitionend", "ontransitionrun", "ontransitionstart", "onvolumechange", "onwaiting", "onwheel", "virtualKeyboardPolicy", "writingSuggestions"],
       HTMLEmbedElement: ["align", "name"],
       HTMLFencedFrameElement: ["*"],
       HTMLFontElement: ["color", "face", "size"],
@@ -1759,12 +1793,12 @@
       HTMLHtmlElement: ["version"],
       HTMLIFrameElement: ["adAuctionHeaders", "align", "allowPaymentRequest", "credentialless", "csp", "featurePolicy", "frameBorder", "longDesc", "marginHeight", "marginWidth", "privateToken", "sharedStorageWritable", "scrolling"],
       HTMLImageElement: ["align", "attributionSrc", "border", "fetchPriority", "hspace", "longDesc", "name", "sharedStorageWritable", "vspace"],
-      HTMLInputElement: ["align", "incremental", "useMap", "webkitEntries", "webkitdirectory"],
+      HTMLInputElement: ["align", "incremental", "useMap", "webkitdirectory"],
       HTMLLIElement: ["type"],
       HTMLLegendElement: ["align"],
       HTMLLinkElement: ["charset", "blocking", "fetchPriority", "rev", "target"],
       HTMLMarqueeElement: ["*"],
-      HTMLMediaElement: ["captureStream", "controller", "controlsList", "disableRemotePlayback", "mediaGroup", "onencrypted", "onwaitingforkey", "remote", "setSinkId", "sinkId", "webkitAudioDecodedByteCount", "webkitVideoDecodedByteCount"],
+      HTMLMediaElement: ["captureStream", "controller", "controlsList", "disableRemotePlayback", "mediaGroup", "onencrypted", "onwaitingforkey", "remote", "setSinkId", "sinkId"],
       HTMLMenuElement: ["compact"],
       HTMLMetaElement: ["scheme"],
       HTMLOListElement: ["compact"],
@@ -1781,7 +1815,7 @@
       HTMLTableRowElement: ["align", "bgColor", "ch", "chOff", "vAlign"],
       HTMLTableSectionElement: ["align", "ch", "chOff", "vAlign"],
       HTMLUListElement: ["compact", "type"],
-      HTMLVideoElement: ["cancelVideoFrameCallback", "onenterpictureinpicture", "onleavepictureinpicture", "playsInline", "requestPictureInPicture", "requestVideoFrameCallback", "webkitDecodedFrameCount", "webkitDroppedFrameCount"]
+      HTMLVideoElement: ["cancelVideoFrameCallback", "onenterpictureinpicture", "onleavepictureinpicture", "playsInline", "requestPictureInPicture", "requestVideoFrameCallback"]
     };
     const targetProperties = {
       // https://developer.mozilla.org/docs/Web/API/Blob
@@ -1898,6 +1932,9 @@
         const prototype = globalThis[name];
         for (const property in prototype.prototype) {
           if (property.toUpperCase() === property) {
+            continue;
+          }
+          if (property.match(/^(webkit|moz)[A-Z]/) || property.startsWith("onwebkit")) {
             continue;
           }
           if (!Object.prototype.hasOwnProperty.call(prototype.prototype, property)) {
@@ -2072,7 +2109,7 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
                   }
                 }
               }
-              return [...result];
+              return result;
             }, "querySelectorThisAndAll");
             this.nodeSelectorCallback = new WeakMap();
             this.observer = new MutationObserver((entry) => {
@@ -2932,7 +2969,7 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
           async $contents(resolveUrl = true) {
             let contents;
             if (this instanceof HTMLLinkElement) {
-              contents = await (await fetch(this.href)).text();
+              contents = await (await F.fetch(this.href)).text();
             } else {
               contents = this.textContent;
             }
@@ -2950,7 +2987,7 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
                 const fullurl = normalize(url);
                 if (fullurl) {
                   requests[fullurl] ??= async (fullurl2) => {
-                    const response = await fetch(fullurl2).catch((v) => ({ ok: false }));
+                    const response = await F.fetch(fullurl2).catch((v) => ({ ok: false }));
                     if (!response.ok) {
                       return null;
                     }
@@ -2985,7 +3022,7 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
           async $contents() {
             let contents;
             if (this.src) {
-              contents = await (await fetch(this.src)).text();
+              contents = await (await F.fetch(this.src)).text();
             } else {
               contents = this.textContent;
             }
@@ -3026,7 +3063,7 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
            */
           async $contents() {
             const url = new URL(this.currentSrc, this.baseURI);
-            const response = await fetch(url);
+            const response = await F.fetch(url);
             const blob = await response.blob();
             return new File([blob], url.pathname.split("/").at(-1) ?? this.currentSrc, {
               type: blob.type,
@@ -3615,9 +3652,39 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
           }, args[0]);
         }, "handleArguments");
         const nodeStyleBackup = new WeakMap();
+        const nodeWillChangeBackup = new WeakMap();
+        const willChangeTimer = new Timer();
+        willChangeTimer.addEventListener("alarm", function() {
+          for (const [e, backup] of nodeWillChangeBackup.entries()) {
+            e.style.setProperty("will-change", backup);
+          }
+          nodeWillChangeBackup.clear();
+        });
         return (
           /** @lends Element.prototype */
           {
+            /**
+             * change css will-change property
+             *
+             * changes are undone after a certain amount of time
+             *
+             * @param {String|Array} value
+             * @param {Number} [timeout=1000]
+             * @return {this}
+             */
+            $willChange(value, timeout = 1e3) {
+              kQuery.logger.assertInstanceOf(value, String, Array)();
+              kQuery.logger.assertInstanceOf(timeout, Number)();
+              value = value instanceof Array ? value : [value];
+              const current = this.style.getPropertyValue("will-change");
+              nodeWillChangeBackup.getOrSet(this, () => current);
+              if (current) {
+                value.push(current);
+              }
+              this.style.setProperty("will-change", [...new Set(value)].join(","));
+              willChangeTimer.restart(timeout, 1);
+              return this;
+            },
             /**
              * change css with transition
              *
@@ -3987,7 +4054,7 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
            * @param {Boolean|Boolean[]} value
            */
           set $indeterminate(value) {
-            kQuery.logger.assertInstanceOf(value, Boolean, Array);
+            kQuery.logger.assertInstanceOf(value, Boolean, Array)();
             if (this instanceof RadioNodeList) {
               if (!value) {
                 kQuery.logger.error(`RadioNodeList's $indeterminate is readonly`);
@@ -4121,6 +4188,93 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
             } else {
               this.setAttribute("value", this.value);
             }
+            return this;
+          }
+        }
+      ),
+      [[HTMLSelectElement.name, HTMLDataListElement.name, $NodeList.name]]: (
+        /** @lends HTMLOptionableElement.prototype */
+        {
+          /**
+           * set option elements
+           *
+           * preserveValue
+           * - false: fully replace all options, selection state is lost
+           * - true: fully replace all options, selection state is kept
+           * - String: keep selected options and insertion method
+           *
+           * @param {HTMLOptionElement[]|HTMLOptGroupElement[]|Object} options
+           * @param {Boolean|String} [preserveValue]
+           * @return {this}
+           */
+          $options(options, preserveValue = void 0) {
+            preserveValue ??= this instanceof HTMLSelectElement ? "append" : null;
+            kQuery.logger.assertInstanceOf(preserveValue, Nullable, Boolean, String)();
+            this.$willChange("scroll-position");
+            const scroll = {
+              top: this.scrollTop,
+              left: this.scrollLeft
+            };
+            const recover = /* @__PURE__ */ __name(() => {
+              this.scrollTop = scroll.top;
+              this.scrollLeft = scroll.left;
+            }, "recover");
+            const build = /* @__PURE__ */ __name((data2) => {
+              const options2 = [];
+              for (const [value, label] of F.objectToEntries(data2)) {
+                if (label instanceof Array) {
+                  options2.push(this.$document.$createElement("optgroup", { label: value }, ...label));
+                } else if (F.objectIsPlain(label)) {
+                  options2.push(this.$document.$createElement("optgroup", { label: value }, ...build(label)));
+                } else {
+                  options2.push(this.$document.$createElement("option", { value, title: label }, label));
+                }
+              }
+              return options2;
+            }, "build");
+            if (F.objectIsPlain(options)) {
+              options = build(options);
+            }
+            const $value = preserveValue ? this.$value : null;
+            if (preserveValue && typeof preserveValue === "string") {
+              const $values = ($value instanceof Array ? $value : [$value]).filter((v) => v != null).map((v) => "" + v);
+              this.$$("option").$except((o) => $values.includes(o.value)).forEach((e) => e.remove());
+              this.$$("optgroup").$except((o) => o.$contains("option")).forEach((e) => e.remove());
+              this.$$("hr.kQuery-option-separator").forEach((e) => e.remove());
+              for (const optgroup of this.$$("optgroup")) {
+                const nexts = optgroup.$nextElements(`optgroup[label="${F.stringEscape(optgroup.label ?? "", "selector")}"]`);
+                for (const next of [...nexts]) {
+                  optgroup[preserveValue](...next.$$("option"));
+                  if (!next.$contains("option")) {
+                    next.remove();
+                  }
+                }
+              }
+              this[preserveValue](this.$document.$createElement("hr", { class: "kQuery-option-separator" }));
+              this[preserveValue](...options);
+              const filter = /* @__PURE__ */ __name(function(options2) {
+                return options2.filter((o) => {
+                  if (o instanceof HTMLOptionElement && $values.includes(o.value)) {
+                    o.remove();
+                    return false;
+                  }
+                  if (o instanceof HTMLOptGroupElement) {
+                    if (!filter([...o.$$("option")]).length) {
+                      o.remove();
+                      return false;
+                    }
+                  }
+                  return true;
+                });
+              }, "filter");
+              filter(options);
+            } else {
+              this.$replaceChildren(...options);
+            }
+            if (preserveValue) {
+              this.$value = $value;
+            }
+            requestAnimationFrame(() => requestAnimationFrame(recover));
             return this;
           }
         }
@@ -4348,6 +4502,7 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
                     child.after(...core.call(child, value[child.dataset.slotName], value));
                     child.remove();
                   }
+                  kQuery.logger.assert(() => fragment.$contains((e) => !e.$isMetadataContent))();
                   const template = [...fragment.childNodes].join("");
                   const html = F.stringRender(template, value, tag);
                   const nodes = this.$document.$createNodeListFromHTML(html);
@@ -4701,88 +4856,94 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
           }
         }
       ),
-      [[Element.name, $NodeList.name]]: (
-        /** @lends Element.prototype */
-        {
-          /**
-           * get no content outerHTML
-           *
-           * @param {Boolean} [withClose=true]
-           * @return {String}
-           *
-           * @example
-           * document.$createElement('div', {a: 'A', b: 'B'}, 'child').$outerTag();
-           * // '<div a="A" b="B"></div>'
-           */
-          $outerTag(withClose = true) {
-            const name = this.localName;
-            const attrs = "" + this.$attrs;
-            let result = `<${name}${attrs ? " " + attrs : ""}>`;
-            if (withClose) {
-              result += `</${name}>`;
-            }
-            return result;
-          },
-          /**
-           * mark matched text nodes
-           *
-           * @param {String|RegExp} word
-           * @param {String|Element} [wrapper]
-           * @param {String|Node|Function} [notSelectorFn]
-           * @return {this}
-           *
-           * @example
-           * <hgroup>
-           *   <h1>this is header</h1>
-           *   <p>this is subheader</p>
-           * </hgroup>
-           *
-           * $('hgroup').$markText('is');
-           *
-           * <hgroup>
-           *   <h1>th<mark>is</mark> <mark>is</mark> header</h1>
-           *   <p>th<mark>is</mark> <mark>is</mark> subheader</p>
-           * </hgroup>
-           */
-          $markText(word, wrapper, notSelectorFn) {
-            kQuery.logger.assertInstanceOf(word, String, RegExp)();
-            kQuery.logger.assertInstanceOf(wrapper, Nullable, String, Element)();
-            if (!(word instanceof RegExp)) {
-              word = new RegExp(F.stringEscape(word, "regex"));
-            }
-            if (!(wrapper instanceof Element)) {
-              wrapper = this.$document.$createElement(wrapper ?? "mark");
-            }
-            const metadataTags = ["base", "link", "meta", "noscript", "script", "style", "template", "title"];
-            const core = /* @__PURE__ */ __name((node) => {
-              for (const child of node.children) {
-                if (metadataTags.includes(child.localName) || notSelectorFn != null && child.$matches(notSelectorFn) || child.$outerTag(false) === wrapper.$outerTag(false)) {
-                  continue;
-                }
-                core(child);
-              }
-              for (const child of node.childNodes) {
-                if (child instanceof CharacterData) {
-                  const matches = child.nodeValue.match(word);
-                  if (matches) {
-                    const after = child.splitText(matches.index);
-                    after.splitText(matches[0].length);
-                    after.$wrap(wrapper.$clone(true));
-                  }
-                }
-              }
-              return node;
-            }, "core");
-            this.normalize();
-            return core(this);
-          }
-        }
-      ),
-      [[Element.name]]: /* @__PURE__ */ function() {
+      [[Element.name, $NodeList.name]]: /* @__PURE__ */ function() {
         let scrollIntoViewing = false;
         return (
           /** @lends Element.prototype */
           {
+            /**
+             * is metadata content
+             *
+             * @see https://html.spec.whatwg.org/multipage/dom.html#metadata-content
+             *
+             * @descriptor get
+             *
+             * @return {Boolean}
+             */
+            get $isMetadataContent() {
+              return ["base", "link", "meta", "noscript", "script", "style", "template", "title"].includes(this.localName.toLowerCase());
+            },
+            /**
+             * get no content outerHTML
+             *
+             * @param {Boolean} [withClose=true]
+             * @return {String}
+             *
+             * @example
+             * document.$createElement('div', {a: 'A', b: 'B'}, 'child').$outerTag();
+             * // '<div a="A" b="B"></div>'
+             */
+            $outerTag(withClose = true) {
+              const name = this.localName;
+              const attrs = "" + this.$attrs;
+              let result = `<${name}${attrs ? " " + attrs : ""}>`;
+              if (withClose) {
+                result += `</${name}>`;
+              }
+              return result;
+            },
+            /**
+             * mark matched text nodes
+             *
+             * @param {String|RegExp} word
+             * @param {String|Element} [wrapper]
+             * @param {String|Node|Function} [notSelectorFn]
+             * @return {this}
+             *
+             * @example
+             * <hgroup>
+             *   <h1>this is header</h1>
+             *   <p>this is subheader</p>
+             * </hgroup>
+             *
+             * $('hgroup').$markText('is');
+             *
+             * <hgroup>
+             *   <h1>th<mark>is</mark> <mark>is</mark> header</h1>
+             *   <p>th<mark>is</mark> <mark>is</mark> subheader</p>
+             * </hgroup>
+             */
+            $markText(word, wrapper, notSelectorFn) {
+              kQuery.logger.assertInstanceOf(word, String, RegExp)();
+              kQuery.logger.assertInstanceOf(wrapper, Nullable, String, Element)();
+              if (!(word instanceof RegExp)) {
+                word = new RegExp(F.stringEscape(word, "regex"));
+              }
+              if (!(wrapper instanceof Element)) {
+                wrapper = this.$document.$createElement(wrapper ?? "mark");
+              }
+              const core = /* @__PURE__ */ __name((node) => {
+                for (const child of node.children) {
+                  if (child.$isMetadataContent || notSelectorFn != null && child.$matches(notSelectorFn) || child.$outerTag(false) === wrapper.$outerTag(false)) {
+                    continue;
+                  }
+                  core(child);
+                }
+                for (const child of node.childNodes) {
+                  if (child instanceof CharacterData) {
+                    const matches = child.nodeValue.match(word);
+                    if (matches) {
+                      const after = child.splitText(matches.index);
+                      after.splitText(matches[0].length);
+                      after.$wrap(wrapper.$clone(true));
+                    }
+                  }
+                }
+                return node;
+              }, "core");
+              this.normalize();
+              return core(this);
+            },
             /**
              * asynchronous scrollIntoView
              *
@@ -4847,7 +5008,7 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
           }
         );
       }(),
-      [[HTMLDialogElement.name]]: (
+      [[HTMLDialogElement.name, $NodeList.name]]: (
         /** @lends HTMLDialogElement.prototype */
         {
           /**
@@ -4954,7 +5115,7 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
   // src/plugins/networks.js
   function networks(kQuery) {
     return {
-      [[HTMLAnchorElement.name]]: (
+      [[HTMLAnchorElement.name, $NodeList.name]]: (
         /** @lends HTMLAnchorElement.prototype */
         {
           /**
@@ -5065,7 +5226,7 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
           }
         }
       ),
-      [[HTMLFormElement.name]]: (
+      [[HTMLFormElement.name, $NodeList.name]]: (
         /** @lends HTMLFormElement.prototype */
         {
           /**
@@ -5094,7 +5255,11 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
                 // Object: additional data
                 data: {},
                 // string | Function
-                fileConverter: void 0
+                fileConverter: void 0,
+                // bool
+                ok: false,
+                // number
+                timeout: 0
               }
             }, options);
             if (!(options.headers instanceof Headers)) {
@@ -5133,9 +5298,7 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
                 throw new Error(`Unknown enctype(${enctype})`);
               }
             }
-            const request = new Request(url, options);
-            kQuery.logger.info(`Request`, request);
-            return fetch(request);
+            return await F.fetch(url, options);
           }
         }
       ),
@@ -5150,7 +5313,7 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
            * @return {Promise<NodeList>}
            */
           async $load(urlOrOptions, options = {}) {
-            if (typeof urlOrOptions === "string") {
+            if (F.anyIsStringable(urlOrOptions)) {
               options.url = urlOrOptions;
             } else {
               options = urlOrOptions;
@@ -5166,7 +5329,11 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
                 // string
                 method: void 0,
                 // Object: additional data
-                data: {}
+                data: {},
+                // bool
+                ok: false,
+                // number
+                timeout: 0
               }
             }, options);
             if (!(options.headers instanceof Headers)) {
@@ -5188,15 +5355,104 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
               options.headers.delete("content-type");
               options.body = new URLSearchParams(dataEntries);
             }
-            const request = new Request(url, options);
-            kQuery.logger.info(`Request`, request);
-            const response = await fetch(request);
+            const response = await F.fetch(url, options);
             let nodes = this.$document.$createNodeListFromHTML(await response.text());
             if (selector) {
               nodes = nodes.$$(selector);
             }
             this.$replaceChildren(nodes);
             return nodes;
+          }
+        }
+      ),
+      [[Blob.name, $FileList.name]]: (
+        /** @lends Blob.prototype */
+        {
+          /**
+           * upload file
+           *
+           * @param {URL|String|RequestInit} urlOrOptions
+           * @param {RequestInit} [options={}]
+           * @return {Promise<Response>}
+           */
+          async $upload(urlOrOptions, options = {}) {
+            let url;
+            if (F.anyIsStringable(urlOrOptions)) {
+              url = urlOrOptions;
+            } else {
+              url = options.url;
+            }
+            kQuery.logger.assertInstanceOf(options, Object)();
+            options = Object.assign({
+              method: "PUT",
+              timeout: 0,
+              ok: false,
+              headers: {},
+              credentials: "same-origin",
+              progress: /* @__PURE__ */ __name(() => null, "progress")
+            }, options);
+            const xhr = new XMLHttpRequest();
+            xhr.open(options.method.toUpperCase(), url, true);
+            xhr.timeout = options.timeout;
+            xhr.withCredentials = options.credentials !== "omit";
+            xhr.responseType = "arraybuffer";
+            for (const [name, value] of F.objectToEntries(options.headers)) {
+              xhr.setRequestHeader(name, value);
+            }
+            const promise = new Promise2((resolve, reject) => {
+              const newResponse = /* @__PURE__ */ __name(function() {
+                const response = new Response(xhr.response, {
+                  status: xhr.status,
+                  statusText: xhr.statusText,
+                  headers: xhr.getAllResponseHeaders().split(/\r\n?/).reduce(function(headers, line) {
+                    if (line.trim()) {
+                      const [name, value] = line.split(":");
+                      headers.append(name.trim(), value.trim());
+                    }
+                    return headers;
+                  }, new Headers())
+                });
+                return Object.defineProperties(response, {
+                  url: {
+                    get() {
+                      return xhr.responseURL;
+                    }
+                  }
+                });
+              }, "newResponse");
+              xhr.addEventListener("readystatechange", function() {
+                if (xhr.readyState === XMLHttpRequest.HEADERS_RECEIVED) {
+                  if (!options.ok && !(200 <= xhr.status && xhr.status < 300)) {
+                    reject(new Error(`${xhr.status}: ${xhr.statusText}`, {
+                      cause: newResponse()
+                    }));
+                  }
+                }
+              });
+              xhr.addEventListener("load", function() {
+                resolve(newResponse());
+              });
+              xhr.addEventListener("error", function(e) {
+                reject(e);
+              });
+              xhr.addEventListener("abort", function(e) {
+                reject(e);
+              });
+              xhr.addEventListener("timeout", function(e) {
+                reject(e);
+              });
+              xhr.upload.addEventListener("progress", function(e) {
+                options.progress(e);
+              });
+            });
+            if (options.method.toUpperCase() === "POST") {
+              const formData = new FormData();
+              formData.append(options.name ?? "tmp", this);
+              xhr.send(formData);
+            } else {
+              xhr.send(this);
+            }
+            return promise;
           }
         }
       )
@@ -5260,6 +5516,9 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
             kQuery.logger.assertInstanceOf(selectorFn, String, Node, Function)();
             if (selectorFn instanceof Node) {
               return this.contains(selectorFn);
+            }
+            if (typeof selectorFn === "string") {
+              return !!(this.matches(selectorFn) || this.querySelector(selectorFn));
             }
             return this.$$$(selectorFn).length > 0;
           },
@@ -5478,11 +5737,11 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
             /**
              * get all textnodes
              *
-             * @param {Number[]} selector
+             * @param {(Number|String)[]} selector
              * @return {NodeList}
              */
             $textNodes(selector = [Node.TEXT_NODE, Node.COMMENT_NODE, Node.CDATA_SECTION_NODE]) {
-              kQuery.logger.assertElementsOf(selector, [Node.TEXT_NODE, Node.COMMENT_NODE, Node.CDATA_SECTION_NODE])();
+              kQuery.logger.assertElementsOf(selector, [Node.TEXT_NODE, Node.COMMENT_NODE, Node.CDATA_SECTION_NODE, "metadata"])();
               const texts = [];
               for (const child of this.childNodes) {
                 if (child instanceof CharacterData) {
@@ -5490,7 +5749,9 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
                     texts.push(child);
                   }
                 } else {
-                  texts.push(...child.$textNodes(selector));
+                  if (selector.includes("metadata") || !child.$isMetadataContent) {
+                    texts.push(...child.$textNodes(selector));
+                  }
                 }
               }
               return F.iterableToNodeList(texts);
@@ -5618,7 +5879,7 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
           }
         );
       }(),
-      [[HTMLInputElement.name]]: (
+      [[HTMLInputElement.name, $NodeList.name]]: (
         /** @lends HTMLInputElement.prototype */
         {
           /**

@@ -81,6 +81,9 @@ import {traversing} from './src/plugins/traversing.js';
  * @typedef {HTMLInputElement} HTMLInputElement
  */
 /**
+ * @typedef {HTMLSelectElement|HTMLDataListElement} HTMLOptionableElement
+ */
+/**
  * @typedef {RadioNodeList} RadioNodeList
  */
 /**
