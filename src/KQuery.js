@@ -14,7 +14,7 @@ export class KQuery {
 
         // config
         this.config = new API.Configuration((function () {
-            if (API.F.objectIsPlain(meta)) {
+            if (API.F.objectIsPlain(meta) && !meta.url) {
                 return meta;
             }
 
