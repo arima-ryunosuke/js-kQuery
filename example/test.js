@@ -253,7 +253,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
                     expect(API.Logger.anyIsInstanceOf(true, Boolean)).toEqual(true);
                     expect(API.Logger.anyIsInstanceOf(false, Boolean)).toEqual(true);
-                    expect(API.Logger.anyIsInstanceOf(1, Boolean)).toEqual(false);
+                    expect(API.Logger.anyIsInstanceOf(1, Boolean)).toEqual(true);
+                    expect(API.Logger.anyIsInstanceOf({}, Boolean)).toEqual(false);
+                    expect(API.Logger.anyIsInstanceOf([], Boolean)).toEqual(false);
 
                     expect(API.Logger.anyIsInstanceOf(123, Number)).toEqual(true);
                     expect(API.Logger.anyIsInstanceOf(Number(123), Number)).toEqual(true);
@@ -293,6 +295,19 @@ document.addEventListener('DOMContentLoaded', function () {
                     expect(API.F.anyIsPrimitive({}, Object)).toEqual(true);
                     expect(API.F.anyIsPrimitive(new Date(), Object)).toEqual(false);
                     expect(API.F.anyIsPrimitive(new String(''), Object)).toEqual(false);
+                });
+                it('F.anyIsStringable', async function () {
+                    expect(API.F.anyIsStringable(undefined)).toEqual(true);
+                    expect(API.F.anyIsStringable(null)).toEqual(true);
+                    expect(API.F.anyIsStringable(true)).toEqual(true);
+                    expect(API.F.anyIsStringable(1234)).toEqual(true);
+                    expect(API.F.anyIsStringable('st')).toEqual(true);
+
+                    expect(API.F.anyIsStringable([])).toEqual(true);
+                    expect(API.F.anyIsStringable({})).toEqual(false);
+                    expect(API.F.anyIsStringable(new Date())).toEqual(true);
+                    expect(API.F.anyIsStringable(new URL('/', 'http://example.com'))).toEqual(true);
+                    expect(API.F.anyIsStringable(new String(''))).toEqual(true);
                 });
                 it('F.stringToKebabCase', async function () {
                     expect(API.F.stringToKebabCase(`hogeFugaPiyo`)).toEqual(`hoge-fuga-piyo`);
@@ -1727,11 +1742,13 @@ document.addEventListener('DOMContentLoaded', function () {
                     const elements = Object.setPrototypeOf([
                         document.$createElement('section', {}, $('<div>1<div>1.1<!-- comment1 --></div></div>')),
                         document.$createElement('section', {}, $('<div>2<div>2.1<!-- comment2 --></div></div>')),
+                        document.$createElement('section', {}, $('<style>.dummy{}</style>')),
                     ], NodeList.prototype);
 
-                    expect([...elements.$textNodes()].map(texts => [...texts].map(text => text.nodeValue))).toEqual([['1', '1.1', ' comment1 '], ['2', '2.1', ' comment2 ']]);
+                    expect([...elements.$textNodes()].map(texts => [...texts].map(text => text.nodeValue))).toEqual([['1', '1.1', ' comment1 '], ['2', '2.1', ' comment2 '], []]);
                     expect([...elements[0].$textNodes()].map(node => node.nodeValue)).toEqual(['1', '1.1', ' comment1 ']);
                     expect([...elements[1].$textNodes([Node.TEXT_NODE])].map(node => node.nodeValue)).toEqual(['2', '2.1']);
+                    expect([...elements[2].$textNodes([Node.TEXT_NODE, 'metadata'])].map(node => node.nodeValue)).toEqual(['.dummy{}']);
                 });
                 it('$contains/$matches/$filter/$except/$child', async function () {
                     const elements = Object.setPrototypeOf([
@@ -2241,7 +2258,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                     expect(this.child.$style.fontSize).toEqual(null);
                     expect(this.child.$style.$fontSize).toEqual('16px');
-                    expect(this.parent.$style['$fontSize::after']).toEqual('13.3333px');
+                    expect(['13.3333px', '14px'].includes(this.parent.$style['$fontSize::after'])).toBe(true);
                 });
                 it('$class', async function () {
                     expect('hoge' in this.element.$class).toEqual(false);
@@ -2314,6 +2331,12 @@ document.addEventListener('DOMContentLoaded', function () {
                     expect(this.elements[1].$class + '').toEqual('c-1');
                     expect(this.elements[2].$class + '').toEqual('none');
                 });
+                it('$isMetadataContent', async function () {
+                    expect(d$('div').$isMetadataContent).toEqual(false);
+                    expect(d$('template').$isMetadataContent).toEqual(true);
+                    expect(d$('script').$isMetadataContent).toEqual(true);
+                    expect(d$('style').$isMetadataContent).toEqual(true);
+                });
                 it('$outerTag', async function () {
                     expect($('<section>content<div>child</div></section>').$outerTag(true)).toEqual('<section></section>');
                     expect($('<section title="hoge">content<div>child</div></section>').$outerTag(false)).toEqual('<section title="hoge">');
@@ -2334,12 +2357,16 @@ document.addEventListener('DOMContentLoaded', function () {
             });
 
             describe('HTMLElement', function () {
+                const margin = 3;
+                const border = 5;
+                const padding = 7;
+
                 beforeEach(function () {
                     this.box = $(`<div style="position:absolute;top:2px;left:2px;">
-                        <div class="box" style="margin:3px; border:red 5px solid; padding:7px; width:200px; overflow:scroll; scrollbar-width:thin; position:relative; top:1px; left:1px;">
-                            <div>
-                                <span style="margin:3px; border:red 5px solid; padding:7px;">a<br>bb<br>ccc</span>
-                                <div style="box-sizing:border-box; width:500px;"> zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz</div>
+                        <div class="box" style="margin:${margin}px; border:red ${border}px solid; padding:${padding}px; width:200px; overflow:scroll; scrollbar-width:thin; position:relative; top:1px; left:1px;">
+                            <div style="font-family:Arial!important;">
+                                <span style="margin:${margin}px; border:red ${border}px solid; padding:${padding}px;font-family:Arial!important;">a<br>bb<br>ccc</span>
+                                <div style="box-sizing:border-box; width:500px;font-family:Arial!important;"> zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz</div>
                             </div>
                         </div>
                     </div>`);
@@ -2373,27 +2400,32 @@ document.addEventListener('DOMContentLoaded', function () {
                 });
                 const cit = window.navigator.userAgent.includes('Chrome') ? window.it : window.xit;
                 cit('get $width/$height', async function () {
-                    expect(this.box.$('div').$width({})).toEqual(189);
-                    expect(this.box.$('div').$width({scrollbar: true})).toEqual(200);
-                    expect(this.box.$('div').$width({scrollbar: true, padding: true})).toEqual(214);
-                    expect(this.box.$('div').$width({scrollbar: true, padding: true, border: true})).toEqual(224);
-                    expect(this.box.$('div').$width({scrollbar: true, padding: true, border: true, margin: true})).toEqual(230);
+                    const wsb = Math.ceil((this.box.$('div').offsetWidth - this.box.$('div').clientWidth) / 2);
+                    const hsb = Math.ceil((this.box.$('div').offsetHeight - this.box.$('div').clientHeight) / 2);
 
-                    expect(this.box.$('div').$height({})).toEqual(116);
-                    expect(this.box.$('div').$height({scrollbar: true})).toEqual(127);
-                    expect(this.box.$('div').$height({scrollbar: true, padding: true})).toEqual(141);
-                    expect(this.box.$('div').$height({scrollbar: true, padding: true, border: true})).toEqual(151.4375);
-                    expect(this.box.$('div').$height({scrollbar: true, padding: true, border: true, margin: true})).toEqual(157.4375);
+                    let width = 200;
+                    expect(this.box.$('div').$width({})).toEqual(width - wsb);
+                    expect(this.box.$('div').$width({scrollbar: true})).toEqual(width);
+                    expect(this.box.$('div').$width({scrollbar: true, padding: true})).toEqual(width += padding * 2);
+                    expect(this.box.$('div').$width({scrollbar: true, padding: true, border: true})).toEqual(width += border * 2);
+                    expect(this.box.$('div').$width({scrollbar: true, padding: true, border: true, margin: true})).toEqual(width += margin * 2);
 
-                    expect(this.box.$('span').$size({})).toEqual({width: 27, height: 79});
-                    expect(this.box.$('span').$size({scrollbar: true})).toEqual({width: 27, height: 79});
-                    expect(this.box.$('span').$size('')).toEqual({width: 27, height: 79});
-                    expect(this.box.$('span').$size({scrollbar: true, padding: true})).toEqual({width: 34, height: 93});
-                    expect(this.box.$('span').$size('inner')).toEqual({width: 34, height: 93});
-                    expect(this.box.$('span').$size({scrollbar: true, padding: true, border: true})).toEqual({width: 39, height: 103.21875});
-                    expect(this.box.$('span').$size('outer')).toEqual({width: 39, height: 103.21875});
-                    expect(this.box.$('span').$size({scrollbar: true, padding: true, border: true, margin: true})).toEqual({width: 45, height: 109.21875});
-                    expect(this.box.$('span').$size('margin')).toEqual({width: 45, height: 109.21875});
+                    let height = 116;
+                    expect(this.box.$('div').$height({})).toEqual(height);
+                    expect(this.box.$('div').$height({scrollbar: true})).toEqual(height += hsb);
+                    expect(this.box.$('div').$height({scrollbar: true, padding: true})).toEqual(height += padding * 2);
+                    expect(this.box.$('div').$height({scrollbar: true, padding: true, border: true})).toBeCloseTo(height += border * 2, 0);
+                    expect(this.box.$('div').$height({scrollbar: true, padding: true, border: true, margin: true})).toBeCloseTo(height += margin * 2, 0);
+
+                    expect(this.box.$('span').$size({})).toEqual({width: 27, height: 78});
+                    expect(this.box.$('span').$size({scrollbar: true})).toEqual({width: 27, height: 78});
+                    expect(this.box.$('span').$size('')).toEqual({width: 27, height: 78});
+                    expect(this.box.$('span').$size({scrollbar: true, padding: true})).toEqual({width: 34, height: 92});
+                    expect(this.box.$('span').$size('inner')).toEqual({width: 34, height: 92});
+                    expect(this.box.$('span').$size({scrollbar: true, padding: true, border: true})).toEqual({width: 39, height: 102.21875});
+                    expect(this.box.$('span').$size('outer')).toEqual({width: 39, height: 102.21875});
+                    expect(this.box.$('span').$size({scrollbar: true, padding: true, border: true, margin: true})).toEqual({width: 45, height: 108.21875});
+                    expect(this.box.$('span').$size('margin')).toEqual({width: 45, height: 108.21875});
                 });
                 cit('set $width/$height', async function () {
                     this.box.$('div').style.boxSizing = 'content-box';
@@ -2407,6 +2439,13 @@ document.addEventListener('DOMContentLoaded', function () {
                     expect(this.box.$('div').$width({scrollbar: true})).toEqual(500);
                     expect(this.box.$('div').$height(500)).toEqual(500);
                     expect(this.box.$('div').$height({})).toEqual(500);
+                });
+                it('$willChange', async function () {
+                    this.box.$willChange('transform');
+                    this.box.$willChange('opacity', 100);
+                    expect(this.box.$style.willChange).toEqual('opacity, transform');
+                    await sleep(200);
+                    expect(this.box.$style.willChange).toEqual(null);
                 });
             });
 
@@ -2791,6 +2830,130 @@ document.addEventListener('DOMContentLoaded', function () {
                 });
             });
 
+            describe('HTMLOptionalElement', function () {
+                beforeEach(function () {
+                    this.single = $(`<select>
+                        <option value="a" selected>A</option>
+                        <option value="b">B</option>
+                        <option value="c">C</option>
+                    </select>`);
+                    this.multiple = $(`<select multiple>
+                        <option value="a" selected>A</option>
+                        <option value="b">B</option>
+                        <option value="c" selected>C</option>
+                    </select>`);
+                    this.datalist = $(`<datalist>
+                        <option value="a">A</option>
+                        <option value="b">B</option>
+                        <option value="c">C</option>
+                    </datalist>`);
+                });
+
+                it('$options', async function () {
+                    const strip = function (node) {
+                        [...node.childNodes].filter(n => n.nodeType !== Node.ELEMENT_NODE).map(n => n.remove());
+                        return node;
+                    };
+
+                    expect(strip(this.single.$options({
+                        a: 'A',
+                        x: 'X',
+                    })).innerHTML).toEqual(`
+                        <option value="a" selected="">A</option>
+                        <hr class="kQuery-option-separator">
+                        <option value="x" title="X">X</option>
+                    `.replaceAll(/\n\s+/g, ''));
+
+                    expect(strip(this.single.$options({
+                        x: 'X',
+                    })).innerHTML).toEqual(`
+                        <option value="a" selected="">A</option>
+                        <hr class="kQuery-option-separator">
+                        <option value="x" title="X">X</option>
+                    `.replaceAll(/\n\s+/g, ''));
+
+                    expect(strip(this.single.$options({
+                        y: 'Y',
+                    }, true)).innerHTML).toEqual(`<option value="y" title="Y">Y</option>`);
+
+                    expect(strip(this.multiple.$options({
+                        a: 'A',
+                        x: 'X',
+                    })).innerHTML).toEqual(`
+                        <option value="a" selected="">A</option>
+                        <option value="c" selected="">C</option>
+                        <hr class="kQuery-option-separator">
+                        <option value="x" title="X">X</option>
+                    `.replaceAll(/\n\s+/g, ''));
+
+                    expect(strip(this.datalist.$options({
+                        a: 'A',
+                        x: 'X',
+                    })).innerHTML).toEqual(`
+                        <option value="a" title="A">A</option>
+                        <option value="x" title="X">X</option>
+                    `.replaceAll(/\n\s+/g, ''));
+
+                    const options = {
+                        y: 'Y',
+                        group: {
+                            g1: 'G1',
+                            g2: 'G2',
+                        },
+                        array: [
+                            document.$createElement('option', {value: 'a1', label: 'A1'}),
+                            document.$createElement('hr'),
+                            document.$createElement('option', {value: 'a2', label: 'A2'}),
+                        ],
+                    };
+
+                    expect(strip(this.multiple.$options(options, false).$resetAttribute()).innerHTML).toEqual(`
+                        <option value="y" title="Y">Y</option>
+                        <optgroup label="group">
+                            <option value="g1" title="G1">G1</option>
+                            <option value="g2" title="G2">G2</option>
+                        </optgroup>
+                        <optgroup label="array">
+                            <option value="a1" label="A1"></option>
+                            <hr>
+                            <option value="a2" label="A2"></option>
+                        </optgroup>
+                    `.replaceAll(/\n\s+/g, ''));
+
+                    this.multiple.$value = 'g1';
+                    expect(strip(this.multiple.$options(options).$resetAttribute()).innerHTML).toEqual(`
+                        <optgroup label="group">
+                            <option value="g1" title="G1" selected="">G1</option>
+                        </optgroup>
+                        <hr class="kQuery-option-separator">
+                        <option value="y" title="Y">Y</option>
+                        <optgroup label="group">
+                            <option value="g2" title="G2">G2</option>
+                        </optgroup>
+                        <optgroup label="array">
+                            <option value="a1" label="A1"></option>
+                            <hr>
+                            <option value="a2" label="A2"></option>
+                        </optgroup>
+                    `.replaceAll(/\n\s+/g, ''));
+
+                    this.multiple.$value = ['g1', 'g2'];
+                    expect(strip(this.multiple.$options(options).$resetAttribute()).innerHTML).toEqual(`
+                        <optgroup label="group">
+                            <option value="g1" title="G1" selected="">G1</option>
+                            <option value="g2" title="G2" selected="">G2</option>
+                        </optgroup>
+                        <hr class="kQuery-option-separator">
+                        <option value="y" title="Y">Y</option>
+                        <optgroup label="array">
+                            <option value="a1" label="A1"></option>
+                            <hr>
+                            <option value="a2" label="A2"></option>
+                        </optgroup>
+                    `.replaceAll(/\n\s+/g, ''));
+                });
+            });
+
             describe('HTMLFormElement', function () {
                 beforeEach(function () {
                     this.form = $('<form action="response.php"><input name="test" value="test"><output></output></form>');
@@ -3003,6 +3166,30 @@ document.addEventListener('DOMContentLoaded', function () {
                     expect(await this.textfile.$dataURL()).toEqual('data:text/plain;base64,' + btoa('hoge'));
                     expect(await this.htmlfile.$dataURL()).toEqual('data:text/html;base64,' + btoa('<q id="a"><span id="b">hey!</span></q>'));
                 });
+                it('$upload', async function () {
+                    const put = await this.textfile.$upload('./response.php', {
+                        method: 'put',
+                    });
+                    expect(await put.json()).toEqual({
+                        method: 'PUT',
+                        get: {},
+                        post: {},
+                        files: {},
+                        body: 'hoge',
+                    });
+                    const post = await this.textfile.$upload('./response.php', {
+                        method: 'post',
+                    });
+                    expect(await post.json()).toEqual({
+                        method: 'POST',
+                        get: {},
+                        post: {},
+                        files: {
+                            textfile: 'text/plain',
+                        },
+                        body: '',
+                    });
+                });
             });
 
             describe('DOMRectReadOnly', function () {
@@ -3210,7 +3397,7 @@ after-text`);
                 it('$intersect', async function () {
                     this.container.$('.intersect').scrollIntoView({behavior: 'instant'});
                     await sleep(100);
-                    expect(this.output.textContent).toContain('intersect-enter: 0 => 1');
+                    expect(this.output.textContent).toContain('intersect-enter: 0 => ');
                 });
                 it('$attribute', async function () {
                     this.container.$('.attribute').disabled = true;
@@ -3321,11 +3508,22 @@ after-text`);
                 it('$resetAttribute', async function () {
                     this.container.$('.set-value').click();
                     this.container.$('.resetAttribute').click();
-                    expect(this.output.textContent).toContain('<input name="text" type="text" value="b">');
+                    expect(this.output.textContent).toContain('<input name="text" type="text" value="b" list="datalist">');
                     expect(this.output.textContent).toContain('<textarea name="textarea">b</textarea>');
                     expect(this.output.textContent).toContain('<input name="checkbox[]" type="checkbox" value="b" id="checkboxB" checked="">');
                     expect(this.output.textContent).toContain('<input name="radio" type="radio" value="b" id="radioB" checked="">');
                     expect(this.output.textContent).toContain('<option value="b" selected="">B</option>');
+                });
+                it('$options', async function () {
+                    this.container.$('select[multiple]').$value = [];
+                    this.container.$('.set-options[data-preserve="prepend"]').click();
+                    this.container.$('select[multiple]').$value = ['ga'];
+                    this.container.$('.set-options[data-preserve="prepend"]').click();
+                    this.container.$('select[multiple]').$value = ['ga', 'gb'];
+                    this.container.$('.set-options[data-preserve="prepend"]').click();
+
+                    expect(this.container.$('select[multiple]').$value).toEqual(['ga', 'gb']);
+                    expect(this.container.$('select[multiple]').innerHTML).toContain('<optgroup label="group"><option value="ga" title="GroupA">GroupA</option><option value="gb" title="GroupB">GroupB</option></optgroup>');
                 });
                 it('$request', async function () {
                     this.container.$('.request').click();

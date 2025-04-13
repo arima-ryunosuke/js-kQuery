@@ -19,12 +19,12 @@
         }
 
         body[data-testing] .jasmine_html-reporter {
-                display: block;
-                position: absolute;
-                top: 0;
-                left: 0;
-                right: 0;
-            }
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+        }
 
         body {
             max-width: 80vw;
@@ -36,6 +36,41 @@
 
         select {
             vertical-align: top;
+
+            &[multiple] {
+                field-sizing: content;
+                max-width: 350px;
+                max-height: 200px;
+                overflow: auto;
+
+                optgroup {
+                    white-space: normal;
+                }
+
+                option {
+                    display: inline-block;
+                    width: 80px;
+                    padding-left: 10px;
+                    margin: 3px;
+                    cursor: pointer;
+
+                    &:hover {
+                        background: skyblue;
+                    }
+
+                    &:before {
+                        content: '☐ ';
+                    }
+
+                    &:checked {
+                        background: lightskyblue;
+
+                        &:before {
+                            content: '☑ ';
+                        }
+                    }
+                }
+            }
         }
 
         :disabled {
@@ -59,6 +94,15 @@
             font-size: 14px;
         }
 
+        .kQuery-option-separator {
+            margin: 3px;
+
+            &:before {
+                content: 'selected';
+                opacity: 0.7;
+            }
+        }
+
         .kQuery-example-hidden {
             display: none !important;
         }
@@ -70,6 +114,41 @@
     <script id="example-js" type="module" src="./example.js"></script>
     <script type="module">
         window.$ = window.$query;
+        window.d$ = document.$.bind(document);
+        window.d$$ = document.$$.bind(document);
+
+        // select without ctrl
+        (function () {
+            const contexts = new WeakMap();
+            document.$on('pointerdown', 'select[multiple] option', function (e) {
+                const select = e.target.closest('select');
+                if (e.button === 0 && select.$attrs.$disabled == null) {
+                    contexts.set(select, {
+                        scroll: select.scrollTop,
+                        target: e.target,
+                    });
+                    e.preventDefault();
+                }
+            });
+            document.$on('pointerleave', 'select[multiple] option', function (e) {
+                const select = e.target.closest('select');
+                const context = contexts.get(select);
+                if (e.button === 0 && select.$attrs.$disabled == null && e.target === context.target) {
+                    contexts.delete(select);
+                    e.preventDefault();
+                }
+            });
+            document.$on('pointerup', 'select[multiple] option', function (e) {
+                const select = e.target.closest('select');
+                const context = contexts.get(select);
+                if (e.button === 0 && select.$attrs.$disabled == null && e.target === context.target) {
+                    contexts.delete(select);
+                    e.target.selected = !e.target.selected;
+                    e.preventDefault();
+                    setTimeout(() => select.scrollTop = context.scroll, 0);
+                }
+            });
+        })();
     </script>
     <script type="module" src="./test.js"></script>
 </head>
@@ -265,9 +344,19 @@
         </div>
 
         <div class="input">
+            <style>
+                dummy {
+                    color: red;
+                }
+            </style>
             <div class="dom-container">
                 first node
             </div>
+            <script type="module">
+                function dummy() {
+                    alert('dummy');
+                }
+            </script>
         </div>
 
         <table>
@@ -600,6 +689,9 @@
             <button type="button" class="file-files">file to files</button>
             <button type="button" class="resetAttribute">reset attribute</button>
             <br>
+            <button type="button" class="set-options" data-preserve="">reset select/datalist options</button>
+            <button type="button" class="set-options" data-preserve="prepend">prepend select/datalist options</button>
+            <br>
             <button type="submit" class="request" name="submit" value="" form="form">request</button>
             <button type="submit" class="request" name="submit" value="get" form="form" formaction="response.php?method=get" formmethod="get" formenctype="application/x-www-form-urlencoded">request GET</button>
             <button type="submit" class="request" name="submit" value="post" form="form" formaction="response.php?method=post" formmethod="post" formenctype="application/x-www-form-urlencoded">request POST</button>
@@ -629,7 +721,11 @@
         </dialog>
 
         <form id="form" class="input" action="response.php?dummy=DUMMY" method="post" enctype="multipart/form-data">
-            <input name="text" type="text" value="text">
+            <input name="text" type="text" value="text" list="datalist">
+            <datalist id="datalist">
+                <option value="a" title="A">A</option>
+                <option value="b" title="A">B</option>
+            </datalist>
             <textarea name="textarea">textarea</textarea>
             <br>
             <input type="checkbox" id="checkboxAll"><label for="checkboxAll">all</label>
@@ -703,6 +799,22 @@
                 });
                 container.$on('click', '.resetAttribute', async function () {
                     input.$$('input, textarea, select').$resetAttribute();
+                    output.textContent = input.innerHTML;
+                });
+                container.$on('click', '.set-options', async function (e) {
+                    const randomA = 10 + Math.round(Math.random() * 10);
+                    const randomB = 20 + Math.round(Math.random() * 10);
+                    input.$$('select,datalist').$options({
+                        flat: 'Flat',
+                        group: {
+                            ga: "GroupA",
+                            gb: "GroupB",
+                        },
+                        random: {
+                            [randomA]: `random${randomA}`,
+                            [randomB]: `random${randomB}`,
+                        },
+                    }, e.target.dataset.preserve);
                     output.textContent = input.innerHTML;
                 });
                 container.$on('click', '.request', async function (e) {
@@ -1031,6 +1143,9 @@
             <br>
             <button type="button" class="file-text">file text</button>
             <button type="button" class="file-dataurl">file dataURL</button>
+            <button type="button" class="file-upload" data-method="put">file upload(PUT)</button>
+            <button type="button" class="file-upload" data-method="post">file upload(POST)</button>
+            <span class="progress"></span>
             <br>
             <button type="button" class="link-contents">link contents</button>
             <button type="button" class="script-contents">script contents</button>
@@ -1119,6 +1234,28 @@
                         const dataurls = await this.files.$dataURL();
                         output.textContent += `dataurl: ${dataurls}\n`;
                         container.$('.preview').src = dataurls[0];
+                    });
+                    file.dispatchEvent(new MouseEvent('click'));
+                });
+                container.$on('click', '.file-upload', function (e) {
+                    const file = document.$createElement('input', {type: 'file', multiple: true});
+                    file.$on('change', async function () {
+                        const progress = $('.progress');
+                        progress.textContent = '';
+                        const response = await this.files[0].$upload('./response.php', {
+                            method: e.target.dataset.method,
+                            progress: function (e) {
+                                progress.textContent = `${e.loaded.toLocaleString()}/${e.total.toLocaleString()}(${(e.loaded / e.total * 100).toFixed(2)}%)`;
+                            },
+                        });
+                        output.textContent += JSON.stringify({
+                            url: response.url,
+                            type: response.type,
+                            status: response.status,
+                            statusText: response.statusText,
+                            headers: Object.fromEntries(response.headers.entries()),
+                            json: await response.json(),
+                        }, null, 2);
                     });
                     file.dispatchEvent(new MouseEvent('click'));
                 });
