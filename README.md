@@ -45,7 +45,7 @@ module は開発のためなので、module としての直利用は原則とし
 
 ユーティリティのリファレンスは下記です。
 
-- https://arima-ryunosuke.github.io/js-kQuery/docs/
+- https://arima-ryunosuke.github.io/js-kQuery/
 
 ### 拡張
 
