@@ -225,6 +225,7 @@ export function manipulation(kQuery) {
                             }
 
                             // render
+                            kQuery.logger.assert(() => fragment.$contains(e => !e.$isMetadataContent))();
                             const template = [...fragment.childNodes].join('');
                             const html = F.stringRender(template, value, tag);
                             const nodes = this.$document.$createNodeListFromHTML(html);

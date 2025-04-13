@@ -294,11 +294,11 @@ export function traversing(kQuery) {
                 /**
                  * get all textnodes
                  *
-                 * @param {Number[]} selector
+                 * @param {(Number|String)[]} selector
                  * @return {NodeList}
                  */
                 $textNodes(selector = [Node.TEXT_NODE, Node.COMMENT_NODE, Node.CDATA_SECTION_NODE]) {
-                    kQuery.logger.assertElementsOf(selector, [Node.TEXT_NODE, Node.COMMENT_NODE, Node.CDATA_SECTION_NODE])();
+                    kQuery.logger.assertElementsOf(selector, [Node.TEXT_NODE, Node.COMMENT_NODE, Node.CDATA_SECTION_NODE, 'metadata'])();
 
                     const texts = [];
                     for (const child of this.childNodes) {
@@ -308,7 +308,9 @@ export function traversing(kQuery) {
                             }
                         }
                         else {
-                            texts.push(...child.$textNodes(selector));
+                            if (selector.includes('metadata') || !child.$isMetadataContent) {
+                                texts.push(...child.$textNodes(selector));
+                            }
                         }
                     }
                     return F.iterableToNodeList(texts);
