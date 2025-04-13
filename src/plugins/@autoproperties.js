@@ -10,8 +10,7 @@ import {$FileList, $NodeList} from '../API.js';
 export function autoproperties(kQuery) {
     const ignoreProperties = {
         EventTarget: ["dispatchEvent"],
-        Element: ["computedStyleMap", "elementTiming", "getInnerHTML", "onbeforecopy", "onbeforecut", "onbeforepaste", "onfullscreenchange", "onfullscreenerror", "onsearch", "onwebkitfullscreenchange", "onwebkitfullscreenerror", "scrollIntoViewIfNeeded", "webkitMatchesSelector", "webkitRequestFullScreen", "webkitRequestFullscreen"],
-        File: ["webkitRelativePath"],
+        Element: ["computedStyleMap", "elementTiming", "getInnerHTML", "onbeforecopy", "onbeforecut", "onbeforepaste", "onfullscreenchange", "onfullscreenerror", "onsearch", "scrollIntoViewIfNeeded"],
         HTMLAnchorElement: ["attributionSrc", "charset", "coords", "name", "rev", "shape"],
         HTMLAreaElement: ["noHref"],
         HTMLBRElement: ["clear"],
@@ -19,7 +18,7 @@ export function autoproperties(kQuery) {
         HTMLDListElement: ["compact"],
         HTMLDirectoryElement: ["*"],
         HTMLDivElement: ["align"],
-        HTMLElement: ["attributeStyleMap", "editContext", "onabort", "onanimationend", "onanimationiteration", "onanimationstart", "onauxclick", "onbeforeinput", "onbeforematch", "onbeforetoggle", "onbeforexrselect", "onblur", "oncancel", "oncanplay", "oncanplaythrough", "onchange", "onclick", "onclose", "oncontentvisibilityautostatechange", "oncontextlost", "oncontextmenu", "oncontextrestored", "oncopy", "oncuechange", "oncut", "ondblclick", "ondrag", "ondragend", "ondragenter", "ondragleave", "ondragover", "ondragstart", "ondrop", "ondurationchange", "onemptied", "onended", "onerror", "onfocus", "onformdata", "ongotpointercapture", "oninput", "oninvalid", "onkeydown", "onkeypress", "onkeyup", "onload", "onloadeddata", "onloadedmetadata", "onloadstart", "onlostpointercapture", "onmousedown", "onmouseenter", "onmouseleave", "onmousemove", "onmouseout", "onmouseover", "onmouseup", "onmousewheel", "onpaste", "onpause", "onplay", "onplaying", "onpointercancel", "onpointerdown", "onpointerenter", "onpointerleave", "onpointermove", "onpointerout", "onpointerover", "onpointerrawupdate", "onpointerup", "onprogress", "onratechange", "onreset", "onresize", "onscroll", "onscrollend", "onscrollsnapchange", "onscrollsnapchanging", "onsecuritypolicyviolation", "onseeked", "onseeking", "onselect", "onselectionchange", "onselectstart", "onslotchange", "onstalled", "onsubmit", "onsuspend", "ontimeupdate", "ontoggle", "ontransitioncancel", "ontransitionend", "ontransitionrun", "ontransitionstart", "onvolumechange", "onwaiting", "onwebkitanimationend", "onwebkitanimationiteration", "onwebkitanimationstart", "onwebkittransitionend", "onwheel", "virtualKeyboardPolicy", "writingSuggestions"],
+        HTMLElement: ["attributeStyleMap", "editContext", "onabort", "onanimationend", "onanimationiteration", "onanimationstart", "onauxclick", "onbeforeinput", "onbeforematch", "onbeforetoggle", "onbeforexrselect", "onblur", "oncancel", "oncanplay", "oncanplaythrough", "onchange", "onclick", "onclose", "oncontentvisibilityautostatechange", "oncontextlost", "oncontextmenu", "oncontextrestored", "oncopy", "oncuechange", "oncut", "ondblclick", "ondrag", "ondragend", "ondragenter", "ondragleave", "ondragover", "ondragstart", "ondrop", "ondurationchange", "onemptied", "onended", "onerror", "onfocus", "onformdata", "ongotpointercapture", "oninput", "oninvalid", "onkeydown", "onkeypress", "onkeyup", "onload", "onloadeddata", "onloadedmetadata", "onloadstart", "onlostpointercapture", "onmousedown", "onmouseenter", "onmouseleave", "onmousemove", "onmouseout", "onmouseover", "onmouseup", "onmousewheel", "onpaste", "onpause", "onplay", "onplaying", "onpointercancel", "onpointerdown", "onpointerenter", "onpointerleave", "onpointermove", "onpointerout", "onpointerover", "onpointerrawupdate", "onpointerup", "onprogress", "onratechange", "onreset", "onresize", "onscroll", "onscrollend", "onscrollsnapchange", "onscrollsnapchanging", "onsecuritypolicyviolation", "onseeked", "onseeking", "onselect", "onselectionchange", "onselectstart", "onslotchange", "onstalled", "onsubmit", "onsuspend", "ontimeupdate", "ontoggle", "ontransitioncancel", "ontransitionend", "ontransitionrun", "ontransitionstart", "onvolumechange", "onwaiting", "onwheel", "virtualKeyboardPolicy", "writingSuggestions"],
         HTMLEmbedElement: ["align", "name"],
         HTMLFencedFrameElement: ["*"],
         HTMLFontElement: ["color", "face", "size"],
@@ -31,12 +30,12 @@ export function autoproperties(kQuery) {
         HTMLHtmlElement: ["version"],
         HTMLIFrameElement: ["adAuctionHeaders", "align", "allowPaymentRequest", "credentialless", "csp", "featurePolicy", "frameBorder", "longDesc", "marginHeight", "marginWidth", "privateToken", "sharedStorageWritable", "scrolling"],
         HTMLImageElement: ["align", "attributionSrc", "border", "fetchPriority", "hspace", "longDesc", "name", "sharedStorageWritable", "vspace"],
-        HTMLInputElement: ["align", "incremental", "useMap", "webkitEntries", "webkitdirectory"],
+        HTMLInputElement: ["align", "incremental", "useMap", "webkitdirectory"],
         HTMLLIElement: ["type"],
         HTMLLegendElement: ["align"],
         HTMLLinkElement: ["charset", "blocking", "fetchPriority", "rev", "target"],
         HTMLMarqueeElement: ["*"],
-        HTMLMediaElement: ["captureStream", "controller", "controlsList", "disableRemotePlayback", "mediaGroup", "onencrypted", "onwaitingforkey", "remote", "setSinkId", "sinkId", "webkitAudioDecodedByteCount", "webkitVideoDecodedByteCount"],
+        HTMLMediaElement: ["captureStream", "controller", "controlsList", "disableRemotePlayback", "mediaGroup", "onencrypted", "onwaitingforkey", "remote", "setSinkId", "sinkId"],
         HTMLMenuElement: ["compact"],
         HTMLMetaElement: ["scheme"],
         HTMLOListElement: ["compact"],
@@ -53,7 +52,7 @@ export function autoproperties(kQuery) {
         HTMLTableRowElement: ["align", "bgColor", "ch", "chOff", "vAlign"],
         HTMLTableSectionElement: ["align", "ch", "chOff", "vAlign"],
         HTMLUListElement: ["compact", "type"],
-        HTMLVideoElement: ["cancelVideoFrameCallback", "onenterpictureinpicture", "onleavepictureinpicture", "playsInline", "requestPictureInPicture", "requestVideoFrameCallback", "webkitDecodedFrameCount", "webkitDroppedFrameCount"],
+        HTMLVideoElement: ["cancelVideoFrameCallback", "onenterpictureinpicture", "onleavepictureinpicture", "playsInline", "requestPictureInPicture", "requestVideoFrameCallback"],
     };
 
     const targetProperties = {
@@ -177,11 +176,15 @@ export function autoproperties(kQuery) {
                 if (property.toUpperCase() === property) {
                     continue;
                 }
+                // not standard
+                if (property.match(/^(webkit|moz)[A-Z]/) || property.startsWith('onwebkit')) {
+                    continue;
+                }
                 // only ownself
                 if (!Object.prototype.hasOwnProperty.call(prototype.prototype, property)) {
                     continue;
                 }
-                // not standard or deprecated or on*event
+                // deprecated or on*event
                 if (name in ignoreProperties && (ignoreProperties[name].includes(property) || ignoreProperties[name].includes('*'))) {
                     continue;
                 }
