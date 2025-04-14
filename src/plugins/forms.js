@@ -1,4 +1,4 @@
-import {$NodeList, F} from '../API.js';
+import {$NodeList, F, Nullable} from '../API.js';
 
 /**
  * @param {KQuery} kQuery
@@ -132,7 +132,7 @@ export function forms(kQuery) {
              * @param {Boolean|Boolean[]} value
              */
             set $indeterminate(value) {
-                kQuery.logger.assertInstanceOf(value, Boolean, Array);
+                kQuery.logger.assertInstanceOf(value, Boolean, Array)();
 
                 if (this instanceof RadioNodeList) {
                     if (!value) {
@@ -288,6 +288,113 @@ export function forms(kQuery) {
                 else {
                     this.setAttribute('value', this.value);
                 }
+
+                return this;
+            },
+        },
+        [[HTMLSelectElement.name, HTMLDataListElement.name, $NodeList.name]]: /** @lends HTMLOptionableElement.prototype */{
+            /**
+             * set option elements
+             *
+             * preserveValue
+             * - false: fully replace all options, selection state is lost
+             * - true: fully replace all options, selection state is kept
+             * - String: keep selected options and insertion method
+             *
+             * @param {HTMLOptionElement[]|HTMLOptGroupElement[]|Object} options
+             * @param {Boolean|String} [preserveValue]
+             * @return {this}
+             */
+            $options(options, preserveValue = undefined) {
+                preserveValue ??= this instanceof HTMLSelectElement ? 'append' : null;
+                kQuery.logger.assertInstanceOf(preserveValue, Nullable, Boolean, String)();
+
+                // browser behaves scroll when scrolling is enabled
+                // - scroll to the last element
+                // - but not every time, sometimes it scrolls to selected element
+                this.$willChange('scroll-position');
+                const scroll = {
+                    top: this.scrollTop,
+                    left: this.scrollLeft,
+                };
+                const recover = () => {
+                    this.scrollTop = scroll.top;
+                    this.scrollLeft = scroll.left;
+                };
+
+                const build = (data) => {
+                    const options = [];
+                    for (const [value, label] of F.objectToEntries(data)) {
+                        if (label instanceof Array) {
+                            options.push(this.$document.$createElement('optgroup', {label: value}, ...label));
+                        }
+                        else if (F.objectIsPlain(label)) {
+                            options.push(this.$document.$createElement('optgroup', {label: value}, ...build(label)));
+                        }
+                        else {
+                            options.push(this.$document.$createElement('option', {value: value, title: label}, label));
+                        }
+                    }
+                    return options;
+                };
+                if (F.objectIsPlain(options)) {
+                    options = build(options);
+                }
+
+                const $value = preserveValue ? this.$value : null;
+
+                if (preserveValue && typeof (preserveValue) === 'string') {
+                    const $values = ($value instanceof Array ? $value : [$value]).filter(v => v != null).map(v => '' + v);
+
+                    // remove not preserve
+                    this.$$('option').$except(o => $values.includes(o.value)).forEach(e => e.remove());
+                    this.$$('optgroup').$except(o => o.$contains('option')).forEach(e => e.remove());
+                    this.$$('hr.kQuery-option-separator').forEach(e => e.remove());
+
+                    // merge optgroup
+                    for (const optgroup of this.$$('optgroup')) {
+                        const nexts = optgroup.$nextElements(`optgroup[label="${F.stringEscape(optgroup.label ?? '', 'selector')}"]`);
+                        for (const next of [...nexts]) {
+                            optgroup[preserveValue](...next.$$('option'));
+                            if (!next.$contains('option')) {
+                                next.remove();
+                            }
+                        }
+                    }
+
+                    // insert new options
+                    this[preserveValue](this.$document.$createElement('hr', {class: 'kQuery-option-separator'}));
+                    this[preserveValue](...options);
+
+                    // remove current option from new options
+                    const filter = function (options) {
+                        return options.filter(o => {
+                            if (o instanceof HTMLOptionElement && $values.includes(o.value)) {
+                                o.remove();
+                                return false;
+                            }
+                            if (o instanceof HTMLOptGroupElement) {
+                                if (!filter([...o.$$('option')]).length) {
+                                    o.remove();
+                                    return false;
+                                }
+                            }
+                            return true;
+                        });
+                    };
+                    filter(options);
+                }
+                else {
+                    this.$replaceChildren(...options);
+                }
+
+                if (preserveValue) {
+                    this.$value = $value;
+                }
+
+                // first animation frame: browser scrolls to selected option
+                // second animation frame: recover scroll position
+                requestAnimationFrame(() => requestAnimationFrame(recover));
 
                 return this;
             },
