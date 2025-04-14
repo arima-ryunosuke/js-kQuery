@@ -570,6 +570,10 @@ export class Logger {
         if (prototype !== Object && typeof (prototype) === 'function' && Object(value) instanceof prototype) {
             return true;
         }
+        // Boolean is loosey(allow all scalar)
+        if (prototype === Boolean && F.anyIsPrimitive(value)) {
+            return true;
+        }
         // Number is loosey(allow numeric string)
         if (prototype === Number && (Object(value) instanceof prototype || !isNaN(value))) {
             return true;
@@ -626,10 +630,8 @@ export class Logger {
         };
         this.assertElementsInstanceOf = !debug ? noop2 : (actual, ...expecteds) => {
             for (const expected of expecteds) {
-                for (const v of Object.values(actual)) {
-                    if (Logger.anyIsInstanceOf(v, expected)) {
-                        return noop;
-                    }
+                if (Object.values(actual).every(v => Logger.anyIsInstanceOf(v, expected))) {
+                    return noop;
                 }
             }
             return console.assert.bind(this, false, prefix, `${Logger.anyToDisplayName(actual)} type must be ${expecteds.map(Logger.anyToDisplayName).join('|')}`);
@@ -644,10 +646,8 @@ export class Logger {
         };
         this.assertElementsOf = !debug ? noop2 : (actual, ...expecteds) => {
             for (const expected of expecteds) {
-                for (const v of Object.values(actual)) {
-                    if (expected.includes(v)) {
-                        return noop;
-                    }
+                if (Object.values(actual).every(v => expected.includes(v))) {
+                    return noop;
                 }
             }
             return console.assert.bind(this, false, prefix, `${Logger.anyToDisplayName(actual)} must be one of ${expecteds.map(Logger.anyToDisplayName).join('|')}`);
