@@ -1,4 +1,4 @@
-import {$NodeList, Nullable, Promise, WeakMap} from '../API.js';
+import {$NodeList, Nullable, Promise, Timer, WeakMap} from '../API.js';
 
 /**
  * @param {KQuery} kQuery
@@ -21,8 +21,45 @@ export function effects(kQuery) {
             };
 
             const nodeStyleBackup = new WeakMap();
+            const nodeWillChangeBackup = new WeakMap();
+
+            const willChangeTimer = new Timer();
+            willChangeTimer.addEventListener('alarm', function () {
+                for (const [e, backup] of nodeWillChangeBackup.entries()) {
+                    e.style.setProperty('will-change', backup);
+                }
+                nodeWillChangeBackup.clear();
+            });
 
             return /** @lends Element.prototype */{
+                /**
+                 * change css will-change property
+                 *
+                 * changes are undone after a certain amount of time
+                 *
+                 * @param {String|Array} value
+                 * @param {Number} [timeout=1000]
+                 * @return {this}
+                 */
+                $willChange(value, timeout = 1000) {
+                    kQuery.logger.assertInstanceOf(value, String, Array)();
+                    kQuery.logger.assertInstanceOf(timeout, Number)();
+
+                    value = value instanceof Array ? value : [value];
+
+                    const current = this.style.getPropertyValue('will-change');
+                    nodeWillChangeBackup.getOrSet(this, () => current);
+                    if (current) {
+                        value.push(current);
+                    }
+
+                    this.style.setProperty('will-change', [...new Set(value)].join(','));
+
+                    // will-change should be set collectively
+                    willChangeTimer.restart(timeout, 1);
+
+                    return this;
+                },
                 /**
                  * change css with transition
                  *
