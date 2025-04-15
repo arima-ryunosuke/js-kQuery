@@ -801,22 +801,17 @@ export class Collection extends null {
  *
  * @private
  */
-export class WeakMap extends GT.WeakMap {
+export class WeakMap {
     constructor() {
-        super();
-
         this.map = new GT.Map();
     }
 
-    _refresh() {
-        for (const [id, ref] of this.map.entries()) {
-            const object = ref.deref();
-            if (object === undefined) {
-                this.map.delete(id);
-                super.delete(object);
-            }
-        }
-        return this;
+    has(key) {
+        return this.map.has(F.objectId(key));
+    }
+
+    get(key) {
+        return this.map.get(F.objectId(key))?.value;
     }
 
     getOrSet(key, provider) {
@@ -827,8 +822,10 @@ export class WeakMap extends GT.WeakMap {
     }
 
     set(key, value) {
-        this.map.set(F.objectId(key), new WeakRef(key));
-        return super.set(key, value);
+        return this.map.set(F.objectId(key), {
+            ref: new WeakRef(key),
+            value: value,
+        });
     }
 
     reset(key, converter) {
@@ -838,20 +835,26 @@ export class WeakMap extends GT.WeakMap {
     }
 
     delete(key) {
-        this.map.delete(F.objectId(key));
-        return super.delete(key);
+        return this.map.delete(F.objectId(key));
     }
 
     clear() {
-        return this._refresh().map.clear();
+        return this.map.clear();
     }
 
     * entries() {
-        yield* this._refresh().map.entries().map(([id, ref]) => [ref.deref(), this.get(ref.deref())]);
+        for (const obj of this.map.values()) {
+            const object = obj.ref.deref();
+            if (object === undefined) {
+                this.map.delete(object);
+                continue;
+            }
+            yield [object, obj.value];
+        }
     }
 
     get size() {
-        return this._refresh().map.size;
+        return [...this.entries()].length;
     }
 }
 
