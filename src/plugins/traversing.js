@@ -67,6 +67,10 @@ export function traversing(kQuery) {
                 if (selectorFn instanceof Node) {
                     return this.contains(selectorFn);
                 }
+                // for performance(length > 0 look for it until the end)
+                if (typeof (selectorFn) === 'string') {
+                    return !!(this.matches(selectorFn) || this.querySelector(selectorFn));
+                }
                 return this.$$$(selectorFn).length > 0;
             },
             /**

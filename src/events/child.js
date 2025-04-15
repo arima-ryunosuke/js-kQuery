@@ -11,7 +11,10 @@ export default class {
         });
         this.eventId = MutationObserver.getOptionsKey(options);
         this.observer = this.constructor.observers[this.eventId] ??= new MutationObserver((entry, last) => {
-            for (const child of [...entry.addedNodes].filter((node) => node instanceof Element)) {
+            for (const child of entry.addedNodes) {
+                if (!(child instanceof Element)) {
+                    continue;
+                }
                 trigger(entry.target, {
                     subtype: 'insert',
                     node: child,
@@ -23,7 +26,10 @@ export default class {
                 });
                 this.constructor.observers['attribute' + this.eventId]?.observe?.(child);
             }
-            for (const child of [...entry.removedNodes].filter((node) => node instanceof Element)) {
+            for (const child of entry.removedNodes) {
+                if (!(child instanceof Element)) {
+                    continue;
+                }
                 trigger(entry.target, {
                     subtype: 'remove',
                     node: child,

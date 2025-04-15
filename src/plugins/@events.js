@@ -63,7 +63,7 @@ export function events(kQuery) {
                                 }
                             }
                         }
-                        return [...result];
+                        return result;
                     };
                     this.nodeSelectorCallback = new WeakMap();
                     this.observer = new MutationObserver((entry) => {
