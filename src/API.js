@@ -38,6 +38,12 @@ export const F = {
         }
         return !['object', 'function'].includes(typeof (value));
     },
+    anyIsStringable(value) {
+        if (F.anyIsPrimitive(value)) {
+            return true;
+        }
+        return (value?.toString && value.toString !== Object.prototype.toString);
+    },
     stringToKebabCase(string) {
         return ('' + string).replaceAll(/([A-Z])/g, (...m) => '-' + m[1].toLowerCase());
     },
@@ -497,6 +503,28 @@ export const F = {
             }
             return func.call(this, ...args);
         };
+    },
+    async fetch(url, options = {}) {
+        if (options.timeout) {
+            const ctrl = new AbortController();
+            setTimeout(() => ctrl.abort(), options.timeout);
+
+            if (options.signal) {
+                options.signal = AbortSignal.any([options.signal, ctrl.signal]);
+            }
+            else {
+                options.signal = ctrl.signal;
+            }
+
+            delete options.timeout;
+        }
+        const response = await GT.fetch(url, options);
+        if (!(options.ok ?? false) && !response.ok) {
+            throw new Error(`${response.status}: ${response.statusText}`, {
+                cause: response,
+            });
+        }
+        return response;
     },
 };
 

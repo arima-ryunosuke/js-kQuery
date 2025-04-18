@@ -155,6 +155,10 @@ export function networks(kQuery) {
                         data: {},
                         // string | Function
                         fileConverter: undefined,
+                        // bool
+                        ok: false,
+                        // number
+                        timeout: 0,
                     },
                 }, options);
                 if (!(options.headers instanceof Headers)) {
@@ -210,9 +214,7 @@ export function networks(kQuery) {
                     }
                 }
 
-                const request = new Request(url, options);
-                kQuery.logger.info(`Request`, request);
-                return fetch(request);
+                return await F.fetch(url, options);
             },
         },
         [[Element.name, $NodeList.name]]: /** @lends Element.prototype */{
@@ -224,7 +226,7 @@ export function networks(kQuery) {
              * @return {Promise<NodeList>}
              */
             async $load(urlOrOptions, options = {}) {
-                if (typeof (urlOrOptions) === 'string') {
+                if (F.anyIsStringable(urlOrOptions)) {
                     options.url = urlOrOptions;
                 }
                 else {
@@ -242,6 +244,10 @@ export function networks(kQuery) {
                         method: undefined,
                         // Object: additional data
                         data: {},
+                        // bool
+                        ok: false,
+                        // number
+                        timeout: 0,
                     },
                 }, options);
                 if (!(options.headers instanceof Headers)) {
@@ -268,9 +274,7 @@ export function networks(kQuery) {
                     options.body = new URLSearchParams(dataEntries);
                 }
 
-                const request = new Request(url, options);
-                kQuery.logger.info(`Request`, request);
-                const response = await fetch(request);
+                const response = await F.fetch(url, options);
                 let nodes = this.$document.$createNodeListFromHTML(await response.text());
                 if (selector) {
                     nodes = nodes.$$(selector);

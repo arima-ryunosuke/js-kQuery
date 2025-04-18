@@ -92,7 +92,7 @@ export function data(kQuery) {
             async $contents(resolveUrl = true) {
                 let contents;
                 if (this instanceof HTMLLinkElement) {
-                    contents = await (await fetch(this.href)).text();
+                    contents = await (await F.fetch(this.href)).text();
                 }
                 else {
                     contents = this.textContent;
@@ -115,7 +115,7 @@ export function data(kQuery) {
                         const fullurl = normalize(url);
                         if (fullurl) {
                             requests[fullurl] ??= async (fullurl) => {
-                                const response = await fetch(fullurl).catch(v => ({ok: false}));
+                                const response = await F.fetch(fullurl).catch(v => ({ok: false}));
                                 if (!response.ok) {
                                     return null;
                                 }
@@ -149,7 +149,7 @@ export function data(kQuery) {
             async $contents() {
                 let contents;
                 if (this.src) {
-                    contents = await (await fetch(this.src)).text();
+                    contents = await (await F.fetch(this.src)).text();
                 }
                 else {
                     contents = this.textContent;
@@ -191,7 +191,7 @@ export function data(kQuery) {
             async $contents() {
                 const url = new URL(this.currentSrc, this.baseURI);
 
-                const response = await fetch(url);
+                const response = await F.fetch(url);
                 const blob = await response.blob();
                 return new File([blob], url.pathname.split('/').at(-1) ?? this.currentSrc, {
                     type: blob.type,
