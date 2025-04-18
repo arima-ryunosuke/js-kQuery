@@ -1,4 +1,4 @@
-import {$NodeList, F, Promise} from '../API.js';
+import {$FileList, $NodeList, F, Promise} from '../API.js';
 
 /**
  * @param {KQuery} kQuery
@@ -277,6 +277,101 @@ export function networks(kQuery) {
                 }
                 this.$replaceChildren(nodes);
                 return nodes;
+            },
+        },
+        [[Blob.name, $FileList.name]]: /** @lends Blob.prototype */{
+            /**
+             * upload file
+             *
+             * @param {URL|String|RequestInit} urlOrOptions
+             * @param {RequestInit} [options={}]
+             * @return {Promise<Response>}
+             */
+            async $upload(urlOrOptions, options = {}) {
+                let url;
+                if (F.anyIsStringable(urlOrOptions)) {
+                    url = urlOrOptions;
+                }
+                else {
+                    url = options.url;
+                }
+                kQuery.logger.assertInstanceOf(options, Object)();
+                options = Object.assign({
+                    method: 'PUT',
+                    timeout: 0,
+                    ok: false,
+                    headers: {},
+                    credentials: 'same-origin',
+                    progress: () => null,
+                }, options);
+
+                const xhr = new XMLHttpRequest();
+                xhr.open(options.method.toUpperCase(), url, true);
+                xhr.timeout = options.timeout;
+                xhr.withCredentials = options.credentials !== 'omit';
+                xhr.responseType = 'arraybuffer';
+
+                for (const [name, value] of F.objectToEntries(options.headers)) {
+                    xhr.setRequestHeader(name, value);
+                }
+
+                const promise = new Promise((resolve, reject) => {
+                    const newResponse = function () {
+                        const response = new Response(xhr.response, {
+                            status: xhr.status,
+                            statusText: xhr.statusText,
+                            headers: xhr.getAllResponseHeaders().split(/\r\n?/).reduce(function (headers, line) {
+                                if (line.trim()) {
+                                    const [name, value] = line.split(':');
+                                    headers.append(name.trim(), value.trim());
+                                }
+                                return headers;
+                            }, new Headers()),
+                        });
+                        return Object.defineProperties(response, {
+                            url: {
+                                get() {return xhr.responseURL;},
+                            },
+                        });
+                    };
+                    xhr.addEventListener('readystatechange', function () {
+                        if (xhr.readyState === XMLHttpRequest.HEADERS_RECEIVED) {
+                            if (!options.ok && !(200 <= xhr.status && xhr.status < 300)) {
+                                reject(new Error(`${xhr.status}: ${xhr.statusText}`, {
+                                    cause: newResponse(),
+                                }));
+                            }
+                            // if emulate fetch, should return Response at this timing
+                            // but ReadableByteStream is limited availability yet
+                        }
+                    });
+                    xhr.addEventListener('load', function () {
+                        resolve(newResponse());
+                    });
+                    xhr.addEventListener('error', function (e) {
+                        reject(e);
+                    });
+                    xhr.addEventListener('abort', function (e) {
+                        reject(e);
+                    });
+                    xhr.addEventListener('timeout', function (e) {
+                        reject(e);
+                    });
+                    xhr.upload.addEventListener('progress', function (e) {
+                        options.progress(e);
+                    });
+                });
+
+                if (options.method.toUpperCase() === 'POST') {
+                    const formData = new FormData();
+                    formData.append(options.name ?? 'tmp', this);
+                    xhr.send(formData);
+                }
+                else {
+                    xhr.send(this);
+                }
+
+                return promise;
             },
         },
     };
