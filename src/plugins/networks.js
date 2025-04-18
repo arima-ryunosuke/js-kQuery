@@ -7,7 +7,7 @@ import {$FileList, $NodeList, F, Promise} from '../API.js';
  */
 export function networks(kQuery) {
     return {
-        [[HTMLAnchorElement.name]]: /** @lends HTMLAnchorElement.prototype */{
+        [[HTMLAnchorElement.name, $NodeList.name]]: /** @lends HTMLAnchorElement.prototype */{
             /**
              * submit based on a href
              *
@@ -127,7 +127,7 @@ export function networks(kQuery) {
                 return this;
             },
         },
-        [[HTMLFormElement.name]]: /** @lends HTMLFormElement.prototype */{
+        [[HTMLFormElement.name, $NodeList.name]]: /** @lends HTMLFormElement.prototype */{
             /**
              * request based on form value
              *

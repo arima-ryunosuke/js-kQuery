@@ -88,99 +88,97 @@ export function miscellaneous(kQuery) {
                 return this.open(url, target, feature);
             },
         },
-        [[Element.name, $NodeList.name]]: /** @lends Element.prototype */{
-            /**
-             * is metadata content
-             *
-             * @see https://html.spec.whatwg.org/multipage/dom.html#metadata-content
-             *
-             * @descriptor get
-             *
-             * @return {Boolean}
-             */
-            get $isMetadataContent() {
-                return ['base', 'link', 'meta', 'noscript', 'script', 'style', 'template', 'title'].includes(this.localName.toLowerCase());
-            },
-            /**
-             * get no content outerHTML
-             *
-             * @param {Boolean} [withClose=true]
-             * @return {String}
-             *
-             * @example
-             * document.$createElement('div', {a: 'A', b: 'B'}, 'child').$outerTag();
-             * // '<div a="A" b="B"></div>'
-             */
-            $outerTag(withClose = true) {
-                const name = this.localName;
-                const attrs = '' + this.$attrs;
-
-                let result = `<${name}${attrs ? ' ' + attrs : ''}>`;
-                if (withClose) {
-                    result += `</${name}>`;
-                }
-                return result;
-            },
-            /**
-             * mark matched text nodes
-             *
-             * @param {String|RegExp} word
-             * @param {String|Element} [wrapper]
-             * @param {String|Node|Function} [notSelectorFn]
-             * @return {this}
-             *
-             * @example
-             * <hgroup>
-             *   <h1>this is header</h1>
-             *   <p>this is subheader</p>
-             * </hgroup>
-             *
-             * $('hgroup').$markText('is');
-             *
-             * <hgroup>
-             *   <h1>th<mark>is</mark> <mark>is</mark> header</h1>
-             *   <p>th<mark>is</mark> <mark>is</mark> subheader</p>
-             * </hgroup>
-             */
-            $markText(word, wrapper, notSelectorFn) {
-                kQuery.logger.assertInstanceOf(word, String, RegExp)();
-                kQuery.logger.assertInstanceOf(wrapper, Nullable, String, Element)();
-
-                if (!(word instanceof RegExp)) {
-                    word = new RegExp(F.stringEscape(word, 'regex'));
-                }
-                if (!(wrapper instanceof Element)) {
-                    wrapper = this.$document.$createElement(wrapper ?? 'mark');
-                }
-
-                const core = (node) => {
-                    for (const child of node.children) {
-                        if (child.$isMetadataContent || (notSelectorFn != null && child.$matches(notSelectorFn)) || child.$outerTag(false) === wrapper.$outerTag(false)) {
-                            continue;
-                        }
-                        core(child);
-                    }
-                    for (const child of node.childNodes) {
-                        if (child instanceof CharacterData) {
-                            const matches = child.nodeValue.match(word);
-                            if (matches) {
-                                const after = child.splitText(matches.index);
-                                after.splitText(matches[0].length);
-                                after.$wrap(wrapper.$clone(true));
-                            }
-                        }
-                    }
-                    return node;
-                };
-
-                this.normalize();
-                return core(this);
-            },
-        },
-        [[Element.name]]: function () {
+        [[Element.name, $NodeList.name]]: function () {
             let scrollIntoViewing = false;
 
             return /** @lends Element.prototype */{
+                /**
+                 * is metadata content
+                 *
+                 * @see https://html.spec.whatwg.org/multipage/dom.html#metadata-content
+                 *
+                 * @descriptor get
+                 *
+                 * @return {Boolean}
+                 */
+                get $isMetadataContent() {
+                    return ['base', 'link', 'meta', 'noscript', 'script', 'style', 'template', 'title'].includes(this.localName.toLowerCase());
+                },
+                /**
+                 * get no content outerHTML
+                 *
+                 * @param {Boolean} [withClose=true]
+                 * @return {String}
+                 *
+                 * @example
+                 * document.$createElement('div', {a: 'A', b: 'B'}, 'child').$outerTag();
+                 * // '<div a="A" b="B"></div>'
+                 */
+                $outerTag(withClose = true) {
+                    const name = this.localName;
+                    const attrs = '' + this.$attrs;
+
+                    let result = `<${name}${attrs ? ' ' + attrs : ''}>`;
+                    if (withClose) {
+                        result += `</${name}>`;
+                    }
+                    return result;
+                },
+                /**
+                 * mark matched text nodes
+                 *
+                 * @param {String|RegExp} word
+                 * @param {String|Element} [wrapper]
+                 * @param {String|Node|Function} [notSelectorFn]
+                 * @return {this}
+                 *
+                 * @example
+                 * <hgroup>
+                 *   <h1>this is header</h1>
+                 *   <p>this is subheader</p>
+                 * </hgroup>
+                 *
+                 * $('hgroup').$markText('is');
+                 *
+                 * <hgroup>
+                 *   <h1>th<mark>is</mark> <mark>is</mark> header</h1>
+                 *   <p>th<mark>is</mark> <mark>is</mark> subheader</p>
+                 * </hgroup>
+                 */
+                $markText(word, wrapper, notSelectorFn) {
+                    kQuery.logger.assertInstanceOf(word, String, RegExp)();
+                    kQuery.logger.assertInstanceOf(wrapper, Nullable, String, Element)();
+
+                    if (!(word instanceof RegExp)) {
+                        word = new RegExp(F.stringEscape(word, 'regex'));
+                    }
+                    if (!(wrapper instanceof Element)) {
+                        wrapper = this.$document.$createElement(wrapper ?? 'mark');
+                    }
+
+                    const core = (node) => {
+                        for (const child of node.children) {
+                            if (child.$isMetadataContent || (notSelectorFn != null && child.$matches(notSelectorFn)) || child.$outerTag(false) === wrapper.$outerTag(false)) {
+                                continue;
+                            }
+                            core(child);
+                        }
+                        for (const child of node.childNodes) {
+                            if (child instanceof CharacterData) {
+                                const matches = child.nodeValue.match(word);
+                                if (matches) {
+                                    const after = child.splitText(matches.index);
+                                    after.splitText(matches[0].length);
+                                    after.$wrap(wrapper.$clone(true));
+                                }
+                            }
+                        }
+                        return node;
+                    };
+
+                    this.normalize();
+                    return core(this);
+                },
                 /**
                  * asynchronous scrollIntoView
                  *
@@ -248,7 +246,7 @@ export function miscellaneous(kQuery) {
                 },
             };
         }(),
-        [[HTMLDialogElement.name]]: /** @lends HTMLDialogElement.prototype */{
+        [[HTMLDialogElement.name, $NodeList.name]]: /** @lends HTMLDialogElement.prototype */{
             /**
              * asynchronous showModal
              *

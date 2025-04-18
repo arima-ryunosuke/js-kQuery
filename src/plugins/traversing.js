@@ -447,7 +447,7 @@ export function traversing(kQuery) {
                 },
             };
         }(),
-        [[HTMLInputElement.name]]: /** @lends HTMLInputElement.prototype */{
+        [[HTMLInputElement.name, $NodeList.name]]: /** @lends HTMLInputElement.prototype */{
             /**
              * get belonging RadioNodeList
              *
