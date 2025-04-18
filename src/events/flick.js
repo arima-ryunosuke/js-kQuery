@@ -2,6 +2,7 @@ import {Vector2} from '../API.js';
 
 export default class {
     constructor(target, selector, options, trigger) {
+        options.buttons ??= 1;
         this.starting = false;
         this.vectors = [];
 
@@ -12,7 +13,7 @@ export default class {
             this.vectors.splice(0);
         };
         this.move = (e) => {
-            if (this.starting) {
+            if ((e.buttons & options.buttons) && this.starting) {
                 this.vectors.push(new Vector2(e.offsetX, e.offsetY, e.timeStamp));
             }
         };

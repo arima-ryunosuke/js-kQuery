@@ -2,6 +2,7 @@ import {Vector2} from '../API.js';
 
 export default class {
     constructor(target, selector, options, trigger) {
+        options.buttons ??= 1;
         this.firstVector = null;
 
         this.down = (e) => {
@@ -10,7 +11,7 @@ export default class {
             this.firstVector = new Vector2(e.offsetX, e.offsetY, e.timeStamp);
         };
         this.move = (e) => {
-            if (this.firstVector) {
+            if ((e.buttons & options.buttons) && this.firstVector) {
                 const currentVector = new Vector2(e.offsetX, e.offsetY, e.timeStamp);
                 const distance = this.firstVector.distance(currentVector);
                 if (distance !== 0) {
