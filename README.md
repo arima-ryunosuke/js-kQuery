@@ -558,6 +558,22 @@ MIT
 - マイナー: 小規模な互換性破壊の際にアップします（引数の変更、小規模破壊を伴う修正など）
 - パッチ: 互換性破壊はありません（デフォルト引数の追加や、新たなクラスの追加、コードフォーマットなど）
 
+### 0.1.0
+
+- [feature] ポインタ系イベントのボタン縛り
+- [feature] 不必要と考えていた単一メソッド系に $NodeList を追加
+- [feature] fetch 系の URL 受け入れとタイムアウトと http エラー
+- [feature] $upload を追加
+- [feature] $options を追加
+- [feature] $willChange を追加
+- [feature] textnodes を使う処理で metadata content を除外
+- [feature] metadata content の判定は有用そうなのでメソッド化
+- [refactor] 効率の悪いコードを最適化
+- [refactor] webkit/moz 等の自動除外設定
+- [refactor] WeakMap の実装を変更
+- [fixbug] 一部のアサーションが間違っていたのと Boolean を緩めにした
+- [fixbug] import.meta が PlainObject 判定されている
+
 ### 0.0.0
 
 - 公開
