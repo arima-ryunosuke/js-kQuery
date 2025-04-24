@@ -2639,20 +2639,23 @@ document.addEventListener('DOMContentLoaded', function () {
                 });
 
                 it('$showModal/$modalElement', async function () {
-                    expect(document.$modalElement()).toEqual(null);
+                    expect(document.$modalElement).toEqual(null);
+                    expect(document.$topLayerElement).toEqual(null);
 
                     setTimeout(() => {
                         this.dialog.close('answer');
                     }, 100);
                     const p1 = this.dialog.$showModal();
-                    expect(document.$modalElement()).toEqual(this.dialog);
+                    expect(document.$modalElement).toEqual(this.dialog);
+                    expect(document.$topLayerElement).toEqual(this.dialog);
                     expect(await p1).toEqual('answer');
 
                     setTimeout(() => {
                         this.dialog.dispatchEvent(new MouseEvent('click', {clientX: 0, clientY: 0}));
                     }, 100);
                     const p2 = this.dialog.$showModal({outside: true});
-                    expect(document.$modalElement()).toEqual(this.dialog);
+                    expect(document.$modalElement).toEqual(this.dialog);
+                    expect(document.$topLayerElement).toEqual(this.dialog);
                     expect(await p2).toEqual(null);
 
                     // not close on untrust event
