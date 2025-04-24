@@ -358,7 +358,7 @@ export function events(kQuery) {
                     kQuery.logger.assertInstanceOf(options, Nullable, Object)();
 
                     for (const [type, namespaces] of eachType(true, types)) {
-                        eventDataMap.reset(this, (eventDatas) => eventDatas.filter(eventData => {
+                        eventDataMap.reset(this, (eventDatas) => (eventDatas ?? []).filter(eventData => {
                             if (type && type !== eventData.type) {
                                 return true;
                             }
