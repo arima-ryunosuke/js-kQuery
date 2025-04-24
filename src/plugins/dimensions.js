@@ -9,6 +9,27 @@ export function dimensions(kQuery) {
     return {
         [[Document.name]]: /** @lends Document.prototype */{
             /**
+             * get top-layer element
+             *
+             * in the future, ":top-layer" pseudo-class may come, but not now
+             *
+             * @return {?Element}
+             */
+            get $topLayerElement() {
+                const tops = this.$$(':modal, :popover-open, :fullscreen');
+                if (tops.length <= 1) {
+                    return tops[0] ?? null;
+                }
+
+                for (const top of tops) {
+                    if (top === this.elementFromPoint(0, 0)) {
+                        return top;
+                    }
+                }
+
+                return null;
+            },
+            /**
              * get current modal element
              *
              * @return {?Element}
