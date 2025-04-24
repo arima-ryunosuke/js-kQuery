@@ -13,7 +13,7 @@ export function dimensions(kQuery) {
              *
              * @return {?Element}
              */
-            $modalElement() {
+            get $modalElement() {
                 // noinspection CssInvalidPseudoSelector
                 const modals = this.querySelectorAll(':modal');
                 const top = this.elementFromPoint(0, 0);
