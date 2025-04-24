@@ -1975,7 +1975,7 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
               kQuery.logger.assertInstanceOf(listener, Nullable, Function)();
               kQuery.logger.assertInstanceOf(options, Nullable, Object)();
               for (const [type, namespaces] of eachType(true, types)) {
-                eventDataMap.reset(this, (eventDatas) => eventDatas.filter((eventData) => {
+                eventDataMap.reset(this, (eventDatas) => (eventDatas ?? []).filter((eventData) => {
                   if (type && type !== eventData.type) {
                     return true;
                   }
