@@ -484,6 +484,7 @@
                     <span class="click">normal-click</span>
                     <span class="once-click">once-click</span>
                     <span class="once-click">once-click</span>
+                    <span class="abort-3click">abort-3click</span>
                     <span class="native-once-click">native-once-click</span>
                     <input class="debounce" value="debounce-input">
 
@@ -593,6 +594,14 @@
                     output.textContent += `${e.type}-${e.detail?.subtype ?? '(none)'}: ${e.target.outerHTML}\n`;
                 }, {
                     once: true,
+                });
+                let count = 0;
+                container.$on('click', '.abort-3click', function (e) {
+                    console.log(e);
+                    output.textContent += `${e.type}-${count}: ${e.target.outerHTML}\n`;
+                    if (++count === 3) {
+                        e.$abort();
+                    }
                 });
                 container.$on('input', '.debounce', function (e) {
                     console.log(e);

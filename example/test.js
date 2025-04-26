@@ -1299,6 +1299,31 @@ document.addEventListener('DOMContentLoaded', function () {
                         count: 3,
                     });
                 });
+                it('$on.abort', async function () {
+                    let receiver = {};
+                    const handler = function (e) {
+                        receiver.count = (receiver.count ?? 0) + 1;
+                        if (receiver.count === 2) {
+                            e.$abort();
+                        }
+                    };
+                    this.element.$on('click', handler);
+
+                    this.element.$trigger('click');
+                    expect(receiver).toEqual({
+                        count: 1,
+                    });
+
+                    this.element.$trigger('click');
+                    expect(receiver).toEqual({
+                        count: 2,
+                    });
+
+                    this.element.$trigger('click');
+                    expect(receiver).toEqual({
+                        count: 2,
+                    });
+                });
                 it('$on.child', async function () {
                     const receiver = {};
                     this.element.$on('child', 'div', function (e) {
@@ -3383,6 +3408,15 @@ after-text`);
                 it('$click', async function () {
                     this.container.$('.click').click();
                     expect(this.output.textContent).toContain('<span class="click">normal-click</span>');
+
+                    this.container.$('.abort-3click').click();
+                    expect(this.output.textContent).toContain('click-0');
+                    this.container.$('.abort-3click').click();
+                    expect(this.output.textContent).toContain('click-1');
+                    this.container.$('.abort-3click').click();
+                    expect(this.output.textContent).toContain('click-2');
+                    this.container.$('.abort-3click').click();
+                    expect(this.output.textContent).not.toContain('click-3');
 
                     this.container.$('.debounce').$trigger('input');
                     this.container.$('.debounce').$trigger('input');
