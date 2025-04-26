@@ -2318,10 +2318,11 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
                     }
                     waitStorage.set(target, "start", Date.now());
                   }
+                  e.$abort = (reason) => eventData.abortController.abort(reason);
                   if (eventData.selector == null) {
                     return eventData.listener.call(this, e);
                   }
-                  for (let parent = target; parent && parent !== this; parent = parent.parentNode) {
+                  for (let parent = target; parent && parent !== this; parent = parent.parentElement) {
                     if (parent.matches(eventData.selector) && !(options.once && eventData.counter.get(target))) {
                       if (!eventData.counter.reset(target, (count) => (count ?? 0) + 1) && options.once) {
                         customEvent?.handlers?.delete?.(target);
@@ -2340,6 +2341,13 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
                 eventData.handler = new WeakRef(handler);
                 eventDataMap.getOrSet(this, () => []).push(eventData);
                 const internalOptions = eventData.selector == null ? options : Object.assign({}, options, { once: false });
+                eventData.abortController = new AbortController();
+                eventData.abortController.signal.addEventListener("abort", eventData.destructor);
+                if (internalOptions.signal) {
+                  internalOptions.signal = AbortSignal.any([internalOptions.signal, eventData.abortController.signal]);
+                } else {
+                  internalOptions.signal = eventData.abortController.signal;
+                }
                 this.addEventListener(internalEventName(type), handler, internalOptions);
                 eventData.destructor = function() {
                   kQuery.logger.debug(`Release of `, type, selector, options);
