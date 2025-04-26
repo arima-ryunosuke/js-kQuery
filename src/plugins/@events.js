@@ -287,6 +287,8 @@ export function events(kQuery) {
                                 waitStorage.set(target, 'start', Date.now());
                             }
 
+                            e.$abort = (reason) => eventData.abortController.abort(reason);
+
                             if (eventData.selector == null) {
                                 return eventData.listener.call(this, e);
                             }
@@ -316,6 +318,15 @@ export function events(kQuery) {
 
                         // if selector and once, apply once per node
                         const internalOptions = eventData.selector == null ? options : Object.assign({}, options, {once: false});
+
+                        eventData.abortController = new AbortController();
+                        eventData.abortController.signal.addEventListener('abort', eventData.destructor);
+                        if (internalOptions.signal) {
+                            internalOptions.signal = AbortSignal.any([internalOptions.signal, eventData.abortController.signal]);
+                        }
+                        else {
+                            internalOptions.signal = eventData.abortController.signal;
+                        }
                         this.addEventListener(internalEventName(type), handler, internalOptions);
 
                         // if once:true, the handler can be retrieved by the GC
