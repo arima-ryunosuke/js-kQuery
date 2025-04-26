@@ -291,7 +291,7 @@ export function events(kQuery) {
                                 return eventData.listener.call(this, e);
                             }
 
-                            for (let parent = target; parent && parent !== this; parent = parent.parentNode) {
+                            for (let parent = target; parent && parent !== this; parent = parent.parentElement) {
                                 if (parent.matches(eventData.selector) && !(options.once && eventData.counter.get(target))) {
                                     if (!eventData.counter.reset(target, (count) => (count ?? 0) + 1) && options.once) {
                                         customEvent?.handlers?.delete?.(target);
