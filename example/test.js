@@ -2700,9 +2700,115 @@ document.addEventListener('DOMContentLoaded', function () {
                         <input name="checkbox" type="checkbox" value="cb">
                         <input name="radio" type="radio" value="ra">
                         <input name="radio" type="radio" value="rb">
+                        
+                        <input id="datetime-nostep"  type="datetime-local" step="">
+                        <input id="datetime-step2"   type="datetime-local" step="2">
+                        <input id="datetime-step0-1" type="datetime-local" step="0.1">
+                        <input id="date" type="date" step="">
+                        <input id="time-nostep"  type="time" step="">
+                        <input id="time-step2"   type="time" step="2">
+                        <input id="time-step0-1" type="time" step="0.1">
+                        <input id="month" type="month" step="">
+                        <input id="week" type="week" step="">
                     <form>`);
                 });
 
+                it('$valueAsDate', async function () {
+                    const format = function (date) {
+                        return date.toLocaleString('sv-SE') + '.' + ('' + date.getMilliseconds()).padStart(3, '0');
+                    };
+                    let target;
+
+                    target = this.form.$('#datetime-nostep');
+                    expect(target.$valueAsDate).toEqual(null);
+                    expect(target.$valueAsNumber).toEqual(Number.NaN);
+                    target.$valueAsDate = new Date('2014-12-24 12:34:56.789');
+                    expect(target.value).toEqual('2014-12-24T12:34');
+                    expect(format(target.$valueAsDate)).toEqual('2014-12-24 12:34:00.000');
+                    target.$valueAsNumber = 1419392096789;
+                    expect(target.value).toEqual('2014-12-24T12:34');
+                    expect(target.$valueAsNumber).toEqual(1419392040000);
+
+                    target = this.form.$('#datetime-step2');
+                    expect(target.$valueAsDate).toEqual(null);
+                    expect(target.$valueAsNumber).toEqual(Number.NaN);
+                    target.$valueAsDate = new Date('2014-12-24 12:34:56.789');
+                    expect(target.value).toEqual('2014-12-24T12:34:56');
+                    expect(format(target.$valueAsDate)).toEqual('2014-12-24 12:34:56.000');
+                    target.$valueAsNumber = 1419392096789;
+                    expect(target.value).toEqual('2014-12-24T12:34:56');
+                    expect(target.$valueAsNumber).toEqual(1419392096000);
+
+                    target = this.form.$('#datetime-step0-1');
+                    expect(target.$valueAsDate).toEqual(null);
+                    expect(target.$valueAsNumber).toEqual(Number.NaN);
+                    target.$valueAsDate = new Date('2014-12-24 12:34:56.789');
+                    expect(target.value).toEqual('2014-12-24T12:34:56.789');
+                    expect(format(target.$valueAsDate)).toEqual('2014-12-24 12:34:56.789');
+                    target.$valueAsNumber = 1419392096789;
+                    expect(target.value).toEqual('2014-12-24T12:34:56.789');
+                    expect(target.$valueAsNumber).toEqual(1419392096789);
+
+                    target = this.form.$('#date');
+                    expect(target.$valueAsDate).toEqual(null);
+                    expect(target.$valueAsNumber).toEqual(Number.NaN);
+                    target.$valueAsDate = new Date('2014-12-24 12:34:56.789');
+                    expect(target.value).toEqual('2014-12-24');
+                    expect(format(target.$valueAsDate)).toEqual('2014-12-24 00:00:00.000');
+                    target.$valueAsNumber = 1419392096789;
+                    expect(target.value).toEqual('2014-12-24');
+                    expect(target.$valueAsNumber).toEqual(1419346800000);
+
+                    target = this.form.$('#time-nostep');
+                    expect(target.$valueAsDate).toEqual(null);
+                    expect(target.$valueAsNumber).toEqual(Number.NaN);
+                    target.$valueAsDate = new Date('2014-12-24 12:34:56.789');
+                    expect(target.value).toEqual('12:34');
+                    expect(format(target.$valueAsDate)).toEqual('1970-01-01 12:34:00.000');
+                    target.$valueAsNumber = 1419392096789;
+                    expect(target.value).toEqual('12:34');
+                    expect(target.$valueAsNumber).toEqual(12840000);
+
+                    target = this.form.$('#time-step2');
+                    expect(target.$valueAsDate).toEqual(null);
+                    expect(target.$valueAsNumber).toEqual(Number.NaN);
+                    target.$valueAsDate = new Date('2014-12-24 12:34:56.789');
+                    expect(target.value).toEqual('12:34:56');
+                    expect(format(target.$valueAsDate)).toEqual('1970-01-01 12:34:56.000');
+                    target.$valueAsNumber = 1419392096789;
+                    expect(target.value).toEqual('12:34:56');
+                    expect(target.$valueAsNumber).toEqual(12896000);
+
+                    target = this.form.$('#time-step0-1');
+                    expect(target.$valueAsDate).toEqual(null);
+                    expect(target.$valueAsNumber).toEqual(Number.NaN);
+                    target.$valueAsDate = new Date('2014-12-24 12:34:56.789');
+                    expect(target.value).toEqual('12:34:56.789');
+                    expect(format(target.$valueAsDate)).toEqual('1970-01-01 12:34:56.789');
+                    target.$valueAsNumber = 1419392096789;
+                    expect(target.value).toEqual('12:34:56.789');
+                    expect(target.$valueAsNumber).toEqual(12896789);
+
+                    target = this.form.$('#month');
+                    expect(target.$valueAsDate).toEqual(null);
+                    expect(target.$valueAsNumber).toEqual(Number.NaN);
+                    target.$valueAsDate = new Date('2014-12-24 12:34:56.789');
+                    expect(target.value).toEqual('2014-12');
+                    expect(format(target.$valueAsDate)).toEqual('2014-12-01 00:00:00.000');
+                    target.$valueAsNumber = 1419392096789;
+                    expect(target.value).toEqual('2014-12');
+                    expect(target.$valueAsNumber).toEqual(1417359600000);
+
+                    target = this.form.$('#week');
+                    expect(target.$valueAsDate).toEqual(null);
+                    expect(target.$valueAsNumber).toEqual(Number.NaN);
+                    target.$valueAsDate = new Date('2014-12-24 12:34:56.789');
+                    expect(target.value).toEqual('2014-W52');
+                    expect(format(target.$valueAsDate)).toEqual('2014-12-22 00:00:00.000');
+                    target.$valueAsNumber = 1419392096789;
+                    expect(target.value).toEqual('2014-W52');
+                    expect(target.$valueAsNumber).toEqual(1419174000000);
+                });
                 it('$indeterminate/checkbox', async function () {
                     const allCheckbox = this.form.$('[type="checkbox"]:not([name])');
                     const checkbox = this.form.$$('[name="checkbox"], span');
@@ -2767,6 +2873,80 @@ document.addEventListener('DOMContentLoaded', function () {
                     <form>`);
                 });
 
+                it('$defaultValue', async function () {
+                    const inputs = this.form.$$('input, textarea, select');
+
+                    expect(inputs.$defaultValue).toEqual([
+                        'text',
+                        'textarea',
+                        'ca',
+                        null,
+                        'ra',
+                        null,
+                        'sa',
+                        ['sa'],
+                    ]);
+
+                    inputs.$defaultValue = '';
+                    expect(inputs.$defaultValue).toEqual([
+                        '',
+                        '',
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        [],
+                    ]);
+
+                    inputs.$defaultValue = 'tb';
+                    expect(inputs.$defaultValue).toEqual([
+                        'tb',
+                        'tb',
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        [],
+                    ]);
+
+                    inputs.$defaultValue = 'cb';
+                    expect(inputs.$defaultValue).toEqual([
+                        'cb',
+                        'cb',
+                        null,
+                        'cb',
+                        null,
+                        null,
+                        null,
+                        [],
+                    ]);
+
+                    inputs.$defaultValue = 'rb';
+                    expect(inputs.$defaultValue).toEqual([
+                        'rb',
+                        'rb',
+                        null,
+                        null,
+                        null,
+                        'rb',
+                        null,
+                        [],
+                    ]);
+
+                    inputs.$defaultValue = 'sb';
+                    expect(inputs.$defaultValue).toEqual([
+                        'sb',
+                        'sb',
+                        null,
+                        null,
+                        null,
+                        null,
+                        'sb',
+                        ['sb'],
+                    ]);
+                });
                 it('$value/$clear', async function () {
                     const inputs = this.form.$$('input, textarea, select');
 
@@ -3632,6 +3812,16 @@ after-text`);
                     this.output = this.container.$('.output');
                 });
 
+                it('$valueAs', async function () {
+                    this.container.$$('.datetime-like').$valueAsDate = new Date('2014-12-24T12:34:56.789');
+                    this.container.$$('.value-as-date[data-native="0"]').click();
+
+                    expect(this.output.textContent).toContain('valueAsDate: 2014-12-24 12:34:00');
+                    expect(this.output.textContent).toContain('valueAsDate: 2014-12-24 00:00:00');
+                    expect(this.output.textContent).toContain('valueAsDate: 1970-01-01 12:34:00');
+                    expect(this.output.textContent).toContain('valueAsDate: 2014-12-01 00:00:00');
+                    expect(this.output.textContent).toContain('valueAsDate: 2014-12-22 00:00:00');
+                });
                 it('$scrollIntoView', async function () {
                     const result = await this.container.$('.scrollIntoView1').$scrollIntoView({
                         behavior: 'smooth',

@@ -1144,6 +1144,24 @@
         <div>
             <button type="button" class="window-open">window open</button>
             <br>
+            <input id="local-datetime" type="datetime-local" class="datetime-like">
+            <button type="button" class="value-as-date" data-native="1">valueAsDate</button>
+            <button type="button" class="value-as-date" data-native="0">$valueAsDate</button>
+            <br>
+            <input id="local-date" type="date" class="datetime-like">
+            <button type="button" class="value-as-date" data-native="1">valueAsDate</button>
+            <button type="button" class="value-as-date" data-native="0">$valueAsDate</button>
+            <input id="local-time" type="time" class="datetime-like">
+            <button type="button" class="value-as-date" data-native="1">valueAsDate</button>
+            <button type="button" class="value-as-date" data-native="0">$valueAsDate</button>
+            <br>
+            <input id="local-month" type="month" class="datetime-like">
+            <button type="button" class="value-as-date" data-native="1">valueAsDate</button>
+            <button type="button" class="value-as-date" data-native="0">$valueAsDate</button>
+            <input id="local-week" type="week" class="datetime-like">
+            <button type="button" class="value-as-date" data-native="1">valueAsDate</button>
+            <button type="button" class="value-as-date" data-native="0">$valueAsDate</button>
+            <br>
             <button type="button" class="scroll-resolve">scroll(resolve)</button>
             <button type="button" class="scroll-ifNeeded">scroll(ifNeeded)</button>
             <button type="button" class="scroll-reject">scroll(reject)</button>
@@ -1199,6 +1217,11 @@
 
                 container.$on('click', '.window-open', async function () {
                     window.$open({url: document.location.href});
+                });
+                container.$on('click', '.value-as-date', async function (e) {
+                    const input = e.target.$prevElement('input');
+                    const result = +e.target.dataset.native ? input.valueAsDate : input.$valueAsDate;
+                    output.textContent += `valueAsDate: ${result.toLocaleString('sv-SE')}\n`;
                 });
                 container.$on('click', '.scroll-resolve', async function () {
                     const result = await container.$('.scrollIntoView1').$scrollIntoView({
