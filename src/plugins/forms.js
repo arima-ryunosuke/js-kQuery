@@ -6,6 +6,37 @@ import {$NodeList, F, Nullable} from '../API.js';
  * @ignore
  */
 export function forms(kQuery) {
+    // 01234567890123456789012345678
+    // 2000-01-23T12:34:56.789+09:00
+    // 2000-W12-7
+    const toLocalISOString = function (date, format) {
+        const local = new Date(+date - date.getTimezoneOffset() * 6e4);
+
+        if (format === 'notz') {
+            return local.toISOString().slice(0, -1);
+        }
+        if (format === 'full') {
+            const offset = date.getTimezoneOffset();
+            const absOffset = Math.abs(offset);
+            const offsetSign = offset > 0 ? '-' : '+';
+            const offsetHour = Math.trunc(absOffset / 60);
+            const offsetMinute = absOffset % 60;
+            const timezone = `${offsetSign}${('' + offsetHour).padStart(2, '0')}:${('' + offsetMinute).padStart(2, '0')}`;
+            return local.toISOString().slice(0, -1) + timezone;
+        }
+        if (format === 'week') {
+            const day1 = 24 * 60 * 60 * 1000;
+            const day3 = day1 * 3;
+            const day7 = day1 * 7;
+
+            const first = new Date(Math.trunc((+local + day3) / day7) * day7);
+            const firstYear = first.getUTCFullYear();
+            const weekNumber = Math.trunc((first - new Date(`${firstYear}-01-01T00:00:00Z`)) / day7) + 1;
+            const dayNumber = (local.getUTCDay() + 6) % 7 + 1;
+            return `${firstYear}-W${('' + weekNumber).padStart(2, '0')}-${dayNumber}`;
+        }
+    };
+
     return {
         [[FormData.name]]: /** @lends FormData.prototype */{
             /**
@@ -89,6 +120,165 @@ export function forms(kQuery) {
                     return value;
                 });
                 return JSON.stringify(object);
+            },
+        },
+        [[HTMLInputElement.name, $NodeList.name]]: /** @lends HTMLInputElement.prototype */{
+            /**
+             * get input value as date
+             *
+             * datetime-like's valueAsDate is UTC timezone, but this property is local timezone
+             *
+             * @descriptor get
+             *
+             * @return {Date}
+             *
+             * @example
+             * <input id="time" type="time">
+             *
+             * $('#time').value = '12:34';
+             * $('#time').valueAsDate;     // Thu Jan 01 1970 21:34:00 GMT+0900
+             * $('#time').$valueAsDate;    // Thu Jan 01 1970 12:34:00 GMT+0900
+             */
+            get $valueAsDate() {
+                // precdondition
+                if (!this.value) {
+                    return null;
+                }
+
+                // datetime-local doesn't have valueAsDate
+                if (this.type === 'datetime-local') {
+                    return new Date(this.value);
+                }
+
+                // other.valueAsDate is UTC
+                if ('valueAsDate' in this) {
+                    return new Date(this.valueAsDate.getTime() + this.valueAsDate.getTimezoneOffset() * 6e4);
+                }
+            },
+            /**
+             * set input value as date
+             *
+             * datetime-like's valueAsDate is UTC timezone, but this property is local timezone
+             * and triming value the format(by step|value)
+             *
+             * @descriptor set
+             *
+             * @param {?Date} value
+             *
+             * @example
+             * <input id="time0" type="time" step="">
+             * <input id="time1" type="time" step="1">
+             *
+             * $('#time0').valueAsDate = new Date('2014-12-24T12:34:56.789');
+             * $('#time1').valueAsDate = new Date('2014-12-24T12:34:56.789');
+             * $('#time0').value; // '03:34:56.789'
+             * $('#time1').value; // '03:34:56.789'
+             *
+             * $('#time0').$valueAsDate = new Date('2014-12-24T12:34:56.789');
+             * $('#time1').$valueAsDate = new Date('2014-12-24T12:34:56.789');
+             * $('#time0').value; // '12:34'
+             * $('#time1').value; // '12:34:56'
+             */
+            set $valueAsDate(value) {
+                // precdondition
+                if (value == null) {
+                    return;
+                }
+                if (!(value instanceof Date)) {
+                    // emulate native error
+                    this.valueAsDate = value;
+                    return;
+                }
+
+                // datetime-local doesn't have valueAsDate
+                if (this.type === 'datetime-local') {
+                    const strtime = toLocalISOString(value, 'notz');
+                    if (this.value !== '') {
+                        this.value = strtime.slice(0, this.value.length);
+                    }
+                    else if (!this.step) {
+                        this.value = strtime.slice(0, 16);
+                    }
+                    else if (this.step.includes('.')) {
+                        this.value = strtime.slice(0, 23);
+                    }
+                    else {
+                        this.value = strtime.slice(0, 19);
+                    }
+                    return;
+                }
+
+                // other.valueAsDate is UTC
+                if (this.type === 'month') {
+                    return this.value = toLocalISOString(value, 'notz').slice(0, 7);
+                }
+                if (this.type === 'week') {
+                    return this.value = toLocalISOString(value, 'week').slice(0, 8);
+                }
+                if (this.type === 'date') {
+                    return this.value = toLocalISOString(value, 'notz').slice(0, 10);
+                }
+                if (this.type === 'time') {
+                    const strtime = toLocalISOString(value, 'notz');
+                    if (this.value !== '') {
+                        this.value = strtime.slice(11, 11 + this.value.length);
+                    }
+                    else if (!this.step) {
+                        this.value = strtime.slice(11, 16);
+                    }
+                    else if (this.step.includes('.')) {
+                        this.value = strtime.slice(11, 23);
+                    }
+                    else {
+                        this.value = strtime.slice(11, 19);
+                    }
+                }
+            },
+            /**
+             * get input value as number
+             *
+             * datetime-like delegates to $valueAsDate, and other work the same as native
+             *
+             * @descriptor get
+             *
+             * @return {Number}
+             */
+            get $valueAsNumber() {
+                // precdondition
+                if (!this.value) {
+                    return Number.NaN;
+                }
+
+                if (['datetime-local', 'month', 'week', 'date', 'time'].includes(this.type)) {
+                    return this.$valueAsDate.getTime();
+                }
+                if ('valueAsNumber' in this) {
+                    return this.valueAsNumber;
+                }
+
+                return Number.NaN;
+            },
+            /**
+             * set input value as number
+             *
+             * datetime-like delegates to $valueAsDate, and other work the same as native
+             *
+             * @descriptor set
+             *
+             * @param {?Number} value
+             */
+            set $valueAsNumber(value) {
+                // precdondition
+                if (isNaN(value) || value == null) {
+                    return;
+                }
+
+                if (['datetime-local', 'month', 'week', 'date', 'time'].includes(this.type)) {
+                    return this.$valueAsDate = new Date(+value);
+                }
+                if ('valueAsNumber' in this) {
+                    this.valueAsNumber = value;
+                }
             },
         },
         [[HTMLInputElement.name, RadioNodeList.name, $NodeList.name]]: /** @lends HTMLInputCheckableElement.prototype */{
