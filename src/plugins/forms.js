@@ -363,6 +363,71 @@ export function forms(kQuery) {
         },
         [[HTMLInputElement.name, HTMLTextAreaElement.name, HTMLSelectElement.name, $NodeList.name]]: /** @lends HTMLInputLikeElement.prototype */{
             /**
+             * get input default value
+             *
+             * Unify the individual implementations of input
+             *
+             * - simple input: defaultValue
+             * - radiobox/checkbox: defaultChecked
+             * - select: defaultSelected
+             * - file: always null or []
+             *
+             * @descriptor get
+             *
+             * @return {null|String|Array}
+             */
+            get $defaultValue() {
+                if (['select-one'].includes(this.type)) {
+                    return Array.prototype.find.call(this.options, option => option.defaultSelected)?.value ?? null;
+                }
+                if (['select-multiple'].includes(this.type)) {
+                    return [...this.options].filter(option => option.defaultSelected).map(option => option.value);
+                }
+                if (['radio', 'checkbox'].includes(this.type)) {
+                    return this.defaultChecked ? this.value : null;
+                }
+                if (['file'].includes(this.type)) {
+                    // HTML specifications is no default for file, so it always returns null to avoid unnecessary confusion
+                    return this.multiple ? [] : null;
+                }
+                if (this.type) {
+                    return this.defaultValue;
+                }
+            },
+            /**
+             * set input default value
+             *
+             * - simple input: defaultValue
+             * - radiobox/checkbox: defaultChecked
+             * - select: defaultSelected
+             * - file: do nothing
+             *
+             * @descriptor set
+             */
+            set $defaultValue(value) {
+                if (['select-one'].includes(this.type)) {
+                    value = '' + value;
+                    for (const option of this.options) {
+                        option.defaultSelected = option.value === value;
+                    }
+                }
+                else if (['select-multiple'].includes(this.type)) {
+                    const values = (value instanceof Array ? value : [value]).map(v => '' + v);
+                    for (const option of this.options) {
+                        option.defaultSelected = values.includes(option.value);
+                    }
+                }
+                else if (['radio', 'checkbox'].includes(this.type)) {
+                    this.defaultChecked = this.value === value;
+                }
+                else if (['file'].includes(this.type)) {
+                    // do nothing
+                }
+                else if (this.type) {
+                    this.defaultValue = value;
+                }
+            },
+            /**
              * get input value
              *
              * - simple input: String
