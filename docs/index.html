@@ -867,6 +867,18 @@
                     <ul class='list-reset py1-ul pl1'>
                       
                       <li><a
+                        href='#htmlinputlikeelementget__defaultvalue'
+                        class='regular pre-open'>
+                        get $defaultValue</a>
+                        <small>get input default value</small></li>
+                      
+                      <li><a
+                        href='#htmlinputlikeelementset__defaultvalue'
+                        class='regular pre-open'>
+                        set $defaultValue</a>
+                        <small>set input default value</small></li>
+                      
+                      <li><a
                         href='#htmlinputlikeelementget__value'
                         class='regular pre-open'>
                         get $value</a>
@@ -943,6 +955,30 @@
                   
                   
                     <ul class='list-reset py1-ul pl1'>
+                      
+                      <li><a
+                        href='#htmlinputelementget__valueasdate'
+                        class='regular pre-open'>
+                        get $valueAsDate</a>
+                        <small>get input value as date</small></li>
+                      
+                      <li><a
+                        href='#htmlinputelementset__valueasdate'
+                        class='regular pre-open'>
+                        set $valueAsDate</a>
+                        <small>set input value as date</small></li>
+                      
+                      <li><a
+                        href='#htmlinputelementget__valueasnumber'
+                        class='regular pre-open'>
+                        get $valueAsNumber</a>
+                        <small>get input value as number</small></li>
+                      
+                      <li><a
+                        href='#htmlinputelementset__valueasnumber'
+                        class='regular pre-open'>
+                        set $valueAsNumber</a>
+                        <small>set input value as number</small></li>
                       
                       <li><a
                         href='#htmlinputelementradionodelist'
@@ -8525,6 +8561,137 @@ if specified insert:null, no inserted</p>
     <div class='py1 quiet mt1 prose-big'>Instance Members</div>
     <div class="clearfix">
   
+    <div class='border-bottom' id='htmlinputlikeelementget__defaultvalue'>
+      <div class="clearfix small pointer toggle-sibling">
+        <div class="py1 contain">
+            <a class='icon pin-right py1 dark-link caret-right'>▸</a>
+            <span class='code strong strong truncate'>get $defaultValue</span>
+        </div>
+      </div>
+      <div class="clearfix display-none toggle-target">
+        <section class='p2 mb2 clearfix bg-white minishadow'>
+
+  
+
+  <p>get input default value</p>
+<p>Unify the individual implementations of input</p>
+<ul>
+<li>simple input: defaultValue</li>
+<li>radiobox/checkbox: defaultChecked</li>
+<li>select: defaultSelected</li>
+<li>file: always null or []</li>
+</ul>
+
+    <div class='pre p1 fill-light mt0'>get $defaultValue</div>
+  
+  
+
+  
+  
+  
+  
+  
+  
+
+  
+
+  
+
+  
+    
+      <div class='py1 quiet mt1 prose-big'>Returns</div>
+      <code>(null | <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">String</a> | <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a>)</code>:
+        
+      
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+</section>
+
+      </div>
+    </div>
+  
+    <div class='border-bottom' id='htmlinputlikeelementset__defaultvalue'>
+      <div class="clearfix small pointer toggle-sibling">
+        <div class="py1 contain">
+            <a class='icon pin-right py1 dark-link caret-right'>▸</a>
+            <span class='code strong strong truncate'>set $defaultValue</span>
+        </div>
+      </div>
+      <div class="clearfix display-none toggle-target">
+        <section class='p2 mb2 clearfix bg-white minishadow'>
+
+  
+
+  <p>set input default value</p>
+<ul>
+<li>simple input: defaultValue</li>
+<li>radiobox/checkbox: defaultChecked</li>
+<li>select: defaultSelected</li>
+<li>file: do nothing</li>
+</ul>
+
+    <div class='pre p1 fill-light mt0'>set $defaultValue</div>
+  
+  
+
+  
+  
+  
+  
+  
+  
+
+  
+    <div class='py1 quiet mt1 prose-big'>Parameters</div>
+    <div class='prose'>
+      
+        <div class='space-bottom0'>
+          <div>
+            <span class='code bold'>value</span> <code class='quiet'>(any)</code>
+	    
+          </div>
+          
+        </div>
+      
+    </div>
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+</section>
+
+      </div>
+    </div>
+  
     <div class='border-bottom' id='htmlinputlikeelementget__value'>
       <div class="clearfix small pointer toggle-sibling">
         <div class="py1 contain">
@@ -9039,6 +9206,274 @@ if specified insert:null, no inserted</p>
   
     <div class='py1 quiet mt1 prose-big'>Instance Members</div>
     <div class="clearfix">
+  
+    <div class='border-bottom' id='htmlinputelementget__valueasdate'>
+      <div class="clearfix small pointer toggle-sibling">
+        <div class="py1 contain">
+            <a class='icon pin-right py1 dark-link caret-right'>▸</a>
+            <span class='code strong strong truncate'>get $valueAsDate</span>
+        </div>
+      </div>
+      <div class="clearfix display-none toggle-target">
+        <section class='p2 mb2 clearfix bg-white minishadow'>
+
+  
+
+  <p>get input value as date</p>
+<p>datetime-like's valueAsDate is UTC timezone, but this property is local timezone</p>
+
+    <div class='pre p1 fill-light mt0'>get $valueAsDate</div>
+  
+  
+
+  
+  
+  
+  
+  
+  
+
+  
+
+  
+
+  
+    
+      <div class='py1 quiet mt1 prose-big'>Returns</div>
+      <code><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date">Date</a></code>:
+        
+      
+    
+  
+
+  
+
+  
+
+  
+    <div class='py1 quiet mt1 prose-big'>Example</div>
+    
+      
+      <pre class='p1 overflow-auto round fill-light'>&lt;input id=<span class="hljs-string">&quot;time&quot;</span> type=<span class="hljs-string">&quot;time&quot;</span>&gt;
+
+$(<span class="hljs-string">&#x27;#time&#x27;</span>).<span class="hljs-property">value</span> = <span class="hljs-string">&#x27;12:34&#x27;</span>;
+$(<span class="hljs-string">&#x27;#time&#x27;</span>).<span class="hljs-property">valueAsDate</span>;     <span class="hljs-comment">// Thu Jan 01 1970 21:34:00 GMT+0900</span>
+$(<span class="hljs-string">&#x27;#time&#x27;</span>).<span class="hljs-property">$valueAsDate</span>;    <span class="hljs-comment">// Thu Jan 01 1970 12:34:00 GMT+0900</span></pre>
+    
+  
+
+  
+
+  
+
+  
+
+  
+</section>
+
+      </div>
+    </div>
+  
+    <div class='border-bottom' id='htmlinputelementset__valueasdate'>
+      <div class="clearfix small pointer toggle-sibling">
+        <div class="py1 contain">
+            <a class='icon pin-right py1 dark-link caret-right'>▸</a>
+            <span class='code strong strong truncate'>set $valueAsDate</span>
+        </div>
+      </div>
+      <div class="clearfix display-none toggle-target">
+        <section class='p2 mb2 clearfix bg-white minishadow'>
+
+  
+
+  <p>set input value as date</p>
+<p>datetime-like's valueAsDate is UTC timezone, but this property is local timezone
+and triming value the format(by step|value)</p>
+
+    <div class='pre p1 fill-light mt0'>set $valueAsDate</div>
+  
+  
+
+  
+  
+  
+  
+  
+  
+
+  
+    <div class='py1 quiet mt1 prose-big'>Parameters</div>
+    <div class='prose'>
+      
+        <div class='space-bottom0'>
+          <div>
+            <span class='code bold'>value</span> <code class='quiet'>(<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date">Date</a>?)</code>
+	    
+          </div>
+          
+        </div>
+      
+    </div>
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <div class='py1 quiet mt1 prose-big'>Example</div>
+    
+      
+      <pre class='p1 overflow-auto round fill-light'>&lt;input id=<span class="hljs-string">&quot;time0&quot;</span> type=<span class="hljs-string">&quot;time&quot;</span> step=<span class="hljs-string">&quot;&quot;</span>&gt;
+<span class="language-xml"><span class="hljs-tag">&lt;<span class="hljs-name">input</span> <span class="hljs-attr">id</span>=<span class="hljs-string">&quot;time1&quot;</span> <span class="hljs-attr">type</span>=<span class="hljs-string">&quot;time&quot;</span> <span class="hljs-attr">step</span>=<span class="hljs-string">&quot;1&quot;</span>&gt;</span>
+
+$(&#x27;#time0&#x27;).valueAsDate = new Date(&#x27;2014-12-24T12:34:56.789&#x27;);
+$(&#x27;#time1&#x27;).valueAsDate = new Date(&#x27;2014-12-24T12:34:56.789&#x27;);
+$(&#x27;#time0&#x27;).value; // &#x27;03:34:56.789&#x27;
+$(&#x27;#time1&#x27;).value; // &#x27;03:34:56.789&#x27;
+
+$(&#x27;#time0&#x27;).$valueAsDate = new Date(&#x27;2014-12-24T12:34:56.789&#x27;);
+$(&#x27;#time1&#x27;).$valueAsDate = new Date(&#x27;2014-12-24T12:34:56.789&#x27;);
+$(&#x27;#time0&#x27;).value; // &#x27;12:34&#x27;
+$(&#x27;#time1&#x27;).value; // &#x27;12:34:56&#x27;</span></pre>
+    
+  
+
+  
+
+  
+
+  
+
+  
+</section>
+
+      </div>
+    </div>
+  
+    <div class='border-bottom' id='htmlinputelementget__valueasnumber'>
+      <div class="clearfix small pointer toggle-sibling">
+        <div class="py1 contain">
+            <a class='icon pin-right py1 dark-link caret-right'>▸</a>
+            <span class='code strong strong truncate'>get $valueAsNumber</span>
+        </div>
+      </div>
+      <div class="clearfix display-none toggle-target">
+        <section class='p2 mb2 clearfix bg-white minishadow'>
+
+  
+
+  <p>get input value as number</p>
+<p>datetime-like delegates to $valueAsDate, and other work the same as native</p>
+
+    <div class='pre p1 fill-light mt0'>get $valueAsNumber</div>
+  
+  
+
+  
+  
+  
+  
+  
+  
+
+  
+
+  
+
+  
+    
+      <div class='py1 quiet mt1 prose-big'>Returns</div>
+      <code><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a></code>:
+        
+      
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+</section>
+
+      </div>
+    </div>
+  
+    <div class='border-bottom' id='htmlinputelementset__valueasnumber'>
+      <div class="clearfix small pointer toggle-sibling">
+        <div class="py1 contain">
+            <a class='icon pin-right py1 dark-link caret-right'>▸</a>
+            <span class='code strong strong truncate'>set $valueAsNumber</span>
+        </div>
+      </div>
+      <div class="clearfix display-none toggle-target">
+        <section class='p2 mb2 clearfix bg-white minishadow'>
+
+  
+
+  <p>set input value as number</p>
+<p>datetime-like delegates to $valueAsDate, and other work the same as native</p>
+
+    <div class='pre p1 fill-light mt0'>set $valueAsNumber</div>
+  
+  
+
+  
+  
+  
+  
+  
+  
+
+  
+    <div class='py1 quiet mt1 prose-big'>Parameters</div>
+    <div class='prose'>
+      
+        <div class='space-bottom0'>
+          <div>
+            <span class='code bold'>value</span> <code class='quiet'>(<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</a>?)</code>
+	    
+          </div>
+          
+        </div>
+      
+    </div>
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+</section>
+
+      </div>
+    </div>
   
     <div class='border-bottom' id='htmlinputelementradionodelist'>
       <div class="clearfix small pointer toggle-sibling">
