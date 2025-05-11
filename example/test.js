@@ -2222,6 +2222,14 @@ document.addEventListener('DOMContentLoaded', function () {
                             'b': 'a',
                         },
                     });
+
+                    this.element.$data.$json = {
+                        'array': ['a', 'b', 'c'],
+                    };
+                    expect(this.element.getAttribute('data-json')).toEqual('{"array":["a","b","c"]}');
+                    expect(this.element.$data.$json).toEqual({
+                        'array': ['a', 'b', 'c'],
+                    });
                 });
                 it('$style', async function () {
                     expect('hoge' in this.element.$style).toEqual(false);
@@ -2630,6 +2638,63 @@ document.addEventListener('DOMContentLoaded', function () {
                         files: {},
                         body: 'form=form&a=A&b=B',
                     });
+                });
+            });
+
+            describe('HTMLInputElement', function () {
+                beforeEach(function () {
+                    this.checkboxes = $(`<input class="test-total-checkbox" type="checkbox">
+                    <input class="test-parent1-checkbox" type="checkbox">
+                      <input class="test-child1-checkbox" type="checkbox">
+                      <input class="test-child1-checkbox" type="checkbox">
+                    <input class="test-parent2-checkbox" type="checkbox">
+                      <input class="test-child2-checkbox" type="checkbox">
+                      <input class="test-child2-checkbox" type="checkbox">
+                    `);
+                    document.body.append(...this.checkboxes);
+                });
+                afterEach(function () {
+                    this.checkboxes.remove();
+                });
+
+                it('$interlock', async function () {
+                    const total = this.checkboxes.$matches('.test-total-checkbox');
+                    const parent1 = this.checkboxes.$matches('.test-parent1-checkbox');
+                    const parent2 = this.checkboxes.$matches('.test-parent2-checkbox');
+                    const child1s = this.checkboxes.$filter('.test-child1-checkbox');
+                    const child2s = this.checkboxes.$filter('.test-child2-checkbox');
+                    
+                    total.$interlock('.test-parent1-checkbox,.test-parent2-checkbox');
+                    parent1.$interlock('.test-child1-checkbox');
+                    parent2.$interlock('.test-child2-checkbox');
+
+                    parent1.checked = true;
+                    parent1.$trigger('change');
+
+                    expect(total.checked).toEqual(false);
+                    expect(total.indeterminate).toEqual(true);
+                    expect(child1s.checked).toEqual([true, true]);
+
+                    parent2.checked = true;
+                    parent2.$trigger('change');
+
+                    expect(total.checked).toEqual(true);
+                    expect(total.indeterminate).toEqual(false);
+                    expect(child2s.checked).toEqual([true, true]);
+
+                    child1s[0].checked = false;
+                    child1s[0].$trigger('change');
+
+                    expect(total.indeterminate).toEqual(false);
+                    expect(parent1.checked).toEqual(true);
+                    expect(parent1.indeterminate).toEqual(true);
+
+                    child2s.checked = false;
+                    child2s.$trigger('change');
+
+                    expect(total.indeterminate).toEqual(true);
+                    expect(parent2.checked).toEqual(false);
+                    expect(parent2.indeterminate).toEqual(false);
                 });
             });
 
@@ -3102,12 +3167,18 @@ document.addEventListener('DOMContentLoaded', function () {
                         <option value="x" title="X">X</option>
                     `.replaceAll(/\n\s+/g, ''));
 
+                    expect(strip(this.datalist.$options({
+                        a: {label: 'A', title: 'AAA'},
+                        x: {label: 'X', 'data-custom': 'custom'},
+                    })).innerHTML).toEqual(`
+                        <option label="A" title="AAA" value="a">A</option>
+                        <option label="X" data-custom="custom" value="x" title="X">X</option>
+                    `.replaceAll(/\n\s+/g, ''));
+
                     const options = {
                         y: 'Y',
-                        group: {
-                            g1: 'G1',
-                            g2: 'G2',
-                        },
+                        g1: {label: 'G1', optgroup: 'group'},
+                        g2: {label: 'G2', optgroup: 'group'},
                         array: [
                             document.$createElement('option', {value: 'a1', label: 'A1'}),
                             document.$createElement('hr'),
@@ -3118,8 +3189,8 @@ document.addEventListener('DOMContentLoaded', function () {
                     expect(strip(this.multiple.$options(options, false).$resetAttribute()).innerHTML).toEqual(`
                         <option value="y" title="Y">Y</option>
                         <optgroup label="group">
-                            <option value="g1" title="G1">G1</option>
-                            <option value="g2" title="G2">G2</option>
+                            <option label="G1" value="g1" title="G1">G1</option>
+                            <option label="G2" value="g2" title="G2">G2</option>
                         </optgroup>
                         <optgroup label="array">
                             <option value="a1" label="A1"></option>
@@ -3131,12 +3202,12 @@ document.addEventListener('DOMContentLoaded', function () {
                     this.multiple.$value = 'g1';
                     expect(strip(this.multiple.$options(options).$resetAttribute()).innerHTML).toEqual(`
                         <optgroup label="group">
-                            <option value="g1" title="G1" selected="">G1</option>
+                            <option label="G1" value="g1" title="G1" selected="">G1</option>
                         </optgroup>
                         <hr class="kQuery-option-separator">
                         <option value="y" title="Y">Y</option>
                         <optgroup label="group">
-                            <option value="g2" title="G2">G2</option>
+                            <option label="G2" value="g2" title="G2">G2</option>
                         </optgroup>
                         <optgroup label="array">
                             <option value="a1" label="A1"></option>
@@ -3148,8 +3219,8 @@ document.addEventListener('DOMContentLoaded', function () {
                     this.multiple.$value = ['g1', 'g2'];
                     expect(strip(this.multiple.$options(options).$resetAttribute()).innerHTML).toEqual(`
                         <optgroup label="group">
-                            <option value="g1" title="G1" selected="">G1</option>
-                            <option value="g2" title="G2" selected="">G2</option>
+                            <option label="G1" value="g1" title="G1" selected="">G1</option>
+                            <option label="G2" value="g2" title="G2" selected="">G2</option>
                         </optgroup>
                         <hr class="kQuery-option-separator">
                         <option value="y" title="Y">Y</option>
@@ -3740,7 +3811,7 @@ after-text`);
                     this.container.$('.set-options[data-preserve="prepend"]').click();
 
                     expect(this.container.$('select[multiple]').$value).toEqual(['ga', 'gb']);
-                    expect(this.container.$('select[multiple]').innerHTML).toContain('<optgroup label="group"><option value="ga" title="GroupA">GroupA</option><option value="gb" title="GroupB">GroupB</option></optgroup>');
+                    expect(this.container.$('select[multiple]').innerHTML).toContain('<optgroup label="group"><option label="GroupA" value="ga" title="GroupA">GroupA</option><option label="GroupB" value="gb" title="GroupB">GroupB</option></optgroup>');
                 });
                 it('$request', async function () {
                     this.container.$('.request').click();
@@ -3803,6 +3874,9 @@ after-text`);
                     expect(newhtml).toContain('"index":"1"');
                     expect(newhtml).toContain('"index":"2"');
                     expect(newhtml).toContain('"index":"3"');
+                });
+                it('$listen', async function () {
+                    expect(this.container.$('#sse span').textContent).toContain('pong');
                 });
             });
 

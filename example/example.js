@@ -27,28 +27,32 @@
             };
         };
 
+        const hiddenRule = document.$createCSSRule();
+        hiddenRule.selectorText = '.kQuery-example-hidden';
+        hiddenRule.$style = {
+            display: 'none!important',
+        };
+
         return {
             // example: register custom prototype
-            [[Element.name, kQuery.API.$NodeList.name]]: function () {
-                return {
-                    $show() {
-                        return this.$toggle(true);
-                    },
-                    $hide() {
-                        return this.$toggle(false);
-                    },
-                    $toggle(display) {
-                        display ??= !this.checkVisibility();
-                        if (display) {
-                            this.classList.remove('kQuery-example-hidden');
-                        }
-                        else {
-                            this.classList.add('kQuery-example-hidden');
-                        }
-                        return this;
-                    },
-                };
-            }(),
+            [[Element.name, kQuery.API.$NodeList.name]]: {
+                $show() {
+                    return this.$toggle(true);
+                },
+                $hide() {
+                    return this.$toggle(false);
+                },
+                $toggle(display) {
+                    display ??= !this.checkVisibility();
+                    if (display) {
+                        this.classList.remove('kQuery-example-hidden');
+                    }
+                    else {
+                        this.classList.add('kQuery-example-hidden');
+                    }
+                    return this;
+                },
+            },
         };
     });
 })();

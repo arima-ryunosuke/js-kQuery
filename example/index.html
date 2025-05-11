@@ -102,10 +102,6 @@
                 opacity: 0.7;
             }
         }
-
-        .kQuery-example-hidden {
-            display: none !important;
-        }
     </style>
     <!-- for dist
     <script src="../dist/kQuery-full.min.js" data-kQuery-debug="true" data-kQuery-log-level="7"></script>
@@ -191,6 +187,7 @@
             <button type="button" class="data-apply">data apply</button>
             <button type="button" class="data-assign">data assign</button>
             <button type="button" class="data-function">data function</button>
+            <button type="button" class="data-json">data $json</button>
             <br>
             <button type="button" class="style">style</button>
             <button type="button" class="style-apply">style apply</button>
@@ -293,6 +290,22 @@
                     };
                     output.textContent = input.innerHTML;
                     console.log(container.$$('input')[1].$data('hogeyo'));
+                });
+                container.$on('click', '.data-json', function () {
+                    container.$$('input').$data = {
+                        hoge: JSON.stringify({
+                            bar: 'bar',
+                            barBaz: 'barBaz',
+                            'bar-baz': 'bar-baz',
+                        }),
+                    };
+                    container.$$('input').$data.$hoge = {
+                        bar: 'bar',
+                        barBaz: 'barBaz',
+                        'bar-baz': 'bar-baz',
+                    };
+                    output.textContent = input.innerHTML;
+                    console.log(container.$$('input')[0].$data.$hoge);
                 });
                 container.$on('click', '.style', function () {
                     container.$$('input').$style.backgroundColor = 'red';
@@ -817,14 +830,12 @@
                     const randomB = 20 + Math.round(Math.random() * 10);
                     input.$$('select,datalist').$options({
                         flat: 'Flat',
-                        group: {
-                            ga: "GroupA",
-                            gb: "GroupB",
-                        },
-                        random: {
-                            [randomA]: `random${randomA}`,
-                            [randomB]: `random${randomB}`,
-                        },
+                        ga: {label: "GroupA", optgroup: 'group'},
+                        gb: {label: "GroupB", optgroup: 'group'},
+                        random: [
+                            {value: randomA, label: `random${randomA}`},
+                            {value: randomB, label: `random${randomB}`},
+                        ],
                     }, e.target.dataset.preserve);
                     output.textContent = input.innerHTML;
                 });
@@ -1095,6 +1106,13 @@
             <span data-index="1">initial span1</span><br>
             <span data-index="2">initial span2</span><br>
             <span data-index="3">initial span3</span><br>
+            <br>
+            <div id="sse">
+                <span></span>
+                <div data-sse="1"></div>
+                <div data-sse="2"></div>
+                <div data-sse="3"></div>
+            </div>
         </div>
 
         <output class="output"></output>
@@ -1105,12 +1123,25 @@
                 const input = container.$('.input');
                 const output = container.$('.output');
 
+                input.$('#sse').$listen('sse.php#ping', function (e) {
+                    this.$('span').textContent = e.data;
+                    console.log(e.data);
+                });
+                input.$$('[data-sse]').$listen('sse.php', function (e) {
+                    this.__called ??= 0;
+                    if (++this.__called >= this.dataset.sse) {
+                        this.remove();
+                    }
+                    this.textContent = e.data;
+                    console.log(e.data);
+                });
+
                 container.$on('click', '.load-get', async function () {
-                    await input.$$('span')[0].$load('response.php');
+                    await input.$$('[data-index]')[0].$load('response.php');
                     output.textContent += `$load: done\n`;
                 });
                 container.$on('click', '.load-gets', async function () {
-                    await input.$$('span').$load('response.php', {
+                    await input.$$('[data-index]').$load('response.php', {
                         data: {
                             index: (node) => node.dataset.index,
                         },
@@ -1118,7 +1149,7 @@
                     output.textContent += `$load: done\n`;
                 });
                 container.$on('click', '.load-posts', async function () {
-                    await input.$$('span').$load('response.php', {
+                    await input.$$('[data-index]').$load('response.php', {
                         method: 'post',
                         data: {
                             additional: 'data',
@@ -1143,6 +1174,16 @@
 
         <div>
             <button type="button" class="window-open">window open</button>
+            <br>
+            <input class="total-checkbox" type="checkbox"><br>
+            <input class="parent1-checkbox" type="checkbox">
+            <input class="child1-checkbox" type="checkbox">
+            <input class="child1-checkbox" type="checkbox" checked>
+            <input class="child1-checkbox" type="checkbox"><br>
+            <input class="parent2-checkbox" type="checkbox">
+            <input class="child2-checkbox" type="checkbox">
+            <input class="child2-checkbox" type="checkbox" checked>
+            <input class="child2-checkbox" type="checkbox"><br>
             <br>
             <input id="local-datetime" type="datetime-local" class="datetime-like">
             <button type="button" class="value-as-date" data-native="1">valueAsDate</button>
@@ -1214,6 +1255,10 @@
             (async function () {
                 const container = document.$('.utility');
                 const output = container.$('.output');
+
+                container.$('.total-checkbox').$interlock('.parent1-checkbox,.parent2-checkbox');
+                container.$('.parent1-checkbox').$interlock('.child1-checkbox');
+                container.$('.parent2-checkbox').$interlock('.child2-checkbox');
 
                 container.$on('click', '.window-open', async function () {
                     window.$open({url: document.location.href});
