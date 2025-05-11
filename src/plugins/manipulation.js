@@ -6,6 +6,7 @@ import {$NodeList, F, WeakMap} from '../API.js';
  * @ignore
  */
 export function manipulation(kQuery) {
+    const styleSheetMap = new Map();
     const renderedNodes = new WeakMap();
     const normalizeNodes = function (nodes) {
         return [...nodes].flatMap(node => node instanceof NodeList ? [...node] : node);
@@ -148,6 +149,33 @@ export function manipulation(kQuery) {
                 element.$append(...children);
 
                 return element;
+            },
+            /**
+             * create CSSRule
+             *
+             * - CSSRule is live, to change...
+             *   - cssRule.selectorText = 'span[attr=value]'
+             *   - cssRule.styleMap.set('color', 'red')
+             *   - cssRule.style.setProperty('color', 'red', 'important')
+             *   - or same as Element.$style
+             *     - cssRule.$style({color: 'red'})
+             *
+             * @param {?String} [media]
+             * @return {CSSRule|CSSStyleRule}
+             */
+            $createCSSRule(media) {
+                if (!styleSheetMap.has(media)) {
+                    const styleSheet = new CSSStyleSheet({
+                        baseURL: this.location.href,
+                        media: media,
+                    });
+                    styleSheetMap.set(media, styleSheet);
+                    this.adoptedStyleSheets = [...this.adoptedStyleSheets, styleSheet];
+                }
+
+                const styleSheet = styleSheetMap.get(media);
+                const index = styleSheet.insertRule(':root {}');
+                return styleSheet.cssRules.item(index);
             },
         },
         [[HTMLTemplateElement.name, $NodeList.name]]: /** @lends HTMLTemplateElement.prototype */{

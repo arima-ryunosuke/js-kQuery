@@ -1,4 +1,4 @@
-import {$NodeList, F, Nullable, ObjectStorage, Proxy} from '../API.js';
+import {$CSSRuleList, $NodeList, F, Nullable, ObjectStorage, Proxy} from '../API.js';
 
 /**
  * @param {KQuery} kQuery
@@ -277,6 +277,81 @@ export function attributes(kQuery) {
                 this.$data(value);
             },
             /**
+             * simple accessor to DOMTokenList(classList)
+             *
+             * @descriptor get
+             *
+             * @return {Object|Function}
+             *
+             * @example
+             * $$('input').$class.name;             // getter(always boolean)
+             * $$('input').$class.name = 'flag';    // setter(cast to boolean)
+             * $$('input').$class({name: 'flag'});  // mass setting(keep other)
+             * $$('input').$class();                // get all keys array
+             *
+             * @example
+             * // object|array is treated like vue.js
+             * $$('input').$class({name: false});
+             * $$('input').$class([{name: false}, 'other']);
+             */
+            get $class() {
+                return nodeStorage.getOrSet(this, 'classList', (node, name) => new Proxy(function $Class() {}, new class extends ProxyProperty {
+                    _hasValue(property) {
+                        return node.classList.contains(property);
+                    }
+
+                    _getString() {
+                        return node.classList.value;
+                    }
+
+                    _getValue(property, value) {
+                        return node.classList.contains(property);
+                    }
+
+                    _deleteValue(property, value) {
+                        node.classList.remove(property);
+                    }
+
+                    _applyGet() {
+                        return [...node.classList.values()];
+                    }
+
+                    _applySet(object) {
+                        for (const [token, flag] of F.objectToEntries(F.objectToClasses(object))) {
+                            node.classList.toggle(token, flag);
+                        }
+                    }
+                }(node, name)));
+            },
+            /**
+             * mass assign DOMTokenList(classList)
+             *
+             * @descriptor set
+             *
+             * @param {Object|Array} value
+             *
+             * @example
+             * $$('input').$class = {name: 'flag'};                // mass assign(delete other)
+             * $$('input').$class = (node, i) => ({name: 'flag'}); // mass assign by callback(delete other)
+             */
+            set $class(value) {
+                kQuery.logger.assertInstanceOf(value, Nullable, String, Object, Array)();
+
+                // null guard for function return (void). keep current values
+                if (value == null) {
+                    return;
+                }
+
+                this.classList.value = '';
+
+                // noinspection JSValidateTypes
+                this.$class(value);
+            },
+        },
+        [[Element.name, CSSStyleRule.name, $NodeList.name, $CSSRuleList.name]]: /**
+         @lends CSSStyleRule.prototype
+         @lends Element.prototype*/ {
+            /**
              * simple accessor to CSSStyleDeclaration(style)
              *
              * @descriptor get
@@ -374,81 +449,10 @@ export function attributes(kQuery) {
                     return;
                 }
 
-                this.setAttribute('style', '');
+                this.style.cssText = '';
 
                 // noinspection JSValidateTypes
                 this.$style(value);
-            },
-            /**
-             * simple accessor to DOMTokenList(classList)
-             *
-             * @descriptor get
-             *
-             * @return {Object|Function}
-             *
-             * @example
-             * $$('input').$class.name;             // getter(always boolean)
-             * $$('input').$class.name = 'flag';    // setter(cast to boolean)
-             * $$('input').$class({name: 'flag'});  // mass setting(keep other)
-             * $$('input').$class();                // get all keys array
-             *
-             * @example
-             * // object|array is treated like vue.js
-             * $$('input').$class({name: false});
-             * $$('input').$class([{name: false}, 'other']);
-             */
-            get $class() {
-                return nodeStorage.getOrSet(this, 'classList', (node, name) => new Proxy(function $Class() {}, new class extends ProxyProperty {
-                    _hasValue(property) {
-                        return node.classList.contains(property);
-                    }
-
-                    _getString() {
-                        return node.classList.value;
-                    }
-
-                    _getValue(property, value) {
-                        return node.classList.contains(property);
-                    }
-
-                    _deleteValue(property, value) {
-                        node.classList.remove(property);
-                    }
-
-                    _applyGet() {
-                        return [...node.classList.values()];
-                    }
-
-                    _applySet(object) {
-                        for (const [token, flag] of F.objectToEntries(F.objectToClasses(object))) {
-                            node.classList.toggle(token, flag);
-                        }
-                    }
-                }(node, name)));
-            },
-            /**
-             * mass assign DOMTokenList(classList)
-             *
-             * @descriptor set
-             *
-             * @param {Object|Array} value
-             *
-             * @example
-             * $$('input').$class = {name: 'flag'};                // mass assign(delete other)
-             * $$('input').$class = (node, i) => ({name: 'flag'}); // mass assign by callback(delete other)
-             */
-            set $class(value) {
-                kQuery.logger.assertInstanceOf(value, Nullable, String, Object, Array)();
-
-                // null guard for function return (void). keep current values
-                if (value == null) {
-                    return;
-                }
-
-                this.classList.value = '';
-
-                // noinspection JSValidateTypes
-                this.$class(value);
             },
         },
     };

@@ -10,6 +10,9 @@ export const AsyncGeneratorFunction = (async function* () {}).constructor;
 export const $NodeList = function () {
     return [NodeList.name, HTMLCollection.name];
 };
+export const $CSSRuleList = function () {
+    return [CSSRuleList.name];
+};
 export const $FileList = function () {
     return [FileList.name];
 };
