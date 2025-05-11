@@ -96,6 +96,9 @@ import {traversing} from './src/plugins/traversing.js';
  * @typedef {DOMRectReadOnly} DOMRectReadOnly
  */
 /**
+ * @typedef {CSSStyleRule} CSSStyleRule
+ */
+/**
  * @typedef {NodeList} NodeList
  */
 /**

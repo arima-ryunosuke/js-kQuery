@@ -158,6 +158,12 @@
                         $createElement</a>
                         <small>create Element from tag, attributes, children</small></li>
                       
+                      <li><a
+                        href='#documentcreatecssrule'
+                        class='regular pre-open'>
+                        $createCSSRule</a>
+                        <small>create CSSRule</small></li>
+                      
                     </ul>
                   
                   
@@ -321,6 +327,12 @@
                         <small>unwrap children</small></li>
                       
                       <li><a
+                        href='#nodelisten'
+                        class='regular pre-open'>
+                        $listen</a>
+                        <small>listen SSE event</small></li>
+                      
+                      <li><a
                         href='#nodeget__window'
                         class='regular pre-open'>
                         get $window</a>
@@ -438,18 +450,6 @@
                         <small>mass assign DOMStringMap(dataset)</small></li>
                       
                       <li><a
-                        href='#elementget__style'
-                        class='regular pre-open'>
-                        get $style</a>
-                        <small>simple accessor to CSSStyleDeclaration(style)</small></li>
-                      
-                      <li><a
-                        href='#elementset__style'
-                        class='regular pre-open'>
-                        set $style</a>
-                        <small>mass assign CSSStyleDeclaration(style)</small></li>
-                      
-                      <li><a
                         href='#elementget__class'
                         class='regular pre-open'>
                         get $class</a>
@@ -460,6 +460,18 @@
                         class='regular pre-open'>
                         set $class</a>
                         <small>mass assign DOMTokenList(classList)</small></li>
+                      
+                      <li><a
+                        href='#elementget__style'
+                        class='regular pre-open'>
+                        get $style</a>
+                        <small>simple accessor to CSSStyleDeclaration(style)</small></li>
+                      
+                      <li><a
+                        href='#elementset__style'
+                        class='regular pre-open'>
+                        set $style</a>
+                        <small>mass assign CSSStyleDeclaration(style)</small></li>
                       
                       <li><a
                         href='#elementwillchange'
@@ -981,6 +993,12 @@
                         <small>set input value as number</small></li>
                       
                       <li><a
+                        href='#htmlinputelementinterlock'
+                        class='regular pre-open'>
+                        $interlock</a>
+                        <small>synchronous checked</small></li>
+                      
+                      <li><a
                         href='#htmlinputelementradionodelist'
                         class='regular pre-open'>
                         $radioNodeList</a>
@@ -1180,6 +1198,16 @@
                   
                   
                 </div>
+                
+                </li>
+              
+                
+                <li><a
+                  href='#cssstylerule'
+                  class="">
+                  CSSStyleRule
+                  
+                </a>
                 
                 </li>
               
@@ -2346,6 +2374,89 @@ eventdata is live, changing it changes the handler itself</p>
 <span class="hljs-variable language_">document</span>.$createElement(<span class="hljs-string">&#x27;span#id.c1.c2[a=A][b=B]&#x27;</span>);
 <span class="hljs-comment">// &lt;span id=&quot;id&quot; class=&quot;c1 c2&quot; a=&quot;A&quot; b=&quot;B&quot;&gt;&lt;/span&gt;</span></pre>
     
+  
+
+  
+
+  
+
+  
+
+  
+</section>
+
+      </div>
+    </div>
+  
+    <div class='border-bottom' id='documentcreatecssrule'>
+      <div class="clearfix small pointer toggle-sibling">
+        <div class="py1 contain">
+            <a class='icon pin-right py1 dark-link caret-right'>▸</a>
+            <span class='code strong strong truncate'>$createCSSRule(media?)</span>
+        </div>
+      </div>
+      <div class="clearfix display-none toggle-target">
+        <section class='p2 mb2 clearfix bg-white minishadow'>
+
+  
+
+  <p>create CSSRule</p>
+<ul>
+<li>CSSRule is live, to change...
+<ul>
+<li>cssRule.selectorText = 'span[attr=value]'</li>
+<li>cssRule.styleMap.set('color', 'red')</li>
+<li>cssRule.style.setProperty('color', 'red', 'important')</li>
+<li>or same as Element.$style
+<ul>
+<li>cssRule.$style({color: 'red'})</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+    <div class='pre p1 fill-light mt0'>$createCSSRule(media: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>??): (CSSRule | <a href="#cssstylerule">CSSStyleRule</a>)</div>
+  
+  
+
+  
+  
+  
+  
+  
+  
+
+  
+    <div class='py1 quiet mt1 prose-big'>Parameters</div>
+    <div class='prose'>
+      
+        <div class='space-bottom0'>
+          <div>
+            <span class='code bold'>media</span> <code class='quiet'>(<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>??)</code>
+	    
+          </div>
+          
+        </div>
+      
+    </div>
+  
+
+  
+
+  
+    
+      <div class='py1 quiet mt1 prose-big'>Returns</div>
+      <code>(CSSRule | <a href="#cssstylerule">CSSStyleRule</a>)</code>:
+        
+      
+    
+  
+
+  
+
+  
+
   
 
   
@@ -3958,6 +4069,100 @@ $(<span class="hljs-string">&#x27;div&#x27;</span>).$unwrapChildren();
       </div>
     </div>
   
+    <div class='border-bottom' id='nodelisten'>
+      <div class="clearfix small pointer toggle-sibling">
+        <div class="py1 contain">
+            <a class='icon pin-right py1 dark-link caret-right'>▸</a>
+            <span class='code strong strong truncate'>$listen(url, listener, options)</span>
+        </div>
+      </div>
+      <div class="clearfix display-none toggle-target">
+        <section class='p2 mb2 clearfix bg-white minishadow'>
+
+  
+
+  <p>listen SSE event</p>
+<ul>
+<li>same url connection is shared
+<ul>
+<li>when all dom were deleted, close connection</li>
+</ul>
+</li>
+<li>url's hash means eventName</li>
+</ul>
+
+    <div class='pre p1 fill-light mt0'>$listen(url: (<a href="https://developer.mozilla.org/docs/Web/API/URL/URL">URL</a> | <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>), listener: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Statements/function">Function</a>, options: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>): this</div>
+  
+  
+
+  
+  
+  
+  
+  
+  
+
+  
+    <div class='py1 quiet mt1 prose-big'>Parameters</div>
+    <div class='prose'>
+      
+        <div class='space-bottom0'>
+          <div>
+            <span class='code bold'>url</span> <code class='quiet'>((<a href="https://developer.mozilla.org/docs/Web/API/URL/URL">URL</a> | <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>))</code>
+	    
+          </div>
+          
+        </div>
+      
+        <div class='space-bottom0'>
+          <div>
+            <span class='code bold'>listener</span> <code class='quiet'>(<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Statements/function">Function</a>)</code>
+	    
+          </div>
+          
+        </div>
+      
+        <div class='space-bottom0'>
+          <div>
+            <span class='code bold'>options</span> <code class='quiet'>(<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>
+            = <code>{}</code>)</code>
+	    
+          </div>
+          
+        </div>
+      
+    </div>
+  
+
+  
+
+  
+    
+      <div class='py1 quiet mt1 prose-big'>Returns</div>
+      <code>this</code>:
+        
+      
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+</section>
+
+      </div>
+    </div>
+  
     <div class='border-bottom' id='nodeget__window'>
       <div class="clearfix small pointer toggle-sibling">
         <div class="py1 contain">
@@ -5105,6 +5310,145 @@ $$(<span class="hljs-string">&#x27;input&#x27;</span>).<span class="hljs-propert
       </div>
     </div>
   
+    <div class='border-bottom' id='elementget__class'>
+      <div class="clearfix small pointer toggle-sibling">
+        <div class="py1 contain">
+            <a class='icon pin-right py1 dark-link caret-right'>▸</a>
+            <span class='code strong strong truncate'>get $class</span>
+        </div>
+      </div>
+      <div class="clearfix display-none toggle-target">
+        <section class='p2 mb2 clearfix bg-white minishadow'>
+
+  
+
+  <p>simple accessor to DOMTokenList(classList)</p>
+
+    <div class='pre p1 fill-light mt0'>get $class</div>
+  
+  
+
+  
+  
+  
+  
+  
+  
+
+  
+
+  
+
+  
+    
+      <div class='py1 quiet mt1 prose-big'>Returns</div>
+      <code>(<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a> | <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Statements/function">Function</a>)</code>:
+        
+      
+    
+  
+
+  
+
+  
+
+  
+    <div class='py1 quiet mt1 prose-big'>Example</div>
+    
+      
+      <pre class='p1 overflow-auto round fill-light'>$$(<span class="hljs-string">&#x27;input&#x27;</span>).<span class="hljs-property">$class</span>.<span class="hljs-property">name</span>;             <span class="hljs-comment">// getter(always boolean)</span>
+$$(<span class="hljs-string">&#x27;input&#x27;</span>).<span class="hljs-property">$class</span>.<span class="hljs-property">name</span> = <span class="hljs-string">&#x27;flag&#x27;</span>;    <span class="hljs-comment">// setter(cast to boolean)</span>
+$$(<span class="hljs-string">&#x27;input&#x27;</span>).$class({<span class="hljs-attr">name</span>: <span class="hljs-string">&#x27;flag&#x27;</span>});  <span class="hljs-comment">// mass setting(keep other)</span>
+$$(<span class="hljs-string">&#x27;input&#x27;</span>).$class();                <span class="hljs-comment">// get all keys array</span></pre>
+    
+      
+      <pre class='p1 overflow-auto round fill-light'><span class="hljs-comment">// object|array is treated like vue.js</span>
+$$(<span class="hljs-string">&#x27;input&#x27;</span>).$class({<span class="hljs-attr">name</span>: <span class="hljs-literal">false</span>});
+$$(<span class="hljs-string">&#x27;input&#x27;</span>).$class([{<span class="hljs-attr">name</span>: <span class="hljs-literal">false</span>}, <span class="hljs-string">&#x27;other&#x27;</span>]);</pre>
+    
+  
+
+  
+
+  
+
+  
+
+  
+</section>
+
+      </div>
+    </div>
+  
+    <div class='border-bottom' id='elementset__class'>
+      <div class="clearfix small pointer toggle-sibling">
+        <div class="py1 contain">
+            <a class='icon pin-right py1 dark-link caret-right'>▸</a>
+            <span class='code strong strong truncate'>set $class</span>
+        </div>
+      </div>
+      <div class="clearfix display-none toggle-target">
+        <section class='p2 mb2 clearfix bg-white minishadow'>
+
+  
+
+  <p>mass assign DOMTokenList(classList)</p>
+
+    <div class='pre p1 fill-light mt0'>set $class</div>
+  
+  
+
+  
+  
+  
+  
+  
+  
+
+  
+    <div class='py1 quiet mt1 prose-big'>Parameters</div>
+    <div class='prose'>
+      
+        <div class='space-bottom0'>
+          <div>
+            <span class='code bold'>value</span> <code class='quiet'>((<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a> | <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a>))</code>
+	    
+          </div>
+          
+        </div>
+      
+    </div>
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <div class='py1 quiet mt1 prose-big'>Example</div>
+    
+      
+      <pre class='p1 overflow-auto round fill-light'>$$(<span class="hljs-string">&#x27;input&#x27;</span>).<span class="hljs-property">$class</span> = {<span class="hljs-attr">name</span>: <span class="hljs-string">&#x27;flag&#x27;</span>};                <span class="hljs-comment">// mass assign(delete other)</span>
+$$(<span class="hljs-string">&#x27;input&#x27;</span>).<span class="hljs-property">$class</span> = <span class="hljs-function">(<span class="hljs-params">node, i</span>) =&gt;</span> ({<span class="hljs-attr">name</span>: <span class="hljs-string">&#x27;flag&#x27;</span>}); <span class="hljs-comment">// mass assign by callback(delete other)</span></pre>
+    
+  
+
+  
+
+  
+
+  
+
+  
+</section>
+
+      </div>
+    </div>
+  
     <div class='border-bottom' id='elementget__style'>
       <div class="clearfix small pointer toggle-sibling">
         <div class="py1 contain">
@@ -5231,145 +5575,6 @@ $$(<span class="hljs-string">&#x27;input&#x27;</span>).<span class="hljs-propert
       
       <pre class='p1 overflow-auto round fill-light'>$$(<span class="hljs-string">&#x27;input&#x27;</span>).<span class="hljs-property">$style</span> = {<span class="hljs-attr">color</span>: <span class="hljs-string">&#x27;value&#x27;</span>};                <span class="hljs-comment">// mass assign(delete other)</span>
 $$(<span class="hljs-string">&#x27;input&#x27;</span>).<span class="hljs-property">$style</span> = <span class="hljs-function">(<span class="hljs-params">node, i</span>) =&gt;</span> ({<span class="hljs-attr">color</span>: <span class="hljs-string">&#x27;value&#x27;</span>}); <span class="hljs-comment">// mass assign by callback(delete other)</span></pre>
-    
-  
-
-  
-
-  
-
-  
-
-  
-</section>
-
-      </div>
-    </div>
-  
-    <div class='border-bottom' id='elementget__class'>
-      <div class="clearfix small pointer toggle-sibling">
-        <div class="py1 contain">
-            <a class='icon pin-right py1 dark-link caret-right'>▸</a>
-            <span class='code strong strong truncate'>get $class</span>
-        </div>
-      </div>
-      <div class="clearfix display-none toggle-target">
-        <section class='p2 mb2 clearfix bg-white minishadow'>
-
-  
-
-  <p>simple accessor to DOMTokenList(classList)</p>
-
-    <div class='pre p1 fill-light mt0'>get $class</div>
-  
-  
-
-  
-  
-  
-  
-  
-  
-
-  
-
-  
-
-  
-    
-      <div class='py1 quiet mt1 prose-big'>Returns</div>
-      <code>(<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a> | <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Statements/function">Function</a>)</code>:
-        
-      
-    
-  
-
-  
-
-  
-
-  
-    <div class='py1 quiet mt1 prose-big'>Example</div>
-    
-      
-      <pre class='p1 overflow-auto round fill-light'>$$(<span class="hljs-string">&#x27;input&#x27;</span>).<span class="hljs-property">$class</span>.<span class="hljs-property">name</span>;             <span class="hljs-comment">// getter(always boolean)</span>
-$$(<span class="hljs-string">&#x27;input&#x27;</span>).<span class="hljs-property">$class</span>.<span class="hljs-property">name</span> = <span class="hljs-string">&#x27;flag&#x27;</span>;    <span class="hljs-comment">// setter(cast to boolean)</span>
-$$(<span class="hljs-string">&#x27;input&#x27;</span>).$class({<span class="hljs-attr">name</span>: <span class="hljs-string">&#x27;flag&#x27;</span>});  <span class="hljs-comment">// mass setting(keep other)</span>
-$$(<span class="hljs-string">&#x27;input&#x27;</span>).$class();                <span class="hljs-comment">// get all keys array</span></pre>
-    
-      
-      <pre class='p1 overflow-auto round fill-light'><span class="hljs-comment">// object|array is treated like vue.js</span>
-$$(<span class="hljs-string">&#x27;input&#x27;</span>).$class({<span class="hljs-attr">name</span>: <span class="hljs-literal">false</span>});
-$$(<span class="hljs-string">&#x27;input&#x27;</span>).$class([{<span class="hljs-attr">name</span>: <span class="hljs-literal">false</span>}, <span class="hljs-string">&#x27;other&#x27;</span>]);</pre>
-    
-  
-
-  
-
-  
-
-  
-
-  
-</section>
-
-      </div>
-    </div>
-  
-    <div class='border-bottom' id='elementset__class'>
-      <div class="clearfix small pointer toggle-sibling">
-        <div class="py1 contain">
-            <a class='icon pin-right py1 dark-link caret-right'>▸</a>
-            <span class='code strong strong truncate'>set $class</span>
-        </div>
-      </div>
-      <div class="clearfix display-none toggle-target">
-        <section class='p2 mb2 clearfix bg-white minishadow'>
-
-  
-
-  <p>mass assign DOMTokenList(classList)</p>
-
-    <div class='pre p1 fill-light mt0'>set $class</div>
-  
-  
-
-  
-  
-  
-  
-  
-  
-
-  
-    <div class='py1 quiet mt1 prose-big'>Parameters</div>
-    <div class='prose'>
-      
-        <div class='space-bottom0'>
-          <div>
-            <span class='code bold'>value</span> <code class='quiet'>((<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a> | <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a>))</code>
-	    
-          </div>
-          
-        </div>
-      
-    </div>
-  
-
-  
-
-  
-
-  
-
-  
-
-  
-    <div class='py1 quiet mt1 prose-big'>Example</div>
-    
-      
-      <pre class='p1 overflow-auto round fill-light'>$$(<span class="hljs-string">&#x27;input&#x27;</span>).<span class="hljs-property">$class</span> = {<span class="hljs-attr">name</span>: <span class="hljs-string">&#x27;flag&#x27;</span>};                <span class="hljs-comment">// mass assign(delete other)</span>
-$$(<span class="hljs-string">&#x27;input&#x27;</span>).<span class="hljs-property">$class</span> = <span class="hljs-function">(<span class="hljs-params">node, i</span>) =&gt;</span> ({<span class="hljs-attr">name</span>: <span class="hljs-string">&#x27;flag&#x27;</span>}); <span class="hljs-comment">// mass assign by callback(delete other)</span></pre>
     
   
 
@@ -8779,6 +8984,7 @@ if specified insert:null, no inserted</p>
 <li>file(single): must be File|FileList</li>
 <li>file(multiple): must be FileList</li>
 </ul>
+<p>this trigger $change event</p>
 
     <div class='pre p1 fill-light mt0'>set $value</div>
   
@@ -9475,6 +9681,77 @@ $(&#x27;#time1&#x27;).value; // &#x27;12:34:56&#x27;</span></pre>
       </div>
     </div>
   
+    <div class='border-bottom' id='htmlinputelementinterlock'>
+      <div class="clearfix small pointer toggle-sibling">
+        <div class="py1 contain">
+            <a class='icon pin-right py1 dark-link caret-right'>▸</a>
+            <span class='code strong strong truncate'>$interlock(selector?)</span>
+        </div>
+      </div>
+      <div class="clearfix display-none toggle-target">
+        <section class='p2 mb2 clearfix bg-white minishadow'>
+
+  
+
+  <p>synchronous checked</p>
+<p>parent checked -> sync all children checked
+child checked -> sync parent checked/indeterminate</p>
+
+    <div class='pre p1 fill-light mt0'>$interlock(selector: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>?): this</div>
+  
+  
+
+  
+  
+  
+  
+  
+  
+
+  
+    <div class='py1 quiet mt1 prose-big'>Parameters</div>
+    <div class='prose'>
+      
+        <div class='space-bottom0'>
+          <div>
+            <span class='code bold'>selector</span> <code class='quiet'>(<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>?)</code>
+	    
+          </div>
+          
+        </div>
+      
+    </div>
+  
+
+  
+
+  
+    
+      <div class='py1 quiet mt1 prose-big'>Returns</div>
+      <code>this</code>:
+        
+      
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+</section>
+
+      </div>
+    </div>
+  
     <div class='border-bottom' id='htmlinputelementradionodelist'>
       <div class="clearfix small pointer toggle-sibling">
         <div class="py1 contain">
@@ -9661,6 +9938,27 @@ $(&#x27;#time1&#x27;).value; // &#x27;12:34:56&#x27;</span></pre>
 
   
 
+  
+    <div class='py1 quiet mt1 prose-big'>Example</div>
+    
+      
+      <pre class='p1 overflow-auto round fill-light'><span class="hljs-comment">// object mode</span>
+$(<span class="hljs-string">&#x27;select&#x27;</span>).$options({
+    <span class="hljs-attr">a1</span>: <span class="hljs-string">&#x27;A1&#x27;</span>,
+    <span class="hljs-attr">a2</span>: {<span class="hljs-attr">label</span>: <span class="hljs-string">&#x27;A1&#x27;</span>, <span class="hljs-string">&#x27;data-custom&#x27;</span>: <span class="hljs-string">&#x27;custom&#x27;</span>},
+    <span class="hljs-attr">b1</span>: {<span class="hljs-attr">label</span>: <span class="hljs-string">&#x27;B1&#x27;</span>, <span class="hljs-attr">optgroup</span>: <span class="hljs-string">&#x27;optgroup&#x27;</span>},
+    <span class="hljs-attr">b2</span>: {<span class="hljs-attr">label</span>: <span class="hljs-string">&#x27;B2&#x27;</span>, <span class="hljs-attr">optgroup</span>: <span class="hljs-string">&#x27;optgroup&#x27;</span>},
+    <span class="hljs-attr">c1</span>: <span class="hljs-variable language_">document</span>.$createElement(<span class="hljs-string">&#x27;option&#x27;</span>, {<span class="hljs-attr">label</span>: <span class="hljs-string">&#x27;C1&#x27;</span>}),
+});
+<span class="hljs-comment">// array mode</span>
+$(<span class="hljs-string">&#x27;select&#x27;</span>).$options([
+    <span class="hljs-string">&#x27;a1&#x27;</span>,
+    {<span class="hljs-attr">value</span>: <span class="hljs-string">&#x27;a1&#x27;</span>, <span class="hljs-attr">label</span>: <span class="hljs-string">&#x27;A1&#x27;</span>, <span class="hljs-string">&#x27;data-custom&#x27;</span>: <span class="hljs-string">&#x27;custom&#x27;</span>},
+    {<span class="hljs-attr">value</span>: <span class="hljs-string">&#x27;b1&#x27;</span>, <span class="hljs-attr">label</span>: <span class="hljs-string">&#x27;B1&#x27;</span>, <span class="hljs-attr">optgroup</span>: <span class="hljs-string">&#x27;optgroup&#x27;</span>},
+    {<span class="hljs-attr">value</span>: <span class="hljs-string">&#x27;b2&#x27;</span>, <span class="hljs-attr">label</span>: <span class="hljs-string">&#x27;B2&#x27;</span>, <span class="hljs-attr">optgroup</span>: <span class="hljs-string">&#x27;optgroup&#x27;</span>},
+    <span class="hljs-variable language_">document</span>.$createElement(<span class="hljs-string">&#x27;option&#x27;</span>, {<span class="hljs-attr">value</span>: <span class="hljs-string">&#x27;c1&#x27;</span>, <span class="hljs-attr">label</span>: <span class="hljs-string">&#x27;C1&#x27;</span>}),
+]);</pre>
+    
   
 
   
@@ -10810,6 +11108,60 @@ false:
     </div>
   
 </div>
+
+  
+
+  
+
+  
+</section>
+
+          
+        
+          
+          <section class='p2 mb2 clearfix bg-white minishadow'>
+
+  
+  <div class='clearfix'>
+    
+    <h3 class='fl m0' id='cssstylerule'>
+      CSSStyleRule
+    </h3>
+    
+    
+  </div>
+  
+
+  
+    <div class='pre p1 fill-light mt0'>CSSStyleRule</div>
+  
+    <p>
+      Type:
+      <a href="#cssstylerule">CSSStyleRule</a>
+    </p>
+  
+  
+
+  
+  
+  
+  
+  
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
 
   
 

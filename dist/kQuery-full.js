@@ -9,6 +9,7 @@
   // src/API.js
   var API_exports = {};
   __export(API_exports, {
+    $CSSRuleList: () => $CSSRuleList,
     $FileList: () => $FileList,
     $NodeList: () => $NodeList,
     AsyncFunction: () => AsyncFunction,
@@ -46,6 +47,9 @@
   var $NodeList = /* @__PURE__ */ __name(function() {
     return [NodeList.name, HTMLCollection.name];
   }, "$NodeList");
+  var $CSSRuleList = /* @__PURE__ */ __name(function() {
+    return [CSSRuleList.name];
+  }, "$CSSRuleList");
   var $FileList = /* @__PURE__ */ __name(function() {
     return [FileList.name];
   }, "$FileList");
@@ -2072,895 +2076,915 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
         customEvents: {}
       }
     );
-    return {
-      [[EventTarget.name, $NodeList.name]]: function() {
-        const eventDataMap = new WeakMap();
-        const eachType = /* @__PURE__ */ __name(function(allowEmpty, type) {
-          if (type == null) {
-            if (!allowEmpty) {
-              throw new Error(`Empty EventType is only allowed this context`);
-            }
-            return [[null, []]];
-          }
-          return ("" + type).trim().split(/\s+/).map((e) => e.trim().split(".")).map(([t, ...n]) => {
-            if (!allowEmpty && !t.length) {
-              throw new Error(`Empty EventType is only allowed this context`);
-            }
-            return [t, n.filter((e) => e.length)];
-          });
-        }, "eachType");
-        const internalEventName = /* @__PURE__ */ __name(function(type) {
-          if (type in kQuery.customEvents) {
-            type = kQuery.config.customEventPrefix + type;
-          }
-          return type;
-        }, "internalEventName");
-        const emulateDelegationWatcher = new class {
-          constructor() {
-            const querySelectorThisAndAll = /* @__PURE__ */ __name(function(nodelist, selector) {
-              const result = /* @__PURE__ */ new Set();
-              for (const node of nodelist) {
-                if (node instanceof Element) {
-                  if (node.matches(selector)) {
-                    result.add(node);
-                  }
-                  for (const child of node.querySelectorAll(selector)) {
-                    result.add(child);
-                  }
-                }
+    const eventDataMap = new WeakMap();
+    const eachType = /* @__PURE__ */ __name(function(allowEmpty, type) {
+      if (type == null) {
+        if (!allowEmpty) {
+          throw new Error(`Empty EventType is only allowed this context`);
+        }
+        return [[null, []]];
+      }
+      return ("" + type).trim().split(/\s+/).map((e) => e.trim().split(".")).map(([t, ...n]) => {
+        if (!allowEmpty && !t.length) {
+          throw new Error(`Empty EventType is only allowed this context`);
+        }
+        return [t, n.filter((e) => e.length)];
+      });
+    }, "eachType");
+    const internalEventName = /* @__PURE__ */ __name(function(type) {
+      if (type in kQuery.customEvents) {
+        type = kQuery.config.customEventPrefix + type;
+      }
+      return type;
+    }, "internalEventName");
+    const emulateDelegationWatcher = new class {
+      constructor() {
+        const querySelectorThisAndAll = /* @__PURE__ */ __name(function(nodelist, selector) {
+          const result = /* @__PURE__ */ new Set();
+          for (const node of nodelist) {
+            if (node instanceof Element) {
+              if (node.matches(selector)) {
+                result.add(node);
               }
-              return result;
-            }, "querySelectorThisAndAll");
-            this.nodeSelectorCallback = new WeakMap();
-            this.observer = new MutationObserver((entry) => {
-              for (const [node, selectorCallbacks] of this.nodeSelectorCallback.entries()) {
-                for (const { selector, callbacks } of selectorCallbacks) {
-                  for (const child of querySelectorThisAndAll(entry.addedNodes, selector)) {
-                    kQuery.logger.debug(`Insert node to delegation emulation of `, node);
-                    callbacks.insert(child);
-                  }
-                  for (const child of querySelectorThisAndAll(entry.removedNodes, selector)) {
-                    kQuery.logger.debug(`Delete node to delegation emulation of `, node);
-                    callbacks.delete(child);
-                  }
-                }
-              }
-            }, {
-              attributes: false,
-              attributeOldValue: false,
-              characterData: false,
-              characterDataOldValue: false,
-              childList: true,
-              subtree: true
-            });
-          }
-          watch(node, selector, callbacks) {
-            if (selector == null) {
-              callbacks.insert(node);
-            } else {
-              this.nodeSelectorCallback.getOrSet(node, () => []).push({ selector, callbacks });
               for (const child of node.querySelectorAll(selector)) {
-                kQuery.logger.debug(`Initial node to delegation emulation of `, child);
+                result.add(child);
+              }
+            }
+          }
+          return result;
+        }, "querySelectorThisAndAll");
+        this.nodeSelectorCallback = new WeakMap();
+        this.observer = new MutationObserver((entry) => {
+          for (const [node, selectorCallbacks] of this.nodeSelectorCallback.entries()) {
+            for (const { selector, callbacks } of selectorCallbacks) {
+              for (const child of querySelectorThisAndAll(entry.addedNodes, selector)) {
+                kQuery.logger.debug(`Insert node to delegation emulation of `, node);
                 callbacks.insert(child);
               }
-              return this.observer.observe(node);
+              for (const child of querySelectorThisAndAll(entry.removedNodes, selector)) {
+                kQuery.logger.debug(`Delete node to delegation emulation of `, node);
+                callbacks.delete(child);
+              }
             }
           }
-          unwatch(node, selector, callbacks) {
-            if (selector == null) {
-              callbacks.delete(node);
-            } else {
-              this.nodeSelectorCallback.reset(node, (selectorCallbacks) => selectorCallbacks.filter((selectorCallback) => {
-                if (selectorCallback.selector === selector && selectorCallback.callbacks === callbacks) {
-                  kQuery.logger.debug(`Unwatch node to delegation emulation of `, node);
-                  return false;
-                }
-                return true;
-              }));
-            }
+        }, {
+          attributes: false,
+          attributeOldValue: false,
+          characterData: false,
+          characterDataOldValue: false,
+          childList: true,
+          subtree: true
+        });
+      }
+      watch(node, selector, callbacks) {
+        if (selector == null) {
+          callbacks.insert(node);
+        } else {
+          this.nodeSelectorCallback.getOrSet(node, () => []).push({ selector, callbacks });
+          for (const child of node.querySelectorAll(selector)) {
+            kQuery.logger.debug(`Initial node to delegation emulation of `, child);
+            callbacks.insert(child);
           }
-        }();
-        return (
-          /** @lends EventTarget.prototype */
-          {
-            /**
-             * addEventListener
-             *
-             * type format:
-             * - click: single event
-             * - click change: multiple event
-             * - click.ns: single namespace event
-             *
-             * delegation:
-             * - specify selector argument, enable delegation(like jQuery)
-             * - specify options ownself:true, trigger only matched element
-             *   - default ownself:false, trigger until closest
-             * - specify options once:true, trigger event per element only once
-             *
-             * listener(e):
-             * - this: bound target
-             * - e.target: triggered element always
-             * - e.currentTarget: listened element always(=this)
-             * - e.$delegateTarget: selector element delegation only
-             *
-             * misc:
-             * - options is not allowed bool(useCapture). must be Object
-             * - throttle: continual events dispatch interval
-             * - debounce: continual events dispatch after last
-             * - leading: fire at first time
-             * - trailing: fire after last time
-             *
-             * ```
-             *          | throttle | (l)throttle | (t)throttle | (lt)throttle | debounce | (l)debounce | (t)debounce | (lt)debounce |
-             *  leading:|          | fire        |             | fire         |          | fire        |             | fire         |
-             *      100:|          |             |             |              |          |             |             |              |
-             *      200:| fire     | fire        | fire        | fire         |          |             |             |              |
-             *      300:|          |             |             |              |          |             |             |              |
-             *      400:| fire     | fire        | fire        | fire         |          |             |             |              |
-             *      500:|          |             |             |              |          |             |             |              |
-             *      600:| fire     | fire        | fire        | fire         |          |             |             |              |
-             * trailing:|          |             | fire        | fire         |          |             | fire        | fire         |
-             * ```
-             *
-             * @param {String} types
-             * @param {String|Function} selector
-             * @param {Function|Object} [listener]
-             * @param {Object} [options={}]
-             * @return {this}
-             */
-            $on(types, selector, listener, options) {
-              if (typeof selector === "function") {
-                options = listener;
-                listener = selector;
-                selector = null;
+          return this.observer.observe(node);
+        }
+      }
+      unwatch(node, selector, callbacks) {
+        if (selector == null) {
+          callbacks.delete(node);
+        } else {
+          this.nodeSelectorCallback.reset(node, (selectorCallbacks) => selectorCallbacks.filter((selectorCallback) => {
+            if (selectorCallback.selector === selector && selectorCallback.callbacks === callbacks) {
+              kQuery.logger.debug(`Unwatch node to delegation emulation of `, node);
+              return false;
+            }
+            return true;
+          }));
+        }
+      }
+    }();
+    return {
+      [[EventTarget.name, $NodeList.name]]: (
+        /** @lends EventTarget.prototype */
+        {
+          /**
+           * addEventListener
+           *
+           * type format:
+           * - click: single event
+           * - click change: multiple event
+           * - click.ns: single namespace event
+           *
+           * delegation:
+           * - specify selector argument, enable delegation(like jQuery)
+           * - specify options ownself:true, trigger only matched element
+           *   - default ownself:false, trigger until closest
+           * - specify options once:true, trigger event per element only once
+           *
+           * listener(e):
+           * - this: bound target
+           * - e.target: triggered element always
+           * - e.currentTarget: listened element always(=this)
+           * - e.$delegateTarget: selector element delegation only
+           *
+           * misc:
+           * - options is not allowed bool(useCapture). must be Object
+           * - throttle: continual events dispatch interval
+           * - debounce: continual events dispatch after last
+           * - leading: fire at first time
+           * - trailing: fire after last time
+           *
+           * ```
+           *          | throttle | (l)throttle | (t)throttle | (lt)throttle | debounce | (l)debounce | (t)debounce | (lt)debounce |
+           *  leading:|          | fire        |             | fire         |          | fire        |             | fire         |
+           *      100:|          |             |             |              |          |             |             |              |
+           *      200:| fire     | fire        | fire        | fire         |          |             |             |              |
+           *      300:|          |             |             |              |          |             |             |              |
+           *      400:| fire     | fire        | fire        | fire         |          |             |             |              |
+           *      500:|          |             |             |              |          |             |             |              |
+           *      600:| fire     | fire        | fire        | fire         |          |             |             |              |
+           * trailing:|          |             | fire        | fire         |          |             | fire        | fire         |
+           * ```
+           *
+           * @param {String} types
+           * @param {String|Function} selector
+           * @param {Function|Object} [listener]
+           * @param {Object} [options={}]
+           * @return {this}
+           */
+          $on(types, selector, listener, options) {
+            if (typeof selector === "function") {
+              options = listener;
+              listener = selector;
+              selector = null;
+            }
+            options = Object.assign({
+              // standard: https://developer.mozilla.org/docs/Web/API/EventTarget/addEventListener
+              ...{
+                // bool
+                once: void 0,
+                // bool
+                capture: void 0,
+                // bool
+                passive: void 0,
+                // https://developer.mozilla.org/docs/Web/API/AbortSignal
+                signal: void 0
+              },
+              // commons
+              ...{
+                // bool
+                ownself: false,
+                // int
+                interval: void 0,
+                // int
+                throttle: void 0,
+                // int
+                debounce: void 0,
+                // bool
+                leading: void 0,
+                // bool
+                trailing: void 0
               }
-              options = Object.assign({
-                // standard: https://developer.mozilla.org/docs/Web/API/EventTarget/addEventListener
-                ...{
-                  // bool
-                  once: void 0,
-                  // bool
-                  capture: void 0,
-                  // bool
-                  passive: void 0,
-                  // https://developer.mozilla.org/docs/Web/API/AbortSignal
-                  signal: void 0
-                },
-                // commons
-                ...{
-                  // bool
-                  ownself: false,
-                  // int
-                  interval: void 0,
-                  // int
-                  throttle: void 0,
-                  // int
-                  debounce: void 0,
-                  // bool
-                  leading: void 0,
-                  // bool
-                  trailing: void 0
+              // other events...
+            }, options);
+            kQuery.logger.assertInstanceOf(types, String)();
+            kQuery.logger.assertInstanceOf(selector, Nullable, String)();
+            kQuery.logger.assertInstanceOf(listener, Function)();
+            kQuery.logger.assertInstanceOf(options, Object)();
+            if (selector != null && options.capture) {
+              kQuery.logger.warn(`Delegation of capture phase isn't tested, so might not work well`);
+            }
+            if (options.throttle && !options.debounce) {
+              options.leading ??= true;
+              options.trailing ??= false;
+            }
+            if (options.debounce && !options.throttle) {
+              options.leading ??= false;
+              options.trailing ??= true;
+            }
+            for (const [type, namespaces] of eachType(false, types)) {
+              const eventData = { type, namespaces, selector, listener, options, counter: new WeakMap(), collectors: [] };
+              let customEvent;
+              if (!(this instanceof Window) && type in kQuery.customEvents) {
+                customEvent = new kQuery.customEvents[type](this, selector, options, function(target, detail = {}, options2 = {}) {
+                  customEvent.bubbles = "bubbles" in options2;
+                  options2.$original ??= {};
+                  options2.$original.$eventId ??= customEvent.eventId;
+                  options2.bubbles ??= (customEvent.selector ?? selector) != null;
+                  options2.detail ??= detail;
+                  target.$trigger(type, options2);
+                });
+                customEvent.handlers ??= {};
+                customEvent.handlers.insert ??= (node) => {
+                };
+                customEvent.handlers.delete ??= (node) => {
+                };
+                emulateDelegationWatcher.watch(this, customEvent.selector ?? selector, customEvent.handlers);
+                eventData.collectors.push(() => {
+                  emulateDelegationWatcher.unwatch(this, customEvent.selector ?? selector, customEvent.handlers);
+                  customEvent.destructor?.(this);
+                });
+              }
+              const waitStorage = new ObjectStorage();
+              const handler = /* @__PURE__ */ __name(async (e) => {
+                if (e.$namespaces?.length && e.$namespaces.some((ns) => !eventData.namespaces.includes(ns))) {
+                  return;
                 }
-                // other events...
-              }, options);
-              kQuery.logger.assertInstanceOf(types, String)();
-              kQuery.logger.assertInstanceOf(selector, Nullable, String)();
-              kQuery.logger.assertInstanceOf(listener, Function)();
-              kQuery.logger.assertInstanceOf(options, Object)();
-              if (selector != null && options.capture) {
-                kQuery.logger.warn(`Delegation of capture phase isn't tested, so might not work well`);
-              }
-              if (options.throttle && !options.debounce) {
-                options.leading ??= true;
-                options.trailing ??= false;
-              }
-              if (options.debounce && !options.throttle) {
-                options.leading ??= false;
-                options.trailing ??= true;
-              }
-              for (const [type, namespaces] of eachType(false, types)) {
-                const eventData = { type, namespaces, selector, listener, options, counter: new WeakMap(), collectors: [] };
-                let customEvent;
-                if (!(this instanceof Window) && type in kQuery.customEvents) {
-                  customEvent = new kQuery.customEvents[type](this, selector, options, function(target, detail = {}, options2 = {}) {
-                    customEvent.bubbles = "bubbles" in options2;
-                    options2.$original ??= {};
-                    options2.$original.$eventId ??= customEvent.eventId;
-                    options2.bubbles ??= (customEvent.selector ?? selector) != null;
-                    options2.detail ??= detail;
-                    target.$trigger(type, options2);
-                  });
-                  customEvent.handlers ??= {};
-                  customEvent.handlers.insert ??= (node) => {
-                  };
-                  customEvent.handlers.delete ??= (node) => {
-                  };
-                  emulateDelegationWatcher.watch(this, customEvent.selector ?? selector, customEvent.handlers);
-                  eventData.collectors.push(() => {
-                    emulateDelegationWatcher.unwatch(this, customEvent.selector ?? selector, customEvent.handlers);
-                    customEvent.destructor?.(this);
-                  });
+                if (customEvent?.eventId !== e.$original?.$eventId) {
+                  return;
                 }
-                const waitStorage = new ObjectStorage();
-                const handler = /* @__PURE__ */ __name(async (e) => {
-                  if (e.$namespaces?.length && e.$namespaces.some((ns) => !eventData.namespaces.includes(ns))) {
-                    return;
-                  }
-                  if (customEvent?.eventId !== e.$original?.$eventId) {
-                    return;
-                  }
-                  const target = e.target;
-                  const debounce = /* @__PURE__ */ __name(async (msec, leading) => {
-                    const timer = Timer.wait(msec);
-                    const current = waitStorage.reset(target, "timer", () => timer);
-                    if (!leading || current?.status === "pending") {
-                      current?.cancel(null);
-                      if (await timer === null) {
-                        return false;
-                      }
-                      if (!options.trailing) {
-                        return false;
-                      }
+                const target = e.target;
+                const debounce = /* @__PURE__ */ __name(async (msec, leading) => {
+                  const timer = Timer.wait(msec);
+                  const current = waitStorage.reset(target, "timer", () => timer);
+                  if (!leading || current?.status === "pending") {
+                    current?.cancel(null);
+                    if (await timer === null) {
+                      return false;
                     }
-                    return true;
-                  }, "debounce");
-                  if (options.debounce != null) {
-                    if (!await debounce(options.debounce, options.leading)) {
+                    if (!options.trailing) {
+                      return false;
+                    }
+                  }
+                  return true;
+                }, "debounce");
+                if (options.debounce != null) {
+                  if (!await debounce(options.debounce, options.leading)) {
+                    return;
+                  }
+                }
+                if (options.throttle != null) {
+                  const start = waitStorage.getOrSet(target, "start", () => Date.now() - (options.leading ? options.throttle : 0));
+                  if (start + options.throttle > Date.now()) {
+                    if (!await debounce(options.throttle, false)) {
                       return;
                     }
                   }
-                  if (options.throttle != null) {
-                    const start = waitStorage.getOrSet(target, "start", () => Date.now() - (options.leading ? options.throttle : 0));
-                    if (start + options.throttle > Date.now()) {
-                      if (!await debounce(options.throttle, false)) {
-                        return;
-                      }
+                  waitStorage.set(target, "start", Date.now());
+                }
+                e.$abort = (reason) => eventData.abortController.abort(reason);
+                if (eventData.selector == null) {
+                  return eventData.listener.call(this, e);
+                }
+                for (let parent = target; parent && parent !== this; parent = parent.parentElement) {
+                  if (parent.matches(eventData.selector) && !(options.once && eventData.counter.get(target))) {
+                    if (!eventData.counter.reset(target, (count) => (count ?? 0) + 1) && options.once) {
+                      customEvent?.handlers?.delete?.(target);
                     }
-                    waitStorage.set(target, "start", Date.now());
-                  }
-                  e.$abort = (reason) => eventData.abortController.abort(reason);
-                  if (eventData.selector == null) {
+                    if (customEvent && !customEvent.bubbles) {
+                      e.stopPropagation();
+                    }
+                    e.$delegateTarget = parent;
                     return eventData.listener.call(this, e);
                   }
-                  for (let parent = target; parent && parent !== this; parent = parent.parentElement) {
-                    if (parent.matches(eventData.selector) && !(options.once && eventData.counter.get(target))) {
-                      if (!eventData.counter.reset(target, (count) => (count ?? 0) + 1) && options.once) {
-                        customEvent?.handlers?.delete?.(target);
-                      }
-                      if (customEvent && !customEvent.bubbles) {
-                        e.stopPropagation();
-                      }
-                      e.$delegateTarget = parent;
-                      return eventData.listener.call(this, e);
-                    }
-                    if (options.ownself) {
-                      break;
-                    }
-                  }
-                }, "handler");
-                eventData.handler = new WeakRef(handler);
-                eventDataMap.getOrSet(this, () => []).push(eventData);
-                const internalOptions = eventData.selector == null ? options : Object.assign({}, options, { once: false });
-                eventData.abortController = new AbortController();
-                eventData.abortController.signal.addEventListener("abort", eventData.destructor);
-                if (internalOptions.signal) {
-                  internalOptions.signal = AbortSignal.any([internalOptions.signal, eventData.abortController.signal]);
-                } else {
-                  internalOptions.signal = eventData.abortController.signal;
-                }
-                this.addEventListener(internalEventName(type), handler, internalOptions);
-                eventData.destructor = function() {
-                  kQuery.logger.debug(`Release of `, type, selector, options);
-                  eventData.collectors.forEach((collector) => collector());
-                  eventData.collectors = [];
-                };
-                F.objectFinalize(handler, eventData.destructor);
-              }
-              return this;
-            },
-            /**
-             * removeEventListener
-             *
-             * all arguments are optional
-             * - $off(): remove all event
-             * - $off('click'): remove all click event
-             * - $off('click', 'selector'): remove all click event of selector
-             * - $off('click', 'selector', listener): remove same listener event of selector
-             *
-             * @param {String} [types]
-             * @param {String|Function} [selector]
-             * @param {Function|Object} [listener]
-             * @param {Object} [options={}]
-             * @return {this}
-             */
-            $off(types, selector, listener, options) {
-              if (typeof selector === "function") {
-                options = listener;
-                listener = selector;
-                selector = null;
-              }
-              kQuery.logger.assertInstanceOf(types, Nullable, String)();
-              kQuery.logger.assertInstanceOf(selector, Nullable, String)();
-              kQuery.logger.assertInstanceOf(listener, Nullable, Function)();
-              kQuery.logger.assertInstanceOf(options, Nullable, Object)();
-              for (const [type, namespaces] of eachType(true, types)) {
-                eventDataMap.reset(this, (eventDatas) => (eventDatas ?? []).filter((eventData) => {
-                  if (type && type !== eventData.type) {
-                    return true;
-                  }
-                  if (namespaces.length && namespaces.some((ns) => !eventData.namespaces.includes(ns))) {
-                    return true;
-                  }
-                  if (selector && selector !== eventData.selector) {
-                    return true;
-                  }
-                  if (listener && listener !== eventData.listener) {
-                    return true;
-                  }
-                  if (options?.capture !== eventData.options.capture) {
-                    return true;
-                  }
-                  this.removeEventListener(internalEventName(eventData.type), eventData.handler.deref(), eventData.options);
-                  eventData.destructor();
-                  return false;
-                }));
-              }
-              return this;
-            },
-            /**
-             * dispatch Event
-             *
-             * types allows multiple event
-             *
-             * some event are special treated, e.g. click is PointerEvent
-             *
-             * @param {String} types
-             * @param {Object} options={}
-             * @return {Boolean}
-             */
-            $trigger(types, options = {}) {
-              kQuery.logger.assertInstanceOf(types, String)();
-              kQuery.logger.assertInstanceOf(options, Object)();
-              let result = true;
-              for (const [type, namespaces] of eachType(false, types)) {
-                const event = kQuery.wellknownEvents[type] ?? CustomEvent;
-                const eventObject = new event(internalEventName(type), Object.assign({
-                  bubbles: true,
-                  cancelable: true,
-                  composed: true
-                }, options));
-                eventObject.$namespaces = namespaces;
-                const completed = this.dispatchEvent(eventObject);
-                kQuery.logger.debug(`Event ${type} is ${completed ? "completed" : "canceled"}`, this, eventObject);
-                result = result && completed;
-              }
-              return result;
-            },
-            /**
-             * get Event data
-             *
-             * this method is very unsafe and changed without any notice
-             * eventdata is live, changing it changes the handler itself
-             *
-             * @param {String} [types]
-             * @param {Boolean} [ancestor]
-             * @param {Boolean} [capture=false]
-             * @return {{type: String, namespaces: Array, selector: String, listener: Function, options: Object}[]}
-             */
-            $events(types, ancestor, capture = false) {
-              kQuery.logger.assertInstanceOf(types, Nullable, String)();
-              kQuery.logger.assertInstanceOf(ancestor, Nullable, Boolean)();
-              kQuery.logger.assertInstanceOf(capture, Boolean)();
-              const result = eventDataMap.get(this) ?? [];
-              if (ancestor) {
-                for (let parent = this.parentNode; parent; parent = parent.parentNode) {
-                  for (const ev of eventDataMap.get(parent) ?? []) {
-                    if (ev.selector != null && this.matches(ev.selector)) {
-                      if (!(ev.options.once && ev.counter.get(this))) {
-                        result.push(ev);
-                      }
-                    }
+                  if (options.ownself) {
+                    break;
                   }
                 }
+              }, "handler");
+              eventData.handler = new WeakRef(handler);
+              eventDataMap.getOrSet(this, () => []).push(eventData);
+              const internalOptions = eventData.selector == null ? options : Object.assign({}, options, { once: false });
+              eventData.abortController = new AbortController();
+              eventData.abortController.signal.addEventListener("abort", eventData.destructor);
+              if (internalOptions.signal) {
+                internalOptions.signal = AbortSignal.any([internalOptions.signal, eventData.abortController.signal]);
+              } else {
+                internalOptions.signal = eventData.abortController.signal;
               }
-              return result.filter((ev) => {
-                if (!ev.handler.deref()) {
-                  return false;
-                }
-                for (const [type, namespaces] of eachType(true, types)) {
-                  if (type && type !== ev.type) {
-                    return false;
-                  }
-                  if (namespaces.length && namespaces.some((ns) => !ev.namespaces.includes(ns))) {
-                    return false;
-                  }
-                }
-                if (capture !== (ev.options.capture ?? false)) {
-                  return false;
-                }
-                return true;
-              });
+              this.addEventListener(internalEventName(type), handler, internalOptions);
+              eventData.destructor = function() {
+                kQuery.logger.debug(`Release of `, type, selector, options);
+                eventData.collectors.forEach((collector) => collector());
+                eventData.collectors = [];
+              };
+              F.objectFinalize(handler, eventData.destructor);
             }
+            return this;
+          },
+          /**
+           * removeEventListener
+           *
+           * all arguments are optional
+           * - $off(): remove all event
+           * - $off('click'): remove all click event
+           * - $off('click', 'selector'): remove all click event of selector
+           * - $off('click', 'selector', listener): remove same listener event of selector
+           *
+           * @param {String} [types]
+           * @param {String|Function} [selector]
+           * @param {Function|Object} [listener]
+           * @param {Object} [options={}]
+           * @return {this}
+           */
+          $off(types, selector, listener, options) {
+            if (typeof selector === "function") {
+              options = listener;
+              listener = selector;
+              selector = null;
+            }
+            kQuery.logger.assertInstanceOf(types, Nullable, String)();
+            kQuery.logger.assertInstanceOf(selector, Nullable, String)();
+            kQuery.logger.assertInstanceOf(listener, Nullable, Function)();
+            kQuery.logger.assertInstanceOf(options, Nullable, Object)();
+            for (const [type, namespaces] of eachType(true, types)) {
+              eventDataMap.reset(this, (eventDatas) => (eventDatas ?? []).filter((eventData) => {
+                if (type && type !== eventData.type) {
+                  return true;
+                }
+                if (namespaces.length && namespaces.some((ns) => !eventData.namespaces.includes(ns))) {
+                  return true;
+                }
+                if (selector && selector !== eventData.selector) {
+                  return true;
+                }
+                if (listener && listener !== eventData.listener) {
+                  return true;
+                }
+                if (options?.capture !== eventData.options.capture) {
+                  return true;
+                }
+                this.removeEventListener(internalEventName(eventData.type), eventData.handler.deref(), eventData.options);
+                eventData.destructor();
+                return false;
+              }));
+            }
+            return this;
+          },
+          /**
+           * dispatch Event
+           *
+           * types allows multiple event
+           *
+           * some event are special treated, e.g. click is PointerEvent
+           *
+           * @param {String} types
+           * @param {Object} options={}
+           * @return {Boolean}
+           */
+          $trigger(types, options = {}) {
+            kQuery.logger.assertInstanceOf(types, String)();
+            kQuery.logger.assertInstanceOf(options, Object)();
+            let result = true;
+            for (const [type, namespaces] of eachType(false, types)) {
+              const event = kQuery.wellknownEvents[type] ?? CustomEvent;
+              const eventObject = new event(internalEventName(type), Object.assign({
+                bubbles: true,
+                cancelable: true,
+                composed: true
+              }, options));
+              eventObject.$namespaces = namespaces;
+              const completed = this.dispatchEvent(eventObject);
+              kQuery.logger.debug(`Event ${type} is ${completed ? "completed" : "canceled"}`, this, eventObject);
+              result = result && completed;
+            }
+            return result;
+          },
+          /**
+           * get Event data
+           *
+           * this method is very unsafe and changed without any notice
+           * eventdata is live, changing it changes the handler itself
+           *
+           * @param {String} [types]
+           * @param {Boolean} [ancestor]
+           * @param {Boolean} [capture=false]
+           * @return {{type: String, namespaces: Array, selector: String, listener: Function, options: Object}[]}
+           */
+          $events(types, ancestor, capture = false) {
+            kQuery.logger.assertInstanceOf(types, Nullable, String)();
+            kQuery.logger.assertInstanceOf(ancestor, Nullable, Boolean)();
+            kQuery.logger.assertInstanceOf(capture, Boolean)();
+            const result = eventDataMap.get(this) ?? [];
+            if (ancestor) {
+              for (let parent = this.parentNode; parent; parent = parent.parentNode) {
+                for (const ev of eventDataMap.get(parent) ?? []) {
+                  if (ev.selector != null && this.matches(ev.selector)) {
+                    if (!(ev.options.once && ev.counter.get(this))) {
+                      result.push(ev);
+                    }
+                  }
+                }
+              }
+            }
+            return result.filter((ev) => {
+              if (!ev.handler.deref()) {
+                return false;
+              }
+              for (const [type, namespaces] of eachType(true, types)) {
+                if (type && type !== ev.type) {
+                  return false;
+                }
+                if (namespaces.length && namespaces.some((ns) => !ev.namespaces.includes(ns))) {
+                  return false;
+                }
+              }
+              if (capture !== (ev.options.capture ?? false)) {
+                return false;
+              }
+              return true;
+            });
           }
-        );
-      }()
+        }
+      )
     };
   }
   __name(events, "events");
 
   // src/plugins/attributes.js
   function attributes(kQuery) {
-    return {
-      [[Element.name, $NodeList.name]]: function() {
-        const nodeStorage = new ObjectStorage();
-        class ProxyProperty {
-          static {
-            __name(this, "ProxyProperty");
-          }
-          static NotImplemented = Symbol("NotImplemented");
-          constructor(node, name) {
-            this.node = node;
-            this.name = name;
-            this.object = node[name];
-          }
-          has(target, property) {
-            return this._hasValue(property);
-          }
-          _hasValue(property) {
-            return Reflect.has(this.object, property);
-          }
-          get(target, property) {
-            if (property === Symbol.toPrimitive || property === "toString") {
-              return () => this._getString();
-            }
-            if (property.charAt(0) === "$") {
-              const $value = this._get$Value(property.substring(1));
-              if ($value !== ProxyProperty.NotImplemented) {
-                return $value;
-              }
-            }
-            const base = Reflect.get(this.object, property);
-            if (typeof base === "function") {
-              return this._getFunction(property, base);
-            }
-            return this._getValue(property, base);
-          }
-          _getString() {
-          }
-          _get$Value(property) {
-            return ProxyProperty.NotImplemented;
-          }
-          _getFunction(property, value) {
-            const method = /* @__PURE__ */ __name((...args) => {
-              const result = F.functionToCallbackable(value, this.node, this.node, method.i).call(this.object, ...args);
-              return result === void 0 ? nodeStorage.get(this.node, this.name) : result;
-            }, "method");
-            return method;
-          }
-          _getValue(property, value) {
-            return value;
-          }
-          set(target, property, value) {
-            if (typeof value === "function") {
-              value = this._setFunction(property, value);
-            }
-            this._setValue(property, value);
-            return true;
-          }
-          _setFunction(property, value) {
-            return value.call(this.object, this.node);
-          }
-          _setValue(property, value) {
-            if (value === void 0) {
-              return;
-            }
-            this.apply(null, null, [{ [property]: value }]);
-          }
-          deleteProperty(target, property) {
-            const value = Reflect.get(this.object, property);
-            this._deleteValue(property, value);
-            return true;
-          }
-          _deleteValue(property, value) {
-            Reflect.deleteProperty(this.object, property);
-          }
-          apply(target, thisArg, argArray) {
-            if (argArray[0] instanceof Array || F.objectIsPlain(argArray[0])) {
-              this._applySet(...argArray);
-              return nodeStorage.get(this.node, this.name);
-            } else {
-              return this._applyGet(...argArray);
-            }
-          }
-          _applyGet(...args) {
-          }
-          _applySet(...args) {
+    const nodeStorage = new ObjectStorage();
+    class ProxyProperty {
+      static {
+        __name(this, "ProxyProperty");
+      }
+      static NotImplemented = Symbol("NotImplemented");
+      constructor(node, name) {
+        this.node = node;
+        this.name = name;
+        this.object = node[name];
+      }
+      has(target, property) {
+        return this._hasValue(property);
+      }
+      _hasValue(property) {
+        return Reflect.has(this.object, property);
+      }
+      get(target, property) {
+        if (property === Symbol.toPrimitive || property === "toString") {
+          return () => this._getString();
+        }
+        if (property.charAt(0) === "$") {
+          const $value = this._get$Value(property.substring(1));
+          if ($value !== ProxyProperty.NotImplemented) {
+            return $value;
           }
         }
-        return (
-          /** @lends Element.prototype */
-          {
-            /**
-             * simple accessor to NamedNodeMap(attribute)
-             *
-             * @descriptor get
-             *
-             * @return {Object|Function}
-             *
-             * @example
-             * $$('input').$attrs.name;             // getter
-             * $$('input').$attrs.name = 'value';   // setter
-             * $$('input').$attrs({name: 'value'}); // mass setting(keep other)
-             * $$('input').$attrs();                // get all key-value object
-             *
-             * @example
-             * // false is delete that attribute
-             * $$('input').$attrs.name = false;
-             * $$('input').$attrs({name: false});
-             *
-             * @example
-             * // $prefix means inherited attribute
-             * $$('input').$attrs.$disabled; // returns true if the parent is disabled even if itself none
-             */
-            get $attrs() {
-              return nodeStorage.getOrSet(this, "attributes", (node, name) => new Proxy2(/* @__PURE__ */ __name(function $Attrs() {
-              }, "$Attrs"), new class extends ProxyProperty {
-                _getString() {
-                  return Object.values(node.attributes).map((attr) => `${F.stringEscape(attr.name, "attr-name")}="${F.stringEscape(attr.value, "attr-value")}"`).join(" ");
-                }
-                _get$Value(property) {
-                  return node.closest(`[${F.stringEscape(property, "css")}]`)?.getAttribute(property) ?? null;
-                }
-                _getValue(property, value) {
-                  return value?.value;
-                }
-                _deleteValue(property, value) {
-                  node.removeAttribute(property);
-                }
-                _applyGet() {
-                  return Object.fromEntries(Array.from(node.attributes, (attr) => [attr.name, attr.value]));
-                }
-                _applySet(object) {
-                  const normalizedAttributes = F.objectToAttributes(object);
-                  for (const [name2, value] of Object.entries(normalizedAttributes)) {
-                    if (typeof value === "boolean") {
-                      node.toggleAttribute(name2, value);
-                    } else {
-                      node.setAttribute(name2, value);
-                    }
-                  }
-                }
-              }(node, name)));
-            },
-            /**
-             * mass assign NamedNodeMap(attribute)
-             *
-             * @descriptor set
-             *
-             * @param {Object} value
-             *
-             * @example
-             * $$('input').$attrs = {name: 'value'};                // mass assign(delete other)
-             * $$('input').$attrs = (node, i) => ({name: 'value'}); // mass assign by callback(delete other)
-             */
-            set $attrs(value) {
-              kQuery.logger.assertInstanceOf(value, Nullable, Object)();
-              if (value == null) {
-                return;
+        const base = Reflect.get(this.object, property);
+        if (typeof base === "function") {
+          return this._getFunction(property, base);
+        }
+        return this._getValue(property, base);
+      }
+      _getString() {
+      }
+      _get$Value(property) {
+        return ProxyProperty.NotImplemented;
+      }
+      _getFunction(property, value) {
+        const method = /* @__PURE__ */ __name((...args) => {
+          const result = F.functionToCallbackable(value, this.node, this.node, method.i).call(this.object, ...args);
+          return result === void 0 ? nodeStorage.get(this.node, this.name) : result;
+        }, "method");
+        return method;
+      }
+      _getValue(property, value) {
+        return value;
+      }
+      set(target, property, value) {
+        if (typeof value === "function") {
+          value = this._setFunction(property, value);
+        }
+        if (property.charAt(0) === "$") {
+          const $value = this._set$Value(property.substring(1), value);
+          if ($value !== ProxyProperty.NotImplemented) {
+            return true;
+          }
+        }
+        this._setValue(property, value);
+        return true;
+      }
+      _set$Value(property, value) {
+        return ProxyProperty.NotImplemented;
+      }
+      _setFunction(property, value) {
+        return value.call(this.object, this.node);
+      }
+      _setValue(property, value) {
+        if (value === void 0) {
+          return;
+        }
+        this.apply(null, null, [{ [property]: value }]);
+      }
+      deleteProperty(target, property) {
+        const value = Reflect.get(this.object, property);
+        this._deleteValue(property, value);
+        return true;
+      }
+      _deleteValue(property, value) {
+        Reflect.deleteProperty(this.object, property);
+      }
+      apply(target, thisArg, argArray) {
+        if (argArray[0] instanceof Array || F.objectIsPlain(argArray[0])) {
+          this._applySet(...argArray);
+          return nodeStorage.get(this.node, this.name);
+        } else {
+          return this._applyGet(...argArray);
+        }
+      }
+      _applyGet(...args) {
+      }
+      _applySet(...args) {
+      }
+    }
+    return {
+      [[Element.name, $NodeList.name]]: (
+        /** @lends Element.prototype */
+        {
+          /**
+           * simple accessor to NamedNodeMap(attribute)
+           *
+           * @descriptor get
+           *
+           * @return {Object|Function}
+           *
+           * @example
+           * $$('input').$attrs.name;             // getter
+           * $$('input').$attrs.name = 'value';   // setter
+           * $$('input').$attrs({name: 'value'}); // mass setting(keep other)
+           * $$('input').$attrs();                // get all key-value object
+           *
+           * @example
+           * // false is delete that attribute
+           * $$('input').$attrs.name = false;
+           * $$('input').$attrs({name: false});
+           *
+           * @example
+           * // $prefix means inherited attribute
+           * $$('input').$attrs.$disabled; // returns true if the parent is disabled even if itself none
+           */
+          get $attrs() {
+            return nodeStorage.getOrSet(this, "attributes", (node, name) => new Proxy2(/* @__PURE__ */ __name(function $Attrs() {
+            }, "$Attrs"), new class extends ProxyProperty {
+              _getString() {
+                return Object.values(node.attributes).map((attr) => `${F.stringEscape(attr.name, "attr-name")}="${F.stringEscape(attr.value, "attr-value")}"`).join(" ");
               }
-              for (const attr of Object.values(this.attributes)) {
-                this.attributes.removeNamedItem(attr.name);
+              _get$Value(property) {
+                return node.closest(`[${F.stringEscape(property, "css")}]`)?.getAttribute(property) ?? null;
               }
-              this.$attrs(value);
-            },
-            /**
-             * simple accessor to DOMStringMap(dataset)
-             *
-             * @descriptor get
-             *
-             * @return {Object|Function}
-             *
-             * @example
-             * $$('input').$data.name;             // getter
-             * $$('input').$data.name = 'value';   // setter
-             * $$('input').$data({name: 'value'}); // mass setting(keep other)
-             * $$('input').$data();                // get all key-value object
-             * $$('input').$data('prefix');        // get structured object
-             *
-             * @example
-             * // $prefix means objective data
-             * $$('input').$data.$hoge; // returns Object starting with hoge
-             */
-            get $data() {
-              return nodeStorage.getOrSet(this, "dataset", (node, name) => new Proxy2(/* @__PURE__ */ __name(function $Data() {
-              }, "$Data"), new class extends ProxyProperty {
-                _getString() {
-                  return JSON.stringify(this.apply(null, null, [""]));
-                }
-                _get$Value(property) {
-                  return this._applyGet(property);
-                }
-                _applyGet(property) {
-                  const result = {};
-                  for (const [name2, data2] of Object.entries(node.dataset)) {
-                    result[name2] = data2;
-                  }
-                  if (typeof property !== "string") {
-                    return result;
-                  }
-                  const targetPrefix = F.stringToKebabCase(property);
-                  const regex = new RegExp(targetPrefix ? `^${property}[A-Z]` : `.*`);
-                  const member = {};
-                  for (const [name2, data2] of Object.entries(result)) {
-                    if (regex.test(name2)) {
-                      member[F.stringToKebabCase(name2)] = data2;
-                    }
-                  }
-                  const entries = Object.entries(member).map(([name2, value]) => [name2.split("-"), value]);
-                  const object = F.entriesToObject(entries, true);
-                  return targetPrefix ? targetPrefix.split("-").reduce((target, key) => target?.[key], object) ?? {} : object;
-                }
-                _applySet(object) {
-                  for (const [name2, data2] of Object.entries(F.objectToDataset(object))) {
-                    node.dataset[F.stringToPascalCase(name2)] = data2;
-                  }
-                }
-              }(node, name)));
-            },
-            /**
-             * mass assign DOMStringMap(dataset)
-             *
-             * @descriptor set
-             *
-             * @param {Object} value
-             *
-             * @example
-             * $$('input').$data = {name: 'value'};                // mass assign(delete other)
-             * $$('input').$data = (node, i) => ({name: 'value'}); // mass assign by callback(delete other)
-             */
-            set $data(value) {
-              kQuery.logger.assertInstanceOf(value, Nullable, Object)();
-              if (value == null) {
-                return;
+              _getValue(property, value) {
+                return value?.value;
               }
-              for (const name of Object.keys(this.dataset)) {
-                delete this.dataset[name];
+              _deleteValue(property, value) {
+                node.removeAttribute(property);
               }
-              this.$data(value);
-            },
-            /**
-             * simple accessor to CSSStyleDeclaration(style)
-             *
-             * @descriptor get
-             *
-             * @return {Object|Function}
-             *
-             * @example
-             * $$('input').$style.color;             // getter
-             * $$('input').$style.color = 'value';   // setter
-             * $$('input').$style({color: 'value'}); // mass setting(keep other)
-             * $$('input').$style();                 // get all key-value object
-             * $$('input').$style(true);             // get all key-value object with important
-             *
-             * @example
-             * // $prefix means computed style
-             * $$('input').$style.$;                // returns computed style
-             * $$('input').$style.$color;           // returns computed style's color
-             * $$('input').$style['$color::after']; // returns computed style's pseudo color
-             */
-            get $style() {
-              return nodeStorage.getOrSet(this, "style", (node, name) => new Proxy2(/* @__PURE__ */ __name(function $Style() {
-              }, "$Style"), new class extends ProxyProperty {
-                _hasValue(property) {
-                  return !!Reflect.get(node.style, property);
-                }
-                _getString() {
-                  return node.style.cssText;
-                }
-                _get$Value(property) {
-                  let [name2, pseudo] = property.split("::");
-                  pseudo = pseudo ? `::${pseudo}` : null;
-                  const cstyle = node.$window.getComputedStyle(node, pseudo);
-                  if (!name2.length) {
-                    return cstyle;
+              _applyGet() {
+                return Object.fromEntries(Array.from(node.attributes, (attr) => [attr.name, attr.value]));
+              }
+              _applySet(object) {
+                const normalizedAttributes = F.objectToAttributes(object);
+                for (const [name2, value] of Object.entries(normalizedAttributes)) {
+                  if (typeof value === "boolean") {
+                    node.toggleAttribute(name2, value);
+                  } else {
+                    node.setAttribute(name2, value);
                   }
-                  return cstyle.getPropertyValue(F.stringToKebabCase(name2));
                 }
-                _getValue(property, value) {
-                  if (property.startsWith("--")) {
-                    return node.style.getPropertyValue(F.stringToKebabCase(property));
-                  }
-                  return value || value === void 0 ? value : null;
+              }
+            }(node, name)));
+          },
+          /**
+           * mass assign NamedNodeMap(attribute)
+           *
+           * @descriptor set
+           *
+           * @param {Object} value
+           *
+           * @example
+           * $$('input').$attrs = {name: 'value'};                // mass assign(delete other)
+           * $$('input').$attrs = (node, i) => ({name: 'value'}); // mass assign by callback(delete other)
+           */
+          set $attrs(value) {
+            kQuery.logger.assertInstanceOf(value, Nullable, Object)();
+            if (value == null) {
+              return;
+            }
+            for (const attr of Object.values(this.attributes)) {
+              this.attributes.removeNamedItem(attr.name);
+            }
+            this.$attrs(value);
+          },
+          /**
+           * simple accessor to DOMStringMap(dataset)
+           *
+           * @descriptor get
+           *
+           * @return {Object|Function}
+           *
+           * @example
+           * $$('input').$data.name;             // getter
+           * $$('input').$data.name = 'value';   // setter
+           * $$('input').$data({name: 'value'}); // mass setting(keep other)
+           * $$('input').$data();                // get all key-value object
+           * $$('input').$data('prefix');        // get structured object
+           *
+           * @example
+           * // $prefix means objective data
+           * $$('input').$data.$hoge; // returns Object starting with hoge
+           */
+          get $data() {
+            return nodeStorage.getOrSet(this, "dataset", (node, name) => new Proxy2(/* @__PURE__ */ __name(function $Data() {
+            }, "$Data"), new class extends ProxyProperty {
+              _getString() {
+                return JSON.stringify(this.apply(null, null, [""]));
+              }
+              _get$Value(property) {
+                return this._applyGet(property);
+              }
+              _applyGet(property) {
+                const result = {};
+                for (const [name2, data2] of Object.entries(node.dataset)) {
+                  result[name2] = data2;
                 }
-                _deleteValue(property, value) {
-                  node.style.removeProperty(F.stringToKebabCase(property));
-                }
-                _applyGet(priority) {
-                  const result = {};
-                  for (let i = 0; true; i++) {
-                    const name2 = node.style[i];
-                    if (!name2) {
-                      break;
-                    }
-                    if (priority === true) {
-                      const priority2 = node.style.getPropertyPriority(name2);
-                      result[name2] = node.style.getPropertyValue(name2) + (priority2 ? `!${priority2}` : "");
-                    } else {
-                      result[name2] = node.style.getPropertyValue(name2);
-                    }
-                  }
+                if (typeof property !== "string") {
                   return result;
                 }
-                _applySet(object) {
-                  for (const [name2, style] of F.objectToEntries(object)) {
-                    const strstyle = "" + style;
-                    const rawstyle = strstyle.replace(/!important$/, "");
-                    node.style.setProperty(F.stringToKebabCase(name2), rawstyle, strstyle === rawstyle ? "" : "important");
+                const targetPrefix = F.stringToKebabCase(property);
+                const regex = new RegExp(targetPrefix ? `^${property}[A-Z]` : `.*`);
+                const member = {};
+                for (const [name2, data2] of Object.entries(result)) {
+                  if (regex.test(name2)) {
+                    member[F.stringToKebabCase(name2)] = data2;
                   }
                 }
-              }(node, name)));
-            },
-            /**
-             * mass assign CSSStyleDeclaration(style)
-             *
-             * @descriptor set
-             *
-             * @param {Object} value
-             *
-             * @example
-             * $$('input').$style = {color: 'value'};                // mass assign(delete other)
-             * $$('input').$style = (node, i) => ({color: 'value'}); // mass assign by callback(delete other)
-             */
-            set $style(value) {
-              kQuery.logger.assertInstanceOf(value, Nullable, Object)();
-              if (value == null) {
-                return;
-              }
-              this.setAttribute("style", "");
-              this.$style(value);
-            },
-            /**
-             * simple accessor to DOMTokenList(classList)
-             *
-             * @descriptor get
-             *
-             * @return {Object|Function}
-             *
-             * @example
-             * $$('input').$class.name;             // getter(always boolean)
-             * $$('input').$class.name = 'flag';    // setter(cast to boolean)
-             * $$('input').$class({name: 'flag'});  // mass setting(keep other)
-             * $$('input').$class();                // get all keys array
-             *
-             * @example
-             * // object|array is treated like vue.js
-             * $$('input').$class({name: false});
-             * $$('input').$class([{name: false}, 'other']);
-             */
-            get $class() {
-              return nodeStorage.getOrSet(this, "classList", (node, name) => new Proxy2(/* @__PURE__ */ __name(function $Class() {
-              }, "$Class"), new class extends ProxyProperty {
-                _hasValue(property) {
-                  return node.classList.contains(property);
-                }
-                _getString() {
-                  return node.classList.value;
-                }
-                _getValue(property, value) {
-                  return node.classList.contains(property);
-                }
-                _deleteValue(property, value) {
-                  node.classList.remove(property);
-                }
-                _applyGet() {
-                  return [...node.classList.values()];
-                }
-                _applySet(object) {
-                  for (const [token, flag] of F.objectToEntries(F.objectToClasses(object))) {
-                    node.classList.toggle(token, flag);
+                if (Object.keys(member).length === 0 && property in node.dataset) {
+                  try {
+                    return JSON.parse(node.dataset[property]);
+                  } catch (e) {
                   }
                 }
-              }(node, name)));
-            },
-            /**
-             * mass assign DOMTokenList(classList)
-             *
-             * @descriptor set
-             *
-             * @param {Object|Array} value
-             *
-             * @example
-             * $$('input').$class = {name: 'flag'};                // mass assign(delete other)
-             * $$('input').$class = (node, i) => ({name: 'flag'}); // mass assign by callback(delete other)
-             */
-            set $class(value) {
-              kQuery.logger.assertInstanceOf(value, Nullable, String, Object, Array)();
-              if (value == null) {
-                return;
+                const entries = Object.entries(member).map(([name2, value]) => [name2.split("-"), value]);
+                const object = F.entriesToObject(entries, true);
+                return targetPrefix ? targetPrefix.split("-").reduce((target, key) => target?.[key], object) ?? {} : object;
               }
-              this.classList.value = "";
-              this.$class(value);
+              _set$Value(property, value) {
+                node.dataset[property] = JSON.stringify(value);
+              }
+              _applySet(object) {
+                for (const [name2, data2] of Object.entries(F.objectToDataset(object))) {
+                  node.dataset[F.stringToPascalCase(name2)] = data2;
+                }
+              }
+            }(node, name)));
+          },
+          /**
+           * mass assign DOMStringMap(dataset)
+           *
+           * @descriptor set
+           *
+           * @param {Object} value
+           *
+           * @example
+           * $$('input').$data = {name: 'value'};                // mass assign(delete other)
+           * $$('input').$data = (node, i) => ({name: 'value'}); // mass assign by callback(delete other)
+           */
+          set $data(value) {
+            kQuery.logger.assertInstanceOf(value, Nullable, Object)();
+            if (value == null) {
+              return;
             }
+            for (const name of Object.keys(this.dataset)) {
+              delete this.dataset[name];
+            }
+            this.$data(value);
+          },
+          /**
+           * simple accessor to DOMTokenList(classList)
+           *
+           * @descriptor get
+           *
+           * @return {Object|Function}
+           *
+           * @example
+           * $$('input').$class.name;             // getter(always boolean)
+           * $$('input').$class.name = 'flag';    // setter(cast to boolean)
+           * $$('input').$class({name: 'flag'});  // mass setting(keep other)
+           * $$('input').$class();                // get all keys array
+           *
+           * @example
+           * // object|array is treated like vue.js
+           * $$('input').$class({name: false});
+           * $$('input').$class([{name: false}, 'other']);
+           */
+          get $class() {
+            return nodeStorage.getOrSet(this, "classList", (node, name) => new Proxy2(/* @__PURE__ */ __name(function $Class() {
+            }, "$Class"), new class extends ProxyProperty {
+              _hasValue(property) {
+                return node.classList.contains(property);
+              }
+              _getString() {
+                return node.classList.value;
+              }
+              _getValue(property, value) {
+                return node.classList.contains(property);
+              }
+              _deleteValue(property, value) {
+                node.classList.remove(property);
+              }
+              _applyGet() {
+                return [...node.classList.values()];
+              }
+              _applySet(object) {
+                for (const [token, flag] of F.objectToEntries(F.objectToClasses(object))) {
+                  node.classList.toggle(token, flag);
+                }
+              }
+            }(node, name)));
+          },
+          /**
+           * mass assign DOMTokenList(classList)
+           *
+           * @descriptor set
+           *
+           * @param {Object|Array} value
+           *
+           * @example
+           * $$('input').$class = {name: 'flag'};                // mass assign(delete other)
+           * $$('input').$class = (node, i) => ({name: 'flag'}); // mass assign by callback(delete other)
+           */
+          set $class(value) {
+            kQuery.logger.assertInstanceOf(value, Nullable, String, Object, Array)();
+            if (value == null) {
+              return;
+            }
+            this.classList.value = "";
+            this.$class(value);
           }
-        );
-      }()
+        }
+      ),
+      [[Element.name, CSSStyleRule.name, $NodeList.name, $CSSRuleList.name]]: (
+        /**
+        @lends CSSStyleRule.prototype
+        @lends Element.prototype*/
+        {
+          /**
+           * simple accessor to CSSStyleDeclaration(style)
+           *
+           * @descriptor get
+           *
+           * @return {Object|Function}
+           *
+           * @example
+           * $$('input').$style.color;             // getter
+           * $$('input').$style.color = 'value';   // setter
+           * $$('input').$style({color: 'value'}); // mass setting(keep other)
+           * $$('input').$style();                 // get all key-value object
+           * $$('input').$style(true);             // get all key-value object with important
+           *
+           * @example
+           * // $prefix means computed style
+           * $$('input').$style.$;                // returns computed style
+           * $$('input').$style.$color;           // returns computed style's color
+           * $$('input').$style['$color::after']; // returns computed style's pseudo color
+           */
+          get $style() {
+            return nodeStorage.getOrSet(this, "style", (node, name) => new Proxy2(/* @__PURE__ */ __name(function $Style() {
+            }, "$Style"), new class extends ProxyProperty {
+              _hasValue(property) {
+                return !!Reflect.get(node.style, property);
+              }
+              _getString() {
+                return node.style.cssText;
+              }
+              _get$Value(property) {
+                let [name2, pseudo] = property.split("::");
+                pseudo = pseudo ? `::${pseudo}` : null;
+                const cstyle = node.$window.getComputedStyle(node, pseudo);
+                if (!name2.length) {
+                  return cstyle;
+                }
+                return cstyle.getPropertyValue(F.stringToKebabCase(name2));
+              }
+              _getValue(property, value) {
+                if (property.startsWith("--")) {
+                  return node.style.getPropertyValue(F.stringToKebabCase(property));
+                }
+                return value || value === void 0 ? value : null;
+              }
+              _deleteValue(property, value) {
+                node.style.removeProperty(F.stringToKebabCase(property));
+              }
+              _applyGet(priority) {
+                const result = {};
+                for (let i = 0; true; i++) {
+                  const name2 = node.style[i];
+                  if (!name2) {
+                    break;
+                  }
+                  if (priority === true) {
+                    const priority2 = node.style.getPropertyPriority(name2);
+                    result[name2] = node.style.getPropertyValue(name2) + (priority2 ? `!${priority2}` : "");
+                  } else {
+                    result[name2] = node.style.getPropertyValue(name2);
+                  }
+                }
+                return result;
+              }
+              _applySet(object) {
+                for (const [name2, style] of F.objectToEntries(object)) {
+                  const strstyle = "" + style;
+                  const rawstyle = strstyle.replace(/!important$/, "");
+                  node.style.setProperty(F.stringToKebabCase(name2), rawstyle, strstyle === rawstyle ? "" : "important");
+                }
+              }
+            }(node, name)));
+          },
+          /**
+           * mass assign CSSStyleDeclaration(style)
+           *
+           * @descriptor set
+           *
+           * @param {Object} value
+           *
+           * @example
+           * $$('input').$style = {color: 'value'};                // mass assign(delete other)
+           * $$('input').$style = (node, i) => ({color: 'value'}); // mass assign by callback(delete other)
+           */
+          set $style(value) {
+            kQuery.logger.assertInstanceOf(value, Nullable, Object)();
+            if (value == null) {
+              return;
+            }
+            this.style.cssText = "";
+            this.$style(value);
+          }
+        }
+      )
     };
   }
   __name(attributes, "attributes");
 
   // src/plugins/data.js
   function data(kQuery) {
+    const nodeBag = new WeakMap();
+    const nodeJson = new WeakMap();
     return {
-      [[Node.name, $NodeList.name]]: function() {
-        const nodeBag = new WeakMap();
-        return (
-          /** @lends Node.prototype */
-          {
-            /**
-             * get Bag for anything
-             *
-             * @descriptor get
-             *
-             * @example
-             * $('input').$bag.hoge;             // getter
-             * $('input').$bag.hoge = 'value';   // setter
-             * $('input').$bag({hoge: 'value'}); // mass setting(keep other)
-             * $('input').$bag();                // get all key-value object
-             */
-            get $bag() {
-              const bag = {};
-              return nodeBag.getOrSet(this, () => new Proxy2(/* @__PURE__ */ __name(function $Bag() {
-              }, "$Bag"), {
-                has(target, property) {
-                  return Reflect.has(bag, property);
-                },
-                get(target, property) {
-                  if (property === Symbol.toPrimitive || property === "toString") {
-                    return () => JSON.stringify(bag);
-                  }
-                  return Reflect.get(bag, property);
-                },
-                set(target, property, value) {
-                  Reflect.set(bag, property, value);
-                  return true;
-                },
-                deleteProperty(target, property) {
-                  Reflect.deleteProperty(bag, property);
-                  return true;
-                },
-                apply(target, thisArg, argArray) {
-                  if (F.objectIsPlain(argArray[0])) {
-                    Object.assign(bag, argArray[0]);
-                  }
-                  return bag;
+      [[Node.name, $NodeList.name]]: (
+        /** @lends Node.prototype */
+        {
+          /**
+           * get Bag for anything
+           *
+           * @descriptor get
+           *
+           * @example
+           * $('input').$bag.hoge;             // getter
+           * $('input').$bag.hoge = 'value';   // setter
+           * $('input').$bag({hoge: 'value'}); // mass setting(keep other)
+           * $('input').$bag();                // get all key-value object
+           */
+          get $bag() {
+            const bag = {};
+            return nodeBag.getOrSet(this, () => new Proxy2(/* @__PURE__ */ __name(function $Bag() {
+            }, "$Bag"), {
+              has(target, property) {
+                return Reflect.has(bag, property);
+              },
+              get(target, property) {
+                if (property === Symbol.toPrimitive || property === "toString") {
+                  return () => JSON.stringify(bag);
                 }
-              }));
-            },
-            /**
-             * mass assign $bag
-             *
-             * @descriptor set
-             *
-             * @param {Object} value
-             *
-             * @example
-             * $('input').$bag = {hoge: 'value'};                // mass assign(delete other)
-             * $('input').$bag = (node, i) => ({hoge: 'value'}); // mass assign by callback(delete other)
-             */
-            set $bag(value) {
-              kQuery.logger.assertInstanceOf(value, Nullable, Object)();
-              if (value == null) {
-                return;
+                return Reflect.get(bag, property);
+              },
+              set(target, property, value) {
+                Reflect.set(bag, property, value);
+                return true;
+              },
+              deleteProperty(target, property) {
+                Reflect.deleteProperty(bag, property);
+                return true;
+              },
+              apply(target, thisArg, argArray) {
+                if (F.objectIsPlain(argArray[0])) {
+                  Object.assign(bag, argArray[0]);
+                }
+                return bag;
               }
-              const $bag = this.$bag;
-              for (const key of Object.keys($bag())) {
-                delete $bag[key];
-              }
-              $bag(value);
+            }));
+          },
+          /**
+           * mass assign $bag
+           *
+           * @descriptor set
+           *
+           * @param {Object} value
+           *
+           * @example
+           * $('input').$bag = {hoge: 'value'};                // mass assign(delete other)
+           * $('input').$bag = (node, i) => ({hoge: 'value'}); // mass assign by callback(delete other)
+           */
+          set $bag(value) {
+            kQuery.logger.assertInstanceOf(value, Nullable, Object)();
+            if (value == null) {
+              return;
             }
+            const $bag = this.$bag;
+            for (const key of Object.keys($bag())) {
+              delete $bag[key];
+            }
+            $bag(value);
           }
-        );
-      }(),
+        }
+      ),
       [[HTMLStyleElement.name, HTMLLinkElement.name, $NodeList.name]]: (
         /** @lends HTMLStylableElement.prototype */
         {
@@ -3245,6 +3269,55 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
 
   // src/plugins/dimensions.js
   function dimensions(kQuery) {
+    const boxsize = /* @__PURE__ */ __name(function(element) {
+      const backup = element.getAttribute("style");
+      try {
+        const cstyle = element.$window.getComputedStyle(element);
+        const marginWidth = parseFloat(cstyle.marginLeft) + parseFloat(cstyle.marginRight);
+        const marginHeight = parseFloat(cstyle.marginTop) + parseFloat(cstyle.marginBottom);
+        element.style.setProperty("box-sizing", "content-box", "important");
+        element.style.setProperty("overflow", "hidden", "important");
+        const box = element.getBoundingClientRect();
+        let contentWidth = box.width;
+        let contentHeight = box.height;
+        element.style.setProperty("border", "none", "important");
+        const borderWidth = contentWidth - element.offsetWidth;
+        const borderHeight = contentHeight - element.offsetHeight;
+        contentWidth -= borderWidth;
+        contentHeight -= borderHeight;
+        element.style.setProperty("padding", 0, "important");
+        const paddingWidth = contentWidth - element.offsetWidth;
+        const paddingHeight = contentHeight - element.offsetHeight;
+        const scrollWidth = element.scrollWidth;
+        const scrollHeight = element.scrollHeight;
+        contentWidth -= paddingWidth;
+        contentHeight -= paddingHeight;
+        const clientWidth = element.clientWidth;
+        const offsetHeight = element.offsetHeight;
+        element.style.setProperty("overflow", "scroll", "important");
+        const scrollbarWidth = clientWidth - element.clientWidth;
+        const scrollbarHeight = element.offsetHeight - offsetHeight;
+        contentWidth -= scrollbarWidth;
+        return {
+          marginWidth,
+          borderWidth,
+          paddingWidth,
+          scrollbarWidth,
+          contentWidth,
+          marginHeight,
+          borderHeight,
+          paddingHeight,
+          scrollbarHeight,
+          contentHeight
+        };
+      } finally {
+        if (backup == null) {
+          element.removeAttribute("style");
+        } else {
+          element.setAttribute("style", backup);
+        }
+      }
+    }, "boxsize");
     return {
       [[Document.name]]: (
         /** @lends Document.prototype */
@@ -3280,286 +3353,235 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
           }
         }
       ),
-      [[HTMLElement.name, $NodeList.name]]: /* @__PURE__ */ function() {
-        const boxsize = /* @__PURE__ */ __name(function(element) {
-          const backup = element.getAttribute("style");
-          try {
-            const cstyle = element.$window.getComputedStyle(element);
-            const marginWidth = parseFloat(cstyle.marginLeft) + parseFloat(cstyle.marginRight);
-            const marginHeight = parseFloat(cstyle.marginTop) + parseFloat(cstyle.marginBottom);
-            element.style.setProperty("box-sizing", "content-box", "important");
-            element.style.setProperty("overflow", "hidden", "important");
-            const box = element.getBoundingClientRect();
-            let contentWidth = box.width;
-            let contentHeight = box.height;
-            element.style.setProperty("border", "none", "important");
-            const borderWidth = contentWidth - element.offsetWidth;
-            const borderHeight = contentHeight - element.offsetHeight;
-            contentWidth -= borderWidth;
-            contentHeight -= borderHeight;
-            element.style.setProperty("padding", 0, "important");
-            const paddingWidth = contentWidth - element.offsetWidth;
-            const paddingHeight = contentHeight - element.offsetHeight;
-            const scrollWidth = element.scrollWidth;
-            const scrollHeight = element.scrollHeight;
-            contentWidth -= paddingWidth;
-            contentHeight -= paddingHeight;
-            const clientWidth = element.clientWidth;
-            const offsetHeight = element.offsetHeight;
-            element.style.setProperty("overflow", "scroll", "important");
-            const scrollbarWidth = clientWidth - element.clientWidth;
-            const scrollbarHeight = element.offsetHeight - offsetHeight;
-            contentWidth -= scrollbarWidth;
-            return {
-              marginWidth,
-              borderWidth,
-              paddingWidth,
-              scrollbarWidth,
-              contentWidth,
-              marginHeight,
-              borderHeight,
-              paddingHeight,
-              scrollbarHeight,
-              contentHeight
-            };
-          } finally {
-            if (backup == null) {
-              element.removeAttribute("style");
-            } else {
-              element.setAttribute("style", backup);
+      [[HTMLElement.name, $NodeList.name]]: (
+        /** @lends HTMLElement.prototype */
+        {
+          /**
+           * normalize cssUnit to pixel
+           *
+           * @param {Number|String} cssLength
+           * @return {Number}
+           *
+           * @example
+           * document.body.$cssPixel('2lh');
+           * // 58.2188
+           */
+          $cssPixel(cssLength) {
+            kQuery.logger.assertInstanceOf(cssLength, Number, String)();
+            if (typeof cssLength === "number") {
+              return cssLength;
             }
-          }
-        }, "boxsize");
-        return (
-          /** @lends HTMLElement.prototype */
-          {
-            /**
-             * normalize cssUnit to pixel
-             *
-             * @param {Number|String} cssLength
-             * @return {Number}
-             *
-             * @example
-             * document.body.$cssPixel('2lh');
-             * // 58.2188
-             */
-            $cssPixel(cssLength) {
-              kQuery.logger.assertInstanceOf(cssLength, Number, String)();
-              if (typeof cssLength === "number") {
-                return cssLength;
+            const value = parseFloat(cssLength);
+            const unit = cssLength.replace(/^-?[0-9.]+/, "");
+            switch (unit) {
+              case "":
+                return value;
+              case "px":
+                return value * 1;
+              case "in":
+                return value * 96;
+              case "pc":
+                return value * 96 / 6;
+              case "pt":
+                return value * 96 / 6 / 12;
+              case "cm":
+                return value * 96 / 2.54;
+              case "mm":
+                return value * 96 / 2.54 / 10;
+              case "Q":
+                return value * 96 / 2.54 / 10 / 4;
+            }
+            const backup = this.getAttribute("style");
+            try {
+              this.style.marginBottom = cssLength;
+              return parseFloat(this.$window.getComputedStyle(this).marginBottom);
+            } finally {
+              if (backup == null) {
+                this.removeAttribute("style");
+              } else {
+                this.setAttribute("style", backup);
               }
-              const value = parseFloat(cssLength);
-              const unit = cssLength.replace(/^-?[0-9.]+/, "");
-              switch (unit) {
-                case "":
-                  return value;
-                case "px":
-                  return value * 1;
-                case "in":
-                  return value * 96;
-                case "pc":
-                  return value * 96 / 6;
-                case "pt":
-                  return value * 96 / 6 / 12;
-                case "cm":
-                  return value * 96 / 2.54;
-                case "mm":
-                  return value * 96 / 2.54 / 10;
-                case "Q":
-                  return value * 96 / 2.54 / 10 / 4;
-              }
-              const backup = this.getAttribute("style");
-              try {
-                this.style.marginBottom = cssLength;
-                return parseFloat(this.$window.getComputedStyle(this).marginBottom);
-              } finally {
-                if (backup == null) {
-                  this.removeAttribute("style");
-                } else {
-                  this.setAttribute("style", backup);
-                }
-              }
-            },
-            /**
-             * get left/top absolute/relative node
-             *
-             * @param {{relative?: Boolean, margin?: Boolean}} [options={}]
-             * @return {{left: Number, top: Number}}
-             */
-            $offset(options = {}) {
-              options = Object.assign({
-                relative: false,
-                margin: false
-              }, options);
-              kQuery.logger.assertInstanceOf(options, Object)();
-              let marginLeft = 0;
-              let marginTop = 0;
-              if (!options.margin) {
-                const cstyle = this.$window.getComputedStyle(this);
-                marginLeft = parseFloat(cstyle.marginLeft);
-                marginTop = parseFloat(cstyle.marginTop);
-              }
-              if (options.relative) {
-                return {
-                  left: this.offsetLeft - marginLeft,
-                  top: this.offsetTop - marginTop
-                };
-              }
-              const box = this.getBoundingClientRect();
+            }
+          },
+          /**
+           * get left/top absolute/relative node
+           *
+           * @param {{relative?: Boolean, margin?: Boolean}} [options={}]
+           * @return {{left: Number, top: Number}}
+           */
+          $offset(options = {}) {
+            options = Object.assign({
+              relative: false,
+              margin: false
+            }, options);
+            kQuery.logger.assertInstanceOf(options, Object)();
+            let marginLeft = 0;
+            let marginTop = 0;
+            if (!options.margin) {
+              const cstyle = this.$window.getComputedStyle(this);
+              marginLeft = parseFloat(cstyle.marginLeft);
+              marginTop = parseFloat(cstyle.marginTop);
+            }
+            if (options.relative) {
               return {
-                left: box.left + window.scrollX - document.documentElement.clientLeft - marginLeft,
-                top: box.top + window.scrollY - document.documentElement.clientTop - marginTop
+                left: this.offsetLeft - marginLeft,
+                top: this.offsetTop - marginTop
               };
-            },
-            /**
-             * get width/height irrespective of css
-             *
-             * ```
-             * ┌margin────────────────────────────────────┐
-             * │                                                                              │
-             * │   ┌border───────────────────────────────┐   │
-             * │   │                                                                    │   │
-             * │   │   ┌padding ───────────────────────┬SB┐   │   │
-             * │   │   │                                                      │  │   │   │
-             * │   │   │   ┌content─────────────────────┤  │   │   │
-             * │   │   │   │                                                 │  │   │   │
-             * │   │   │   └-────────────────────────┤  │   │   │
-             * │   │   │                                                      │  │   │   │
-             * │   │   ├───────────────────────────┴─┤   │   │
-             * │   │   ├scroll bar────────────────────────┤   │   │
-             * │   │   └─────────────────────────────┘   │   │
-             * │   │                                                                    │   │
-             * │   └──────────────────────────────────┘   │
-             * │                                                                              │
-             * └───────────────────────────────────────┘
-             * ```
-             *
-             * @param {String|{scroll?: Boolean, margin?: Boolean, border?: Boolean, padding?: Boolean, scrollbar?: Boolean}} [options={}]
-             * @return {{width: Number, height: Number}}
-             */
-            $size(options = {}) {
-              if (typeof options === "string") {
-                const presets = {
-                  "": {
-                    scrollbar: true
-                  },
-                  client: {
-                    padding: true
-                  },
-                  inner: {
-                    padding: true,
-                    scrollbar: true
-                  },
-                  offset: {
-                    padding: true,
-                    border: true
-                  },
-                  outer: {
-                    padding: true,
-                    border: true,
-                    scrollbar: true
-                  },
-                  margin: {
-                    padding: true,
-                    border: true,
-                    margin: true,
-                    scrollbar: true
-                  }
-                };
-                options = presets[options];
-              }
-              kQuery.logger.assertInstanceOf(options, Object)();
-              options = Object.assign({
-                scroll: false,
-                margin: false,
-                border: false,
-                padding: false,
-                scrollbar: false
-              }, options);
-              const box = boxsize(this);
-              let width = options.scroll ? this.scrollWidth : box.contentWidth;
-              let height = options.scroll ? this.scrollHeight : box.contentHeight;
-              if (options.margin) {
-                width += box.marginWidth;
-                height += box.marginHeight;
-              }
-              if (options.border) {
-                width += box.borderWidth;
-                height += box.borderHeight;
-              }
-              if (options.padding) {
-                width += box.paddingWidth;
-                height += box.paddingHeight;
-              }
-              if (options.scrollbar && !options.scroll) {
-                width += box.scrollbarWidth;
-                height += box.scrollbarHeight;
-              }
-              return { width, height };
-            },
-            /**
-             * get/set width irrespective of css
-             *
-             * @param {Number|String|{scroll?: Boolean, margin?: Boolean, border?: Boolean, padding?: Boolean, scrollbar?: Boolean}} [options={}]
-             * @return {Number}
-             */
-            $width(options = {}) {
-              if (typeof options === "number" || typeof options === "string") {
-                if (F.stringIsNaN(options)) {
-                  kQuery.logger.error(`options(${options}) is NaN`);
-                }
-                let size = this.$cssPixel(options);
-                const cstyle = this.$window.getComputedStyle(this);
-                if (cstyle.boxSizing !== "border-box") {
-                  const box = boxsize(this);
-                  size -= box.borderWidth + box.paddingWidth;
-                }
-                this.style.width = size + "px";
-                return size;
-              }
-              return this.$size(options).width;
-            },
-            /**
-             * get/set height irrespective of css
-             *
-             * @param {Number|String|{scroll?: Boolean, margin?: Boolean, border?: Boolean, padding?: Boolean, scrollbar?: Boolean}} [options={}]
-             * @return {Number}
-             */
-            $height(options = {}) {
-              if (typeof options === "number" || typeof options === "string") {
-                if (F.stringIsNaN(options)) {
-                  kQuery.logger.error(`options(${options}) is NaN`);
-                }
-                let size = this.$cssPixel(options);
-                const cstyle = this.$window.getComputedStyle(this);
-                if (cstyle.boxSizing !== "border-box") {
-                  const box = boxsize(this);
-                  size -= box.borderHeight + box.paddingHeight;
-                }
-                this.style.height = size + "px";
-                return size;
-              }
-              return this.$size(options).height;
-            },
-            /**
-             * get closest scrollable parent
-             *
-             * @param {{height: Boolean, width: Boolean}} scrollableOptions
-             * @return {?Element}
-             */
-            $scrollParent(scrollableOptions = { height: true, width: true }) {
-              kQuery.logger.assertInstanceOf(scrollableOptions, Object)();
-              if (scrollableOptions.height && this.scrollHeight > this.clientHeight) {
-                return this;
-              }
-              if (scrollableOptions.width && this.scrollWidth > this.clientWidth) {
-                return this;
-              }
-              return this.parentElement?.$scrollParent(scrollableOptions) ?? null;
             }
+            const box = this.getBoundingClientRect();
+            return {
+              left: box.left + window.scrollX - document.documentElement.clientLeft - marginLeft,
+              top: box.top + window.scrollY - document.documentElement.clientTop - marginTop
+            };
+          },
+          /**
+           * get width/height irrespective of css
+           *
+           * ```
+           * ┌margin────────────────────────────────────┐
+           * │                                                                              │
+           * │   ┌border───────────────────────────────┐   │
+           * │   │                                                                    │   │
+           * │   │   ┌padding ───────────────────────┬SB┐   │   │
+           * │   │   │                                                      │  │   │   │
+           * │   │   │   ┌content─────────────────────┤  │   │   │
+           * │   │   │   │                                                 │  │   │   │
+           * │   │   │   └-────────────────────────┤  │   │   │
+           * │   │   │                                                      │  │   │   │
+           * │   │   ├───────────────────────────┴─┤   │   │
+           * │   │   ├scroll bar────────────────────────┤   │   │
+           * │   │   └─────────────────────────────┘   │   │
+           * │   │                                                                    │   │
+           * │   └──────────────────────────────────┘   │
+           * │                                                                              │
+           * └───────────────────────────────────────┘
+           * ```
+           *
+           * @param {String|{scroll?: Boolean, margin?: Boolean, border?: Boolean, padding?: Boolean, scrollbar?: Boolean}} [options={}]
+           * @return {{width: Number, height: Number}}
+           */
+          $size(options = {}) {
+            if (typeof options === "string") {
+              const presets = {
+                "": {
+                  scrollbar: true
+                },
+                client: {
+                  padding: true
+                },
+                inner: {
+                  padding: true,
+                  scrollbar: true
+                },
+                offset: {
+                  padding: true,
+                  border: true
+                },
+                outer: {
+                  padding: true,
+                  border: true,
+                  scrollbar: true
+                },
+                margin: {
+                  padding: true,
+                  border: true,
+                  margin: true,
+                  scrollbar: true
+                }
+              };
+              options = presets[options];
+            }
+            kQuery.logger.assertInstanceOf(options, Object)();
+            options = Object.assign({
+              scroll: false,
+              margin: false,
+              border: false,
+              padding: false,
+              scrollbar: false
+            }, options);
+            const box = boxsize(this);
+            let width = options.scroll ? this.scrollWidth : box.contentWidth;
+            let height = options.scroll ? this.scrollHeight : box.contentHeight;
+            if (options.margin) {
+              width += box.marginWidth;
+              height += box.marginHeight;
+            }
+            if (options.border) {
+              width += box.borderWidth;
+              height += box.borderHeight;
+            }
+            if (options.padding) {
+              width += box.paddingWidth;
+              height += box.paddingHeight;
+            }
+            if (options.scrollbar && !options.scroll) {
+              width += box.scrollbarWidth;
+              height += box.scrollbarHeight;
+            }
+            return { width, height };
+          },
+          /**
+           * get/set width irrespective of css
+           *
+           * @param {Number|String|{scroll?: Boolean, margin?: Boolean, border?: Boolean, padding?: Boolean, scrollbar?: Boolean}} [options={}]
+           * @return {Number}
+           */
+          $width(options = {}) {
+            if (typeof options === "number" || typeof options === "string") {
+              if (F.stringIsNaN(options)) {
+                kQuery.logger.error(`options(${options}) is NaN`);
+              }
+              let size = this.$cssPixel(options);
+              const cstyle = this.$window.getComputedStyle(this);
+              if (cstyle.boxSizing !== "border-box") {
+                const box = boxsize(this);
+                size -= box.borderWidth + box.paddingWidth;
+              }
+              this.style.width = size + "px";
+              return size;
+            }
+            return this.$size(options).width;
+          },
+          /**
+           * get/set height irrespective of css
+           *
+           * @param {Number|String|{scroll?: Boolean, margin?: Boolean, border?: Boolean, padding?: Boolean, scrollbar?: Boolean}} [options={}]
+           * @return {Number}
+           */
+          $height(options = {}) {
+            if (typeof options === "number" || typeof options === "string") {
+              if (F.stringIsNaN(options)) {
+                kQuery.logger.error(`options(${options}) is NaN`);
+              }
+              let size = this.$cssPixel(options);
+              const cstyle = this.$window.getComputedStyle(this);
+              if (cstyle.boxSizing !== "border-box") {
+                const box = boxsize(this);
+                size -= box.borderHeight + box.paddingHeight;
+              }
+              this.style.height = size + "px";
+              return size;
+            }
+            return this.$size(options).height;
+          },
+          /**
+           * get closest scrollable parent
+           *
+           * @param {{height: Boolean, width: Boolean}} scrollableOptions
+           * @return {?Element}
+           */
+          $scrollParent(scrollableOptions = { height: true, width: true }) {
+            kQuery.logger.assertInstanceOf(scrollableOptions, Object)();
+            if (scrollableOptions.height && this.scrollHeight > this.clientHeight) {
+              return this;
+            }
+            if (scrollableOptions.width && this.scrollWidth > this.clientWidth) {
+              return this;
+            }
+            return this.parentElement?.$scrollParent(scrollableOptions) ?? null;
           }
-        );
-      }(),
+        }
+      ),
       [[DOMRectReadOnly.name]]: (
         /** @lends DOMRectReadOnly.prototype */
         {
@@ -3665,290 +3687,288 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
 
   // src/plugins/effects.js
   function effects(kQuery) {
+    const handleArguments = /* @__PURE__ */ __name(function(args) {
+      if (typeof args[0] === "number") {
+        args[1] ??= {};
+        args[1].duration = args[0];
+        args[0] = args[1];
+      }
+      return Object.assign({
+        initial: {},
+        reset: true
+      }, args[0]);
+    }, "handleArguments");
+    const nodeStyleBackup = new WeakMap();
+    const nodeWillChangeBackup = new WeakMap();
+    const willChangeTimer = new Timer();
+    willChangeTimer.addEventListener("alarm", function() {
+      for (const [e, backup] of nodeWillChangeBackup.entries()) {
+        e.style.setProperty("will-change", backup);
+      }
+      nodeWillChangeBackup.clear();
+    });
     return {
-      [[Element.name, $NodeList.name]]: function() {
-        const handleArguments = /* @__PURE__ */ __name(function(args) {
-          if (typeof args[0] === "number") {
-            args[1] ??= {};
-            args[1].duration = args[0];
-            args[0] = args[1];
-          }
-          return Object.assign({
-            initial: {},
-            reset: true
-          }, args[0]);
-        }, "handleArguments");
-        const nodeStyleBackup = new WeakMap();
-        const nodeWillChangeBackup = new WeakMap();
-        const willChangeTimer = new Timer();
-        willChangeTimer.addEventListener("alarm", function() {
-          for (const [e, backup] of nodeWillChangeBackup.entries()) {
-            e.style.setProperty("will-change", backup);
-          }
-          nodeWillChangeBackup.clear();
-        });
-        return (
-          /** @lends Element.prototype */
-          {
-            /**
-             * change css will-change property
-             *
-             * changes are undone after a certain amount of time
-             *
-             * @param {String|Array} value
-             * @param {Number} [timeout=1000]
-             * @return {this}
-             */
-            $willChange(value, timeout = 1e3) {
-              kQuery.logger.assertInstanceOf(value, String, Array)();
-              kQuery.logger.assertInstanceOf(timeout, Number)();
-              value = value instanceof Array ? value : [value];
-              const current = this.style.getPropertyValue("will-change");
-              nodeWillChangeBackup.getOrSet(this, () => current);
-              if (current) {
-                value.push(current);
-              }
-              this.style.setProperty("will-change", [...new Set(value)].join(","));
-              willChangeTimer.restart(timeout, 1);
-              return this;
-            },
-            /**
-             * change css with transition
-             *
-             * options.initial: first css styles
-             * options.reset: reset all when finish
-             * options.duration: reference transition css
-             * options.timing: reference transition css
-             *
-             * @param {Object} properties
-             * @param {Object} [options={}]
-             * @return {Promise<Boolean>}
-             */
-            async $transition(properties, options) {
-              kQuery.logger.assertInstanceOf(properties, Object)();
-              kQuery.logger.assertInstanceOf(options, Nullable, Object)();
-              options = Object.assign({
-                initial: {},
-                reset: false,
-                duration: 400,
-                timing: "ease"
-              }, options);
-              const current = nodeStyleBackup.getOrSet(this, () => ({
-                count: 0,
-                style: this.getAttribute("style"),
-                transitionValue: this.style.getPropertyValue("transition") ?? "",
-                transitionPriority: this.style.getPropertyPriority("transition") ?? ""
-              }));
-              current.count++;
-              for (const [css, value] of Object.entries(options.initial)) {
-                this.style.setProperty(css, value, "important");
-              }
-              this.getClientRects();
-              const currentTransitions = (this.style.getPropertyValue("transition") ?? "").split(",").filter((v) => v);
-              for (const [css, value] of Object.entries(properties)) {
-                this.style.setProperty(css, value, "important");
-                currentTransitions.push(`${css} ${options.duration}ms ${options.timing}`);
-              }
-              this.style.setProperty("transition", currentTransitions.join(","), "important");
-              let resolve, reject;
-              const promise = new Promise2((res, rej) => {
-                resolve = res;
-                reject = rej;
-              });
-              const complete = /* @__PURE__ */ __name(() => {
-                this.removeEventListener("transitionend", listener);
-                const current2 = nodeStyleBackup.get(this);
-                if (--current2.count === 0) {
-                  nodeStyleBackup.delete(this);
-                  if (options.reset) {
-                    this.setAttribute("style", current2.style);
-                  } else {
-                    this.style.setProperty("transition", current2.transitionValue, current2.transitionPriority);
-                    for (const [css, value] of Object.entries(properties)) {
-                      this.style.setProperty(css, value, "");
-                    }
+      [[Element.name, $NodeList.name]]: (
+        /** @lends Element.prototype */
+        {
+          /**
+           * change css will-change property
+           *
+           * changes are undone after a certain amount of time
+           *
+           * @param {String|Array} value
+           * @param {Number} [timeout=1000]
+           * @return {this}
+           */
+          $willChange(value, timeout = 1e3) {
+            kQuery.logger.assertInstanceOf(value, String, Array)();
+            kQuery.logger.assertInstanceOf(timeout, Number)();
+            value = value instanceof Array ? value : [value];
+            const current = this.style.getPropertyValue("will-change");
+            nodeWillChangeBackup.getOrSet(this, () => current);
+            if (current) {
+              value.push(current);
+            }
+            this.style.setProperty("will-change", [...new Set(value)].join(","));
+            willChangeTimer.restart(timeout, 1);
+            return this;
+          },
+          /**
+           * change css with transition
+           *
+           * options.initial: first css styles
+           * options.reset: reset all when finish
+           * options.duration: reference transition css
+           * options.timing: reference transition css
+           *
+           * @param {Object} properties
+           * @param {Object} [options={}]
+           * @return {Promise<Boolean>}
+           */
+          async $transition(properties, options) {
+            kQuery.logger.assertInstanceOf(properties, Object)();
+            kQuery.logger.assertInstanceOf(options, Nullable, Object)();
+            options = Object.assign({
+              initial: {},
+              reset: false,
+              duration: 400,
+              timing: "ease"
+            }, options);
+            const current = nodeStyleBackup.getOrSet(this, () => ({
+              count: 0,
+              style: this.getAttribute("style"),
+              transitionValue: this.style.getPropertyValue("transition") ?? "",
+              transitionPriority: this.style.getPropertyPriority("transition") ?? ""
+            }));
+            current.count++;
+            for (const [css, value] of Object.entries(options.initial)) {
+              this.style.setProperty(css, value, "important");
+            }
+            this.getClientRects();
+            const currentTransitions = (this.style.getPropertyValue("transition") ?? "").split(",").filter((v) => v);
+            for (const [css, value] of Object.entries(properties)) {
+              this.style.setProperty(css, value, "important");
+              currentTransitions.push(`${css} ${options.duration}ms ${options.timing}`);
+            }
+            this.style.setProperty("transition", currentTransitions.join(","), "important");
+            let resolve, reject;
+            const promise = new Promise2((res, rej) => {
+              resolve = res;
+              reject = rej;
+            });
+            const complete = /* @__PURE__ */ __name(() => {
+              this.removeEventListener("transitionend", listener);
+              const current2 = nodeStyleBackup.get(this);
+              if (--current2.count === 0) {
+                nodeStyleBackup.delete(this);
+                if (options.reset) {
+                  this.setAttribute("style", current2.style);
+                } else {
+                  this.style.setProperty("transition", current2.transitionValue, current2.transitionPriority);
+                  for (const [css, value] of Object.entries(properties)) {
+                    this.style.setProperty(css, value, "");
                   }
                 }
-              }, "complete");
-              const queue = new Set(Object.keys(properties));
-              const listener = /* @__PURE__ */ __name((e) => {
-                queue.delete(e.propertyName);
-                if (queue.size === 0) {
-                  clearTimeout(timer);
-                  complete();
-                  resolve(true);
-                }
-              }, "listener");
-              const timer = setTimeout(function() {
+              }
+            }, "complete");
+            const queue = new Set(Object.keys(properties));
+            const listener = /* @__PURE__ */ __name((e) => {
+              queue.delete(e.propertyName);
+              if (queue.size === 0) {
+                clearTimeout(timer);
                 complete();
-                resolve(false);
-              }, options.duration + 32);
-              this.addEventListener("transitionend", listener);
-              return promise;
-            },
-            /**
-             * fade in element
-             *
-             * this does not involve visibility, you have to do it ourselves.
-             *
-             * @param {Number|Object} [durationOrOptions=400]
-             * @param {Object} [options={}]
-             * @return {Promise<Boolean>}
-             *
-             * @example
-             * node.hidden = false;
-             * await node.$fadeIn();
-             */
-            async $fadeIn(durationOrOptions = 400, options = {}) {
-              const opts = handleArguments(arguments);
-              const cstyle = this.$window.getComputedStyle(this);
-              opts.initial = Object.assign(opts.initial, {
-                opacity: 0
-              });
-              return this.$transition({
-                opacity: cstyle.opacity
-              }, opts);
-            },
-            /**
-             * fade out element
-             *
-             * this does not involve visibility, you have to do it ourselves.
-             *
-             * @param {Number|Object} [durationOrOptions=400]
-             * @param {Object} [options={}]
-             * @return {Promise<Boolean>}
-             *
-             * @example
-             * await node.$fadeOut();
-             * node.hidden = true;
-             */
-            async $fadeOut(durationOrOptions = 400, options = {}) {
-              const opts = handleArguments(arguments);
-              const cstyle = this.$window.getComputedStyle(this);
-              opts.initial = Object.assign(opts.initial, {
-                opacity: cstyle.opacity
-              });
-              return this.$transition({
-                opacity: 0
-              }, opts);
-            },
-            /**
-             * slide to down element
-             *
-             * this does not involve visibility, you have to do it ourselves.
-             *
-             * @param {Number|Object} [durationOrOptions=400]
-             * @param {Object} [options={}]
-             * @return {Promise<Boolean>}
-             */
-            async $slideDown(durationOrOptions = 400, options = {}) {
-              const opts = handleArguments(arguments);
-              const cstyle = this.$window.getComputedStyle(this);
-              opts.initial = Object.assign(opts.initial, {
-                overflow: "hidden",
-                height: 0,
-                "margin-top": 0,
-                "margin-bottom": 0,
-                "padding-top": 0,
-                "padding-bottom": 0
-              });
-              return this.$transition({
-                height: parseFloat(cstyle.height),
-                "margin-top": parseFloat(cstyle.marginTop),
-                "margin-bottom": parseFloat(cstyle.marginBottom),
-                "padding-top": parseFloat(cstyle.paddingTop),
-                "padding-bottom": parseFloat(cstyle.paddingBottom)
-              }, opts);
-            },
-            /**
-             * slide to top element
-             *
-             * this does not involve visibility, you have to do it ourselves.
-             *
-             * @param {Number|Object} [durationOrOptions=400]
-             * @param {Object} [options={}]
-             * @return {Promise<Boolean>}
-             */
-            async $slideUp(durationOrOptions = 400, options = {}) {
-              const opts = handleArguments(arguments);
-              const cstyle = this.$window.getComputedStyle(this);
-              opts.initial = Object.assign(opts.initial, {
-                overflow: "hidden",
-                height: parseFloat(cstyle.height),
-                "margin-top": parseFloat(cstyle.marginTop),
-                "margin-bottom": parseFloat(cstyle.marginBottom),
-                "padding-top": parseFloat(cstyle.paddingTop),
-                "padding-bottom": parseFloat(cstyle.paddingBottom)
-              });
-              return this.$transition({
-                height: 0,
-                "margin-top": 0,
-                "margin-bottom": 0,
-                "padding-top": 0,
-                "padding-bottom": 0
-              }, opts);
-            },
-            /**
-             * slide to right element
-             *
-             * this does not involve visibility, you have to do it ourselves.
-             *
-             * @param {Number|Object} [durationOrOptions=400]
-             * @param {Object} [options={}]
-             * @return {Promise<Boolean>}
-             */
-            async $slideRight(durationOrOptions = 400, options = {}) {
-              const opts = handleArguments(arguments);
-              const cstyle = this.$window.getComputedStyle(this);
-              opts.initial = Object.assign(opts.initial, {
-                overflow: "hidden",
-                width: 0,
-                "margin-left": 0,
-                "margin-right": 0,
-                "padding-left": 0,
-                "padding-right": 0,
-                "max-height": parseFloat(cstyle.height)
-              });
-              return this.$transition({
-                width: parseFloat(cstyle.width),
-                "margin-left": parseFloat(cstyle.marginLeft),
-                "margin-right": parseFloat(cstyle.marginRight),
-                "padding-left": parseFloat(cstyle.paddingLeft),
-                "padding-right": parseFloat(cstyle.paddingRight)
-              }, opts);
-            },
-            /**
-             * slide to left element
-             *
-             * this does not involve visibility, you have to do it ourselves.
-             *
-             * @param {Number|Object} [durationOrOptions=400]
-             * @param {Object} [options={}]
-             * @return {Promise<Boolean>}
-             */
-            async $slideLeft(durationOrOptions = 400, options = {}) {
-              const opts = handleArguments(arguments);
-              const cstyle = this.$window.getComputedStyle(this);
-              opts.initial = Object.assign(opts.initial, {
-                overflow: "hidden",
-                width: parseFloat(cstyle.width),
-                "margin-left": parseFloat(cstyle.marginLeft),
-                "margin-right": parseFloat(cstyle.marginRight),
-                "padding-left": parseFloat(cstyle.paddingLeft),
-                "padding-right": parseFloat(cstyle.paddingRight),
-                "max-height": parseFloat(cstyle.height)
-              });
-              return this.$transition({
-                width: 0,
-                "margin-left": 0,
-                "margin-right": 0,
-                "padding-left": 0,
-                "padding-right": 0
-              }, opts);
-            }
+                resolve(true);
+              }
+            }, "listener");
+            const timer = setTimeout(function() {
+              complete();
+              resolve(false);
+            }, options.duration + 32);
+            this.addEventListener("transitionend", listener);
+            return promise;
+          },
+          /**
+           * fade in element
+           *
+           * this does not involve visibility, you have to do it ourselves.
+           *
+           * @param {Number|Object} [durationOrOptions=400]
+           * @param {Object} [options={}]
+           * @return {Promise<Boolean>}
+           *
+           * @example
+           * node.hidden = false;
+           * await node.$fadeIn();
+           */
+          async $fadeIn(durationOrOptions = 400, options = {}) {
+            const opts = handleArguments(arguments);
+            const cstyle = this.$window.getComputedStyle(this);
+            opts.initial = Object.assign(opts.initial, {
+              opacity: 0
+            });
+            return this.$transition({
+              opacity: cstyle.opacity
+            }, opts);
+          },
+          /**
+           * fade out element
+           *
+           * this does not involve visibility, you have to do it ourselves.
+           *
+           * @param {Number|Object} [durationOrOptions=400]
+           * @param {Object} [options={}]
+           * @return {Promise<Boolean>}
+           *
+           * @example
+           * await node.$fadeOut();
+           * node.hidden = true;
+           */
+          async $fadeOut(durationOrOptions = 400, options = {}) {
+            const opts = handleArguments(arguments);
+            const cstyle = this.$window.getComputedStyle(this);
+            opts.initial = Object.assign(opts.initial, {
+              opacity: cstyle.opacity
+            });
+            return this.$transition({
+              opacity: 0
+            }, opts);
+          },
+          /**
+           * slide to down element
+           *
+           * this does not involve visibility, you have to do it ourselves.
+           *
+           * @param {Number|Object} [durationOrOptions=400]
+           * @param {Object} [options={}]
+           * @return {Promise<Boolean>}
+           */
+          async $slideDown(durationOrOptions = 400, options = {}) {
+            const opts = handleArguments(arguments);
+            const cstyle = this.$window.getComputedStyle(this);
+            opts.initial = Object.assign(opts.initial, {
+              overflow: "hidden",
+              height: 0,
+              "margin-top": 0,
+              "margin-bottom": 0,
+              "padding-top": 0,
+              "padding-bottom": 0
+            });
+            return this.$transition({
+              height: parseFloat(cstyle.height),
+              "margin-top": parseFloat(cstyle.marginTop),
+              "margin-bottom": parseFloat(cstyle.marginBottom),
+              "padding-top": parseFloat(cstyle.paddingTop),
+              "padding-bottom": parseFloat(cstyle.paddingBottom)
+            }, opts);
+          },
+          /**
+           * slide to top element
+           *
+           * this does not involve visibility, you have to do it ourselves.
+           *
+           * @param {Number|Object} [durationOrOptions=400]
+           * @param {Object} [options={}]
+           * @return {Promise<Boolean>}
+           */
+          async $slideUp(durationOrOptions = 400, options = {}) {
+            const opts = handleArguments(arguments);
+            const cstyle = this.$window.getComputedStyle(this);
+            opts.initial = Object.assign(opts.initial, {
+              overflow: "hidden",
+              height: parseFloat(cstyle.height),
+              "margin-top": parseFloat(cstyle.marginTop),
+              "margin-bottom": parseFloat(cstyle.marginBottom),
+              "padding-top": parseFloat(cstyle.paddingTop),
+              "padding-bottom": parseFloat(cstyle.paddingBottom)
+            });
+            return this.$transition({
+              height: 0,
+              "margin-top": 0,
+              "margin-bottom": 0,
+              "padding-top": 0,
+              "padding-bottom": 0
+            }, opts);
+          },
+          /**
+           * slide to right element
+           *
+           * this does not involve visibility, you have to do it ourselves.
+           *
+           * @param {Number|Object} [durationOrOptions=400]
+           * @param {Object} [options={}]
+           * @return {Promise<Boolean>}
+           */
+          async $slideRight(durationOrOptions = 400, options = {}) {
+            const opts = handleArguments(arguments);
+            const cstyle = this.$window.getComputedStyle(this);
+            opts.initial = Object.assign(opts.initial, {
+              overflow: "hidden",
+              width: 0,
+              "margin-left": 0,
+              "margin-right": 0,
+              "padding-left": 0,
+              "padding-right": 0,
+              "max-height": parseFloat(cstyle.height)
+            });
+            return this.$transition({
+              width: parseFloat(cstyle.width),
+              "margin-left": parseFloat(cstyle.marginLeft),
+              "margin-right": parseFloat(cstyle.marginRight),
+              "padding-left": parseFloat(cstyle.paddingLeft),
+              "padding-right": parseFloat(cstyle.paddingRight)
+            }, opts);
+          },
+          /**
+           * slide to left element
+           *
+           * this does not involve visibility, you have to do it ourselves.
+           *
+           * @param {Number|Object} [durationOrOptions=400]
+           * @param {Object} [options={}]
+           * @return {Promise<Boolean>}
+           */
+          async $slideLeft(durationOrOptions = 400, options = {}) {
+            const opts = handleArguments(arguments);
+            const cstyle = this.$window.getComputedStyle(this);
+            opts.initial = Object.assign(opts.initial, {
+              overflow: "hidden",
+              width: parseFloat(cstyle.width),
+              "margin-left": parseFloat(cstyle.marginLeft),
+              "margin-right": parseFloat(cstyle.marginRight),
+              "padding-left": parseFloat(cstyle.paddingLeft),
+              "padding-right": parseFloat(cstyle.paddingRight),
+              "max-height": parseFloat(cstyle.height)
+            });
+            return this.$transition({
+              width: 0,
+              "margin-left": 0,
+              "margin-right": 0,
+              "padding-left": 0,
+              "padding-right": 0
+            }, opts);
           }
-        );
-      }()
+        }
+      )
     };
   }
   __name(effects, "effects");
@@ -4128,35 +4148,35 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
             if (this.type === "datetime-local") {
               const strtime = toLocalISOString(value, "notz");
               if (this.value !== "") {
-                this.value = strtime.slice(0, this.value.length);
+                this.$value = strtime.slice(0, this.value.length);
               } else if (!this.step) {
-                this.value = strtime.slice(0, 16);
+                this.$value = strtime.slice(0, 16);
               } else if (this.step.includes(".")) {
-                this.value = strtime.slice(0, 23);
+                this.$value = strtime.slice(0, 23);
               } else {
-                this.value = strtime.slice(0, 19);
+                this.$value = strtime.slice(0, 19);
               }
               return;
             }
             if (this.type === "month") {
-              return this.value = toLocalISOString(value, "notz").slice(0, 7);
+              return this.$value = toLocalISOString(value, "notz").slice(0, 7);
             }
             if (this.type === "week") {
-              return this.value = toLocalISOString(value, "week").slice(0, 8);
+              return this.$value = toLocalISOString(value, "week").slice(0, 8);
             }
             if (this.type === "date") {
-              return this.value = toLocalISOString(value, "notz").slice(0, 10);
+              return this.$value = toLocalISOString(value, "notz").slice(0, 10);
             }
             if (this.type === "time") {
               const strtime = toLocalISOString(value, "notz");
               if (this.value !== "") {
-                this.value = strtime.slice(11, 11 + this.value.length);
+                this.$value = strtime.slice(11, 11 + this.value.length);
               } else if (!this.step) {
-                this.value = strtime.slice(11, 16);
+                this.$value = strtime.slice(11, 16);
               } else if (this.step.includes(".")) {
-                this.value = strtime.slice(11, 23);
+                this.$value = strtime.slice(11, 23);
               } else {
-                this.value = strtime.slice(11, 19);
+                this.$value = strtime.slice(11, 19);
               }
             }
           },
@@ -4266,10 +4286,10 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
               this.indeterminate = false;
             } else if (value.every((v) => !v)) {
               this.indeterminate = false;
-              this.checked = false;
+              this.$value = null;
             } else if (value.every((v) => v)) {
               this.indeterminate = false;
-              this.checked = true;
+              this.$value = this.value;
             } else {
               this.indeterminate = true;
             }
@@ -4381,28 +4401,57 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
            * - file(single): must be File|FileList
            * - file(multiple): must be FileList
            *
+           * this trigger $change event
+           *
            * @descriptor set
            */
           set $value(value) {
+            let changed = false;
             if (["select-one"].includes(this.type)) {
-              this.value = value;
+              if (this.value !== value) {
+                this.value = value;
+                changed = true;
+              }
             } else if (["select-multiple"].includes(this.type)) {
-              const values = (value instanceof Array ? value : [value]).map((v) => "" + v);
+              const values = (value instanceof Array ? value : [value]).filter((v) => v !== null).map((v) => "" + v);
               for (const option of this.options) {
-                option.selected = values.includes(option.value);
+                const selected = values.includes(option.value);
+                if (option.selected !== selected) {
+                  option.selected = selected;
+                  changed = true;
+                }
               }
             } else if (["radio", "checkbox"].includes(this.type)) {
-              this.checked = this.value === value;
+              const checked = this.value === value;
+              if (this.checked !== checked) {
+                this.checked = checked;
+                changed = true;
+              }
             } else if (["file"].includes(this.type)) {
+              const files = Array.from(this.files, (f) => f.name).join("/");
               if (value instanceof File) {
-                const dataTransfer = new DataTransfer();
-                dataTransfer.items.add(value);
-                this.files = dataTransfer.files;
+                if (value.name !== files) {
+                  const dataTransfer = new DataTransfer();
+                  dataTransfer.items.add(value);
+                  this.files = dataTransfer.files;
+                  changed = true;
+                }
               } else if (value instanceof FileList) {
-                this.files = value;
+                if (Array.from(value, (f) => f.name).join("/") !== files) {
+                  this.files = value;
+                  changed = true;
+                }
               }
             } else if (this.type) {
-              this.value = value;
+              if (this.value !== value) {
+                this.value = value;
+                changed = true;
+              }
+            }
+            if (changed) {
+              this.dispatchEvent(new Event("$change", {
+                bubbles: true
+              }));
             }
           },
           /**
@@ -4414,13 +4463,13 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
            */
           $clear() {
             if (["select-one", "select-multiple"].includes(this.type)) {
-              this.value = null;
+              this.$value = null;
             } else if (["radio", "checkbox"].includes(this.type)) {
-              this.checked = false;
+              this.$value = null;
             } else if (["file"].includes(this.type)) {
-              this.files = new DataTransfer().files;
+              this.$value = new DataTransfer().files;
             } else if (this.type) {
-              this.value = "";
+              this.$value = "";
             }
             return this;
           },
@@ -4457,8 +4506,27 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
            * @param {HTMLOptionElement[]|HTMLOptGroupElement[]|Object} options
            * @param {Boolean|String} [preserveValue]
            * @return {this}
+           *
+           * @example
+           * // object mode
+           * $('select').$options({
+           *     a1: 'A1',
+           *     a2: {label: 'A1', 'data-custom': 'custom'},
+           *     b1: {label: 'B1', optgroup: 'optgroup'},
+           *     b2: {label: 'B2', optgroup: 'optgroup'},
+           *     c1: document.$createElement('option', {label: 'C1'}),
+           * });
+           * // array mode
+           * $('select').$options([
+           *     'a1',
+           *     {value: 'a1', label: 'A1', 'data-custom': 'custom'},
+           *     {value: 'b1', label: 'B1', optgroup: 'optgroup'},
+           *     {value: 'b2', label: 'B2', optgroup: 'optgroup'},
+           *     document.$createElement('option', {value: 'c1', label: 'C1'}),
+           * ]);
            */
           $options(options, preserveValue = void 0) {
+            kQuery.logger.assertInstanceOf(options, Object, Array)();
             preserveValue ??= this instanceof HTMLSelectElement ? "append" : null;
             kQuery.logger.assertInstanceOf(preserveValue, Nullable, Boolean, String)();
             this.$willChange("scroll-position");
@@ -4471,21 +4539,36 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
               this.scrollLeft = scroll.left;
             }, "recover");
             const build = /* @__PURE__ */ __name((data2) => {
+              const optgroups = {};
               const options2 = [];
-              for (const [value, label] of F.objectToEntries(data2)) {
+              for (let [value, label] of F.objectToEntries(data2)) {
                 if (label instanceof Array) {
-                  options2.push(this.$document.$createElement("optgroup", { label: value }, ...label));
-                } else if (F.objectIsPlain(label)) {
                   options2.push(this.$document.$createElement("optgroup", { label: value }, ...build(label)));
+                } else if (label instanceof Node) {
+                  label.value ||= value;
+                  options2.push(label);
+                } else if (F.objectIsPlain(label)) {
+                  label = { ...label };
+                  label.value ??= value;
+                  label.title ??= label.label;
+                  if (label.optgroup) {
+                    const optgroup = label.optgroup;
+                    delete label.optgroup;
+                    if (!optgroups[optgroup]) {
+                      optgroups[optgroup] = this.$document.$createElement("optgroup", { label: optgroup });
+                      options2.push(optgroups[optgroup]);
+                    }
+                    optgroups[optgroup].append(this.$document.$createElement("option", label, label.label));
+                  } else {
+                    options2.push(this.$document.$createElement("option", label, label.label));
+                  }
                 } else {
                   options2.push(this.$document.$createElement("option", { value, title: label }, label));
                 }
               }
               return options2;
             }, "build");
-            if (F.objectIsPlain(options)) {
-              options = build(options);
-            }
+            options = build(options);
             const $value = preserveValue ? this.$value : null;
             if (preserveValue && typeof preserveValue === "string") {
               const $values = ($value instanceof Array ? $value : [$value]).filter((v) => v != null).map((v) => "" + v);
@@ -4550,6 +4633,22 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
 
   // src/plugins/manipulation.js
   function manipulation(kQuery) {
+    const styleSheetMap = /* @__PURE__ */ new Map();
+    const renderedNodes = new WeakMap();
+    const normalizeNodes = /* @__PURE__ */ __name(function(nodes) {
+      return [...nodes].flatMap((node) => node instanceof NodeList ? [...node] : node);
+    }, "normalizeNodes");
+    class Value {
+      static {
+        __name(this, "Value");
+      }
+      constructor(value) {
+        this.value = value;
+      }
+      toString() {
+        return "" + this.value;
+      }
+    }
     return {
       [[Window.name]]: (
         /** @lends Window.prototype */
@@ -4668,366 +4767,382 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
             }
             element.$append(...children);
             return element;
+          },
+          /**
+           * create CSSRule
+           *
+           * - CSSRule is live, to change...
+           *   - cssRule.selectorText = 'span[attr=value]'
+           *   - cssRule.styleMap.set('color', 'red')
+           *   - cssRule.style.setProperty('color', 'red', 'important')
+           *   - or same as Element.$style
+           *     - cssRule.$style({color: 'red'})
+           *
+           * @param {?String} [media]
+           * @return {CSSRule|CSSStyleRule}
+           */
+          $createCSSRule(media) {
+            if (!styleSheetMap.has(media)) {
+              const styleSheet2 = new CSSStyleSheet({
+                baseURL: this.location.href,
+                media
+              });
+              styleSheetMap.set(media, styleSheet2);
+              this.adoptedStyleSheets = [...this.adoptedStyleSheets, styleSheet2];
+            }
+            const styleSheet = styleSheetMap.get(media);
+            const index = styleSheet.insertRule(":root {}");
+            return styleSheet.cssRules.item(index);
           }
         }
       ),
-      [[HTMLTemplateElement.name, $NodeList.name]]: function() {
-        const renderedNodes = new WeakMap();
-        class Value {
-          static {
-            __name(this, "Value");
-          }
-          constructor(value) {
-            this.value = value;
-          }
-          toString() {
-            return "" + this.value;
-          }
-        }
-        return (
-          /** @lends HTMLTemplateElement.prototype */
-          {
-            /**
-             * render template content
-             *
-             * this is experimental, very magical,evil and slow.
-             *
-             * vars:
-             * - Array: per below
-             * - String: text node
-             * - other Object: text node without escape
-             * - plain Object: render recursive
-             *
-             * rendered nodes are auto inserted to after this
-             * if specified insert:null, no inserted
-             *
-             * @param {Object|Object[]} vars
-             * @param {{escape?: String|Function, logical?: String, insert?: String}} [options={}]
-             * @return {NodeList}
-             */
-            $render(vars, options = {}) {
-              options = Object.assign({
-                escape: "html",
-                logical: "---logical<false/>---",
-                insert: "after"
-              }, options);
-              const tag = /* @__PURE__ */ __name(function(value) {
+      [[HTMLTemplateElement.name, $NodeList.name]]: (
+        /** @lends HTMLTemplateElement.prototype */
+        {
+          /**
+           * render template content
+           *
+           * this is experimental, very magical,evil and slow.
+           *
+           * vars:
+           * - Array: per below
+           * - String: text node
+           * - other Object: text node without escape
+           * - plain Object: render recursive
+           *
+           * rendered nodes are auto inserted to after this
+           * if specified insert:null, no inserted
+           *
+           * @param {Object|Object[]} vars
+           * @param {{escape?: String|Function, logical?: String, insert?: String}} [options={}]
+           * @return {NodeList}
+           */
+          $render(vars, options = {}) {
+            options = Object.assign({
+              escape: "html",
+              logical: "---logical<false/>---",
+              insert: "after"
+            }, options);
+            const tag = /* @__PURE__ */ __name(function(value) {
+              if (options.logical) {
+                if (value === false) {
+                  return options.logical;
+                }
+                if (value === true) {
+                  return "";
+                }
+              }
+              if (typeof value === "object" && !(value instanceof Value)) {
+                return value;
+              }
+              if (typeof options.escape === "function") {
+                return options.escape(value);
+              }
+              return F.stringEscape(value, options.escape);
+            }, "tag");
+            const core = /* @__PURE__ */ __name(function(current, parent) {
+              if (!current) {
+                return [];
+              }
+              if (!(current instanceof Array)) {
+                current = [current];
+              }
+              const elements2 = [];
+              for (let [i, value] of current.entries()) {
+                const fragment = this.content.cloneNode(true);
+                if (F.anyIsPrimitive(value)) {
+                  value = new Value(value);
+                }
+                Object.assign(value, {
+                  $parent: parent,
+                  $index: i,
+                  $length: current.length,
+                  $first: i === 0,
+                  $last: i === current.length - 1
+                });
+                const children = fragment.$$("template[data-slot-name]");
+                for (const child of children) {
+                  child.after(...core.call(child, value[child.dataset.slotName], value));
+                  child.remove();
+                }
+                kQuery.logger.assert(() => fragment.$contains((e) => !e.$isMetadataContent))();
+                const template = [...fragment.childNodes].join("");
+                const html = F.stringRender(template, value, tag);
+                const nodes = this.$document.$createNodeListFromHTML(html);
                 if (options.logical) {
-                  if (value === false) {
-                    return options.logical;
-                  }
-                  if (value === true) {
-                    return "";
-                  }
-                }
-                if (typeof value === "object" && !(value instanceof Value)) {
-                  return value;
-                }
-                if (typeof options.escape === "function") {
-                  return options.escape(value);
-                }
-                return F.stringEscape(value, options.escape);
-              }, "tag");
-              const core = /* @__PURE__ */ __name(function(current, parent) {
-                if (!current) {
-                  return [];
-                }
-                if (!(current instanceof Array)) {
-                  current = [current];
-                }
-                const elements2 = [];
-                for (let [i, value] of current.entries()) {
-                  const fragment = this.content.cloneNode(true);
-                  if (F.anyIsPrimitive(value)) {
-                    value = new Value(value);
-                  }
-                  Object.assign(value, {
-                    $parent: parent,
-                    $index: i,
-                    $length: current.length,
-                    $first: i === 0,
-                    $last: i === current.length - 1
-                  });
-                  const children = fragment.$$("template[data-slot-name]");
-                  for (const child of children) {
-                    child.after(...core.call(child, value[child.dataset.slotName], value));
-                    child.remove();
-                  }
-                  kQuery.logger.assert(() => fragment.$contains((e) => !e.$isMetadataContent))();
-                  const template = [...fragment.childNodes].join("");
-                  const html = F.stringRender(template, value, tag);
-                  const nodes = this.$document.$createNodeListFromHTML(html);
-                  if (options.logical) {
-                    for (const node of nodes.$$$("*")) {
-                      for (const attribute of Array.from(node.attributes)) {
-                        if (attribute.value === options.logical) {
-                          node.attributes.removeNamedItem(attribute.name);
-                        }
+                  for (const node of nodes.$$$("*")) {
+                    for (const attribute of Array.from(node.attributes)) {
+                      if (attribute.value === options.logical) {
+                        node.attributes.removeNamedItem(attribute.name);
                       }
                     }
                   }
-                  elements2.push(...nodes);
                 }
-                return elements2;
-              }, "core");
-              const elements = core.call(this, vars, null);
-              if (options.insert) {
-                const olds = renderedNodes.reset(this, () => elements) ?? [];
-                olds.forEach((old) => old.remove());
-                this[options.insert](...elements);
+                elements2.push(...nodes);
               }
-              return F.iterableToNodeList(elements);
+              return elements2;
+            }, "core");
+            const elements = core.call(this, vars, null);
+            if (options.insert) {
+              const olds = renderedNodes.reset(this, () => elements) ?? [];
+              olds.forEach((old) => old.remove());
+              this[options.insert](...elements);
             }
+            return F.iterableToNodeList(elements);
           }
-        );
-      }(),
-      [[Node.name, $NodeList.name]]: /* @__PURE__ */ function() {
-        const normalizeNodes = /* @__PURE__ */ __name(function(nodes) {
-          return [...nodes].flatMap((node) => node instanceof NodeList ? [...node] : node);
-        }, "normalizeNodes");
-        return (
-          /** @lends Node.prototype */
-          {
-            /**
-             * clone Node
-             *
-             * withEvent:
-             * - false: same as cloneNode(true)
-             * - true: deep clone with event handler
-             *
-             * @param {Boolean} [withEvent = false]
-             * @return {Node}
-             */
-            $clone(withEvent = false) {
-              if (!withEvent) {
-                return this.cloneNode(true);
-              }
-              const cloned = this.cloneNode(false);
-              for (const ev of this.$events(null, false, false)) {
-                cloned.$on(ev.type + ev.namespaces.map((ns) => `.${ns}`).join(), ev.selector, ev.listener, ev.options);
-              }
-              for (const child of this.childNodes) {
-                if (child instanceof Element) {
-                  cloned.appendChild(child.$clone(true));
-                } else {
-                  cloned.appendChild(child.cloneNode(true));
-                }
-              }
-              return cloned;
-            },
-            /**
-             * insert before this
-             *
-             * almost the same as before, however, accept NodeList
-             *
-             * @param {...String|Node|NodeList} [nodes=[]]
-             * @return {this}
-             *
-             * @example
-             * {!!!insert here!!!}
-             * <this>
-             *     child
-             * </this>
-             */
-            $before(...nodes) {
-              this.before(...normalizeNodes(nodes));
-              return this;
-            },
-            /**
-             * insert first child
-             *
-             * almost the same as prepend, however, accept NodeList
-             *
-             * @param {...String|Node|NodeList} [nodes=[]]
-             * @return {this}
-             *
-             * @example
-             * <this>
-             *     {!!!insert here!!!}
-             *     child
-             * </this>
-             */
-            $prepend(...nodes) {
-              this.prepend(...normalizeNodes(nodes));
-              return this;
-            },
-            /**
-             * insert specified child
-             *
-             * @param {Number|String|Node|Function} selectorFn
-             * @param {...String|Node|NodeList} [nodes=[]]
-             * @return {this}
-             *
-             * @example
-             * <this>
-             *     child
-             *     {!!!insert here!!!}
-             *     child
-             * </this>
-             */
-            $insert(selectorFn, ...nodes) {
-              this.$childElement(selectorFn)?.$before?.(...normalizeNodes(nodes));
-              return this;
-            },
-            /**
-             * insert last child
-             *
-             * almost the same as append, however, accept NodeList
-             *
-             * @param {...String|Node|NodeList} [nodes=[]]
-             * @return {this}
-             *
-             * @example
-             * <this>
-             *     child
-             *     {!!!insert here!!!}
-             * </this>
-             */
-            $append(...nodes) {
-              this.append(...normalizeNodes(nodes));
-              return this;
-            },
-            /**
-             * insert after this
-             *
-             * almost the same as after, however, accept NodeList
-             *
-             * @param {...String|Node|NodeList} [nodes=[]]
-             * @return {this}
-             *
-             * @example
-             * <this>
-             *     child
-             * </this>
-             * {!!!insert here!!!}
-             */
-            $after(...nodes) {
-              this.after(...normalizeNodes(nodes));
-              return this;
-            },
-            /**
-             * replace this
-             *
-             * almost the same as replaceWith, however, accept NodeList
-             *
-             * @param {...String|Node|NodeList} [nodes=[]]
-             * @return {this}
-             */
-            $replace(...nodes) {
-              this.replaceWith(...normalizeNodes(nodes));
-              return this;
-            },
-            /**
-             * replace children
-             *
-             * exhange parameter of replaceChild, and variadic
-             * @see https://developer.mozilla.org/docs/Web/API/Node/replaceChild
-             * > The parameter order, new before old, is unusual
-             *
-             * @param {Node} oldChild
-             * @param {...String|Node|NodeList} [nodes=[]]
-             * @return {this}
-             */
-            $replaceChild(oldChild, ...nodes) {
-              this.$insert(oldChild, ...nodes);
-              this.$childElement(oldChild)?.remove();
-              return this;
-            },
-            /**
-             * replace children
-             *
-             * almost the same as replaceChildren, however, accept NodeList
-             *
-             * @param {...String|Node|NodeList} [nodes=[]]
-             * @return {this}
-             */
-            $replaceChildren(...nodes) {
-              this.replaceChildren(...normalizeNodes(nodes));
-              return this;
-            },
-            /**
-             * wrap this element
-             *
-             * @param {Element} node
-             * @return {this}
-             *
-             * @example
-             * <div>
-             *   text
-             *   <span>span</span>
-             * </div>
-             *
-             * $('div').$wrap($('<section></section>'));
-             *
-             * <section>
-             *   <div>
-             *     text
-             *     <span>span</span>
-             *   </div>
-             * </section>
-             */
-            $wrap(node) {
-              this.parentNode.insertBefore(node, this);
-              node.appendChild(this);
-              return this;
-            },
-            /**
-             * unwrap parent
-             *
-             * @return {this}
-             *
-             * @example
-             * <section>
-             *   <div>
-             *     text
-             *     <span>span</span>
-             *   </div>
-             * </section>
-             *
-             * $('div').$unwrap();
-             *
-             * <div>
-             *   text
-             *   <span>span</span>
-             * </div>
-             */
-            $unwrap() {
-              this.parentNode.$unwrapChildren();
-              return this;
-            },
-            /**
-             * unwrap children
-             *
-             * @return {this}
-             *
-             * @example
-             * <section>
-             *   <div>
-             *     text
-             *     <span>span</span>
-             *   </div>
-             * </section>
-             *
-             * $('div').$unwrapChildren();
-             *
-             * <section>
-             *   text
-             *   <span>span</span>
-             * </section>
-             */
-            $unwrapChildren() {
-              this.replaceWith(...this.childNodes);
-              return this;
+        }
+      ),
+      [[Node.name, $NodeList.name]]: (
+        /** @lends Node.prototype */
+        {
+          /**
+           * clone Node
+           *
+           * withEvent:
+           * - false: same as cloneNode(true)
+           * - true: deep clone with event handler
+           *
+           * @param {Boolean} [withEvent = false]
+           * @return {Node}
+           */
+          $clone(withEvent = false) {
+            if (!withEvent) {
+              return this.cloneNode(true);
             }
+            const cloned = this.cloneNode(false);
+            for (const ev of this.$events(null, false, false)) {
+              cloned.$on(ev.type + ev.namespaces.map((ns) => `.${ns}`).join(), ev.selector, ev.listener, ev.options);
+            }
+            for (const child of this.childNodes) {
+              if (child instanceof Element) {
+                cloned.appendChild(child.$clone(true));
+              } else {
+                cloned.appendChild(child.cloneNode(true));
+              }
+            }
+            return cloned;
+          },
+          /**
+           * insert before this
+           *
+           * almost the same as before, however, accept NodeList
+           *
+           * @param {...String|Node|NodeList} [nodes=[]]
+           * @return {this}
+           *
+           * @example
+           * {!!!insert here!!!}
+           * <this>
+           *     child
+           * </this>
+           */
+          $before(...nodes) {
+            this.before(...normalizeNodes(nodes));
+            return this;
+          },
+          /**
+           * insert first child
+           *
+           * almost the same as prepend, however, accept NodeList
+           *
+           * @param {...String|Node|NodeList} [nodes=[]]
+           * @return {this}
+           *
+           * @example
+           * <this>
+           *     {!!!insert here!!!}
+           *     child
+           * </this>
+           */
+          $prepend(...nodes) {
+            this.prepend(...normalizeNodes(nodes));
+            return this;
+          },
+          /**
+           * insert specified child
+           *
+           * @param {Number|String|Node|Function} selectorFn
+           * @param {...String|Node|NodeList} [nodes=[]]
+           * @return {this}
+           *
+           * @example
+           * <this>
+           *     child
+           *     {!!!insert here!!!}
+           *     child
+           * </this>
+           */
+          $insert(selectorFn, ...nodes) {
+            this.$childElement(selectorFn)?.$before?.(...normalizeNodes(nodes));
+            return this;
+          },
+          /**
+           * insert last child
+           *
+           * almost the same as append, however, accept NodeList
+           *
+           * @param {...String|Node|NodeList} [nodes=[]]
+           * @return {this}
+           *
+           * @example
+           * <this>
+           *     child
+           *     {!!!insert here!!!}
+           * </this>
+           */
+          $append(...nodes) {
+            this.append(...normalizeNodes(nodes));
+            return this;
+          },
+          /**
+           * insert after this
+           *
+           * almost the same as after, however, accept NodeList
+           *
+           * @param {...String|Node|NodeList} [nodes=[]]
+           * @return {this}
+           *
+           * @example
+           * <this>
+           *     child
+           * </this>
+           * {!!!insert here!!!}
+           */
+          $after(...nodes) {
+            this.after(...normalizeNodes(nodes));
+            return this;
+          },
+          /**
+           * replace this
+           *
+           * almost the same as replaceWith, however, accept NodeList
+           *
+           * @param {...String|Node|NodeList} [nodes=[]]
+           * @return {this}
+           */
+          $replace(...nodes) {
+            this.replaceWith(...normalizeNodes(nodes));
+            return this;
+          },
+          /**
+           * replace children
+           *
+           * exhange parameter of replaceChild, and variadic
+           * @see https://developer.mozilla.org/docs/Web/API/Node/replaceChild
+           * > The parameter order, new before old, is unusual
+           *
+           * @param {Node} oldChild
+           * @param {...String|Node|NodeList} [nodes=[]]
+           * @return {this}
+           */
+          $replaceChild(oldChild, ...nodes) {
+            this.$insert(oldChild, ...nodes);
+            this.$childElement(oldChild)?.remove();
+            return this;
+          },
+          /**
+           * replace children
+           *
+           * almost the same as replaceChildren, however, accept NodeList
+           *
+           * @param {...String|Node|NodeList} [nodes=[]]
+           * @return {this}
+           */
+          $replaceChildren(...nodes) {
+            this.replaceChildren(...normalizeNodes(nodes));
+            return this;
+          },
+          /**
+           * wrap this element
+           *
+           * @param {Element} node
+           * @return {this}
+           *
+           * @example
+           * <div>
+           *   text
+           *   <span>span</span>
+           * </div>
+           *
+           * $('div').$wrap($('<section></section>'));
+           *
+           * <section>
+           *   <div>
+           *     text
+           *     <span>span</span>
+           *   </div>
+           * </section>
+           */
+          $wrap(node) {
+            this.parentNode.insertBefore(node, this);
+            node.appendChild(this);
+            return this;
+          },
+          /**
+           * unwrap parent
+           *
+           * @return {this}
+           *
+           * @example
+           * <section>
+           *   <div>
+           *     text
+           *     <span>span</span>
+           *   </div>
+           * </section>
+           *
+           * $('div').$unwrap();
+           *
+           * <div>
+           *   text
+           *   <span>span</span>
+           * </div>
+           */
+          $unwrap() {
+            this.parentNode.$unwrapChildren();
+            return this;
+          },
+          /**
+           * unwrap children
+           *
+           * @return {this}
+           *
+           * @example
+           * <section>
+           *   <div>
+           *     text
+           *     <span>span</span>
+           *   </div>
+           * </section>
+           *
+           * $('div').$unwrapChildren();
+           *
+           * <section>
+           *   text
+           *   <span>span</span>
+           * </section>
+           */
+          $unwrapChildren() {
+            this.replaceWith(...this.childNodes);
+            return this;
           }
-        );
-      }()
+        }
+      )
     };
   }
   __name(manipulation, "manipulation");
 
   // src/plugins/miscellaneous.js
   function miscellaneous(kQuery) {
+    const interlockings = new WeakMap();
+    const documentChange = /* @__PURE__ */ __name(function(e) {
+      for (const [parent, selector] of interlockings.entries()) {
+        if (e.target.$matches(selector)) {
+          parent.$indeterminate = window.$query(selector).$filter("[type=checkbox]").checked;
+        }
+      }
+    }, "documentChange");
+    let scrollIntoViewing = false;
     return {
       [[Window.name]]: (
         /** @lends Window.prototype */
@@ -5107,158 +5222,196 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
           }
         }
       ),
-      [[Element.name, $NodeList.name]]: /* @__PURE__ */ function() {
-        let scrollIntoViewing = false;
-        return (
-          /** @lends Element.prototype */
-          {
-            /**
-             * is metadata content
-             *
-             * @see https://html.spec.whatwg.org/multipage/dom.html#metadata-content
-             *
-             * @descriptor get
-             *
-             * @return {Boolean}
-             */
-            get $isMetadataContent() {
-              return ["base", "link", "meta", "noscript", "script", "style", "template", "title"].includes(this.localName.toLowerCase());
-            },
-            /**
-             * get no content outerHTML
-             *
-             * @param {Boolean} [withClose=true]
-             * @return {String}
-             *
-             * @example
-             * document.$createElement('div', {a: 'A', b: 'B'}, 'child').$outerTag();
-             * // '<div a="A" b="B"></div>'
-             */
-            $outerTag(withClose = true) {
-              const name = this.localName;
-              const attrs = "" + this.$attrs;
-              let result = `<${name}${attrs ? " " + attrs : ""}>`;
-              if (withClose) {
-                result += `</${name}>`;
-              }
-              return result;
-            },
-            /**
-             * mark matched text nodes
-             *
-             * @param {String|RegExp} word
-             * @param {String|Element} [wrapper]
-             * @param {String|Node|Function} [notSelectorFn]
-             * @return {this}
-             *
-             * @example
-             * <hgroup>
-             *   <h1>this is header</h1>
-             *   <p>this is subheader</p>
-             * </hgroup>
-             *
-             * $('hgroup').$markText('is');
-             *
-             * <hgroup>
-             *   <h1>th<mark>is</mark> <mark>is</mark> header</h1>
-             *   <p>th<mark>is</mark> <mark>is</mark> subheader</p>
-             * </hgroup>
-             */
-            $markText(word, wrapper, notSelectorFn) {
-              kQuery.logger.assertInstanceOf(word, String, RegExp)();
-              kQuery.logger.assertInstanceOf(wrapper, Nullable, String, Element)();
-              if (!(word instanceof RegExp)) {
-                word = new RegExp(F.stringEscape(word, "regex"));
-              }
-              if (!(wrapper instanceof Element)) {
-                wrapper = this.$document.$createElement(wrapper ?? "mark");
-              }
-              const core = /* @__PURE__ */ __name((node) => {
-                for (const child of node.children) {
-                  if (child.$isMetadataContent || notSelectorFn != null && child.$matches(notSelectorFn) || child.$outerTag(false) === wrapper.$outerTag(false)) {
-                    continue;
-                  }
-                  core(child);
+      [[Element.name, $NodeList.name]]: (
+        /** @lends Element.prototype */
+        {
+          /**
+           * is metadata content
+           *
+           * @see https://html.spec.whatwg.org/multipage/dom.html#metadata-content
+           *
+           * @descriptor get
+           *
+           * @return {Boolean}
+           */
+          get $isMetadataContent() {
+            return ["base", "link", "meta", "noscript", "script", "style", "template", "title"].includes(this.localName.toLowerCase());
+          },
+          /**
+           * get no content outerHTML
+           *
+           * @param {Boolean} [withClose=true]
+           * @return {String}
+           *
+           * @example
+           * document.$createElement('div', {a: 'A', b: 'B'}, 'child').$outerTag();
+           * // '<div a="A" b="B"></div>'
+           */
+          $outerTag(withClose = true) {
+            const name = this.localName;
+            const attrs = "" + this.$attrs;
+            let result = `<${name}${attrs ? " " + attrs : ""}>`;
+            if (withClose) {
+              result += `</${name}>`;
+            }
+            return result;
+          },
+          /**
+           * mark matched text nodes
+           *
+           * @param {String|RegExp} word
+           * @param {String|Element} [wrapper]
+           * @param {String|Node|Function} [notSelectorFn]
+           * @return {this}
+           *
+           * @example
+           * <hgroup>
+           *   <h1>this is header</h1>
+           *   <p>this is subheader</p>
+           * </hgroup>
+           *
+           * $('hgroup').$markText('is');
+           *
+           * <hgroup>
+           *   <h1>th<mark>is</mark> <mark>is</mark> header</h1>
+           *   <p>th<mark>is</mark> <mark>is</mark> subheader</p>
+           * </hgroup>
+           */
+          $markText(word, wrapper, notSelectorFn) {
+            kQuery.logger.assertInstanceOf(word, String, RegExp)();
+            kQuery.logger.assertInstanceOf(wrapper, Nullable, String, Element)();
+            if (!(word instanceof RegExp)) {
+              word = new RegExp(F.stringEscape(word, "regex"));
+            }
+            if (!(wrapper instanceof Element)) {
+              wrapper = this.$document.$createElement(wrapper ?? "mark");
+            }
+            const core = /* @__PURE__ */ __name((node) => {
+              for (const child of node.children) {
+                if (child.$isMetadataContent || notSelectorFn != null && child.$matches(notSelectorFn) || child.$outerTag(false) === wrapper.$outerTag(false)) {
+                  continue;
                 }
-                for (const child of node.childNodes) {
-                  if (child instanceof CharacterData) {
-                    const matches = child.nodeValue.match(word);
-                    if (matches) {
-                      const after = child.splitText(matches.index);
-                      after.splitText(matches[0].length);
-                      after.$wrap(wrapper.$clone(true));
-                    }
+                core(child);
+              }
+              for (const child of node.childNodes) {
+                if (child instanceof CharacterData) {
+                  const matches = child.nodeValue.match(word);
+                  if (matches) {
+                    const after = child.splitText(matches.index);
+                    after.splitText(matches[0].length);
+                    after.$wrap(wrapper.$clone(true));
                   }
                 }
-                return node;
-              }, "core");
-              this.normalize();
-              return core(this);
-            },
-            /**
-             * asynchronous scrollIntoView
-             *
-             * @param {ScrollIntoViewOptions|Object} [options={}]
-             * @return {Promise<Boolean>}
-             */
-            async $scrollIntoView(options = {}) {
-              kQuery.logger.assertInstanceOf(options, Object)();
-              options = Object.assign({
-                // standard https://developer.mozilla.org/docs/Web/API/Element/scrollIntoView
-                ...{
-                  // string: "smooth" | "instant" | "auto"
-                  behavior: void 0,
-                  // string: "start" | "center" | "end" | "nearest"
-                  block: void 0,
-                  // string: "start" | "center" | "end" | "nearest"
-                  inline: void 0
-                },
-                // extends
-                ...{
-                  // bool
-                  global: true,
-                  // number
-                  timeout: void 0,
-                  // number https://developer.mozilla.org/docs/Web/API/IntersectionObserver/thresholds
-                  threshold: void 0,
-                  // bool emulate https://developer.mozilla.org/docs/Web/API/Element/scrollIntoViewIfNeeded
-                  ifNeeded: false
-                }
-              }, options);
-              if (options.global && scrollIntoViewing) {
-                return Promise2.resolve(false);
               }
-              return new Promise2((resolve, reject) => {
-                const observer = new IntersectionObserver((entry, last) => {
-                  if (!last && entry.isIntersecting && options.ifNeeded) {
-                    resolve(false);
-                    observer.unobserve(entry.target);
-                    return;
-                  }
-                  entry.target.scrollIntoView(options);
-                  scrollIntoViewing = true;
-                  if (entry.isIntersecting) {
-                    timeouter?.stop();
-                    observer.unobserve(entry.target);
-                    scrollIntoViewing = false;
-                    resolve(true);
-                  }
-                }, {
-                  threshold: options.threshold ?? 0
-                });
-                const timeouter = options.timeout ? new Timer() : null;
-                timeouter?.addEventListener("alarm", (e) => {
-                  observer.unobserve(this);
+              return node;
+            }, "core");
+            this.normalize();
+            return core(this);
+          },
+          /**
+           * asynchronous scrollIntoView
+           *
+           * @param {ScrollIntoViewOptions|Object} [options={}]
+           * @return {Promise<Boolean>}
+           */
+          async $scrollIntoView(options = {}) {
+            kQuery.logger.assertInstanceOf(options, Object)();
+            options = Object.assign({
+              // standard https://developer.mozilla.org/docs/Web/API/Element/scrollIntoView
+              ...{
+                // string: "smooth" | "instant" | "auto"
+                behavior: void 0,
+                // string: "start" | "center" | "end" | "nearest"
+                block: void 0,
+                // string: "start" | "center" | "end" | "nearest"
+                inline: void 0
+              },
+              // extends
+              ...{
+                // bool
+                global: true,
+                // number
+                timeout: void 0,
+                // number https://developer.mozilla.org/docs/Web/API/IntersectionObserver/thresholds
+                threshold: void 0,
+                // bool emulate https://developer.mozilla.org/docs/Web/API/Element/scrollIntoViewIfNeeded
+                ifNeeded: false
+              }
+            }, options);
+            if (options.global && scrollIntoViewing) {
+              return Promise2.resolve(false);
+            }
+            return new Promise2((resolve, reject) => {
+              const observer = new IntersectionObserver((entry, last) => {
+                if (!last && entry.isIntersecting && options.ifNeeded) {
+                  resolve(false);
+                  observer.unobserve(entry.target);
+                  return;
+                }
+                entry.target.scrollIntoView(options);
+                scrollIntoViewing = true;
+                if (entry.isIntersecting) {
+                  timeouter?.stop();
+                  observer.unobserve(entry.target);
                   scrollIntoViewing = false;
-                  reject(this);
+                  resolve(true);
+                }
+              }, {
+                threshold: options.threshold ?? 0
+              });
+              const timeouter = options.timeout ? new Timer() : null;
+              timeouter?.addEventListener("alarm", (e) => {
+                observer.unobserve(this);
+                scrollIntoViewing = false;
+                reject(this);
+              });
+              timeouter?.start(options.timeout);
+              observer.observe(this);
+            });
+          }
+        }
+      ),
+      [[HTMLInputElement.name, $NodeList.name]]: (
+        /** @lends HTMLInputElement.prototype */
+        {
+          /**
+           * synchronous checked
+           *
+           * parent checked -> sync all children checked
+           * child checked -> sync parent checked/indeterminate
+           *
+           * @param {Object} [selector]
+           * @return {this}
+           */
+          $interlock(selector) {
+            kQuery.logger.assertInstanceOf(selector, Nullable, String)();
+            if (this.type !== "checkbox") {
+              return this;
+            }
+            if (selector == null) {
+              const selector2 = interlockings.get(this);
+              if (selector2 == null) {
+                throw new Error(this + " is not have child selector");
+              }
+              this.$indeterminate = window.$query(selector2).$filter("[type=checkbox]").checked;
+            } else {
+              interlockings.set(this, selector);
+              this.$indeterminate = window.$query(selector).$filter("[type=checkbox]").checked;
+              ["change", "$change"].forEach((e) => {
+                this.$document.addEventListener(e, documentChange);
+                this.addEventListener(e, (e2) => {
+                  const parent = e2.target;
+                  const children = window.$query(selector).$filter("[type=checkbox]");
+                  for (const child of children) {
+                    child.$value = parent.checked ? child.value : null;
+                  }
                 });
-                timeouter?.start(options.timeout);
-                observer.observe(this);
               });
             }
+            return this;
           }
-        );
-      }(),
+        }
+      ),
       [[HTMLDialogElement.name, $NodeList.name]]: (
         /** @lends HTMLDialogElement.prototype */
         {
@@ -5365,7 +5518,69 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
 
   // src/plugins/networks.js
   function networks(kQuery) {
+    const eventSources = {};
     return {
+      [[Node.name, $NodeList.name]]: (
+        /** @lends Node.prototype */
+        {
+          /**
+           * listen SSE event
+           *
+           * - same url connection is shared
+           *   - when all dom were deleted, close connection
+           * - url's hash means eventName
+           *
+           * @param {URL|String} url
+           * @param {Function} listener
+           * @param {Object} [options={}]
+           * @return {this}
+           */
+          $listen(url, listener, options = {}) {
+            options = Object.assign({
+              credentials: false
+            }, options);
+            url = new URL(url, this.baseURI);
+            const eventName = url.hash.substring(1) || "message";
+            url.hash = "";
+            const eventSource = eventSources[url] ??= new class extends EventSource {
+              #$nodeListeners;
+              constructor(url2, options2) {
+                super(url2, options2);
+                kQuery.logger.debug(`SSE open ${url2}#`);
+                this.#$nodeListeners = new WeakMap();
+              }
+              $listen(node, name, listener2) {
+                const names = [...this.#$nodeListeners.entries()].flatMap(([, namedListeners2]) => Object.keys(namedListeners2));
+                if (!names.includes(name)) {
+                  kQuery.logger.debug(`SSE listen ${this.url}#${name}`);
+                  this.addEventListener(name, (e) => {
+                    if (this.#$nodeListeners.size === 0) {
+                      delete eventSources[this.url];
+                      this.close();
+                      kQuery.logger.debug(`SSE close ${this.url}`);
+                    }
+                    for (const [node2, namedListeners2] of this.#$nodeListeners.entries()) {
+                      for (const listener3 of namedListeners2[name] ?? []) {
+                        listener3.call(node2, e);
+                      }
+                    }
+                  });
+                }
+                const namedListeners = this.#$nodeListeners.getOrSet(node, () => ({}));
+                namedListeners[name] ??= [];
+                namedListeners[name].push(listener2);
+              }
+            }(url, {
+              withCredentials: options.credentials
+            });
+            if (eventSource.withCredentials !== !!options.credentials) {
+              kQuery.logger.error(`SSE url(credentials) is difference`);
+            }
+            eventSource.$listen(this, eventName, listener);
+            return this;
+          }
+        }
+      ),
       [[HTMLAnchorElement.name, $NodeList.name]]: (
         /** @lends HTMLAnchorElement.prototype */
         {
@@ -5713,6 +5928,14 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
 
   // src/plugins/traversing.js
   function traversing(kQuery) {
+    const nodeGenerateSiblings = /* @__PURE__ */ __name(function* (node, selectorFn, flow) {
+      kQuery.logger.assertInstanceOf(node, Node)();
+      for (let sibling = node[flow]; sibling; sibling = sibling[flow]) {
+        if (selectorFn == null || sibling.$matches(selectorFn)) {
+          yield sibling;
+        }
+      }
+    }, "nodeGenerateSiblings");
     return {
       [[Document.name, DocumentFragment.name, Element.name]]: (
         /** @lends DocumentLikeElement.prototype */
@@ -5953,183 +6176,173 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
           }
         }
       ),
-      [[Node.name, $NodeList.name]]: /* @__PURE__ */ function() {
-        const nodeGenerateSiblings = /* @__PURE__ */ __name(function* (node, selectorFn, flow) {
-          kQuery.logger.assertInstanceOf(node, Node)();
-          for (let sibling = node[flow]; sibling; sibling = sibling[flow]) {
-            if (selectorFn == null || sibling.$matches(selectorFn)) {
-              yield sibling;
+      [[Node.name, $NodeList.name]]: (
+        /** @lends Node.prototype */
+        {
+          /**
+           * alias to ownerDocument.defaultView or global Window
+           *
+           * @descriptor get
+           *
+           * @return {Window}
+           */
+          get $window() {
+            return this.ownerDocument?.defaultView ?? window;
+          },
+          /**
+           * alias to ownerDocument or global Document
+           *
+           * @descriptor get
+           *
+           * @return {Document}
+           */
+          get $document() {
+            return this.ownerDocument ?? window.document;
+          },
+          /**
+           * get all textnodes
+           *
+           * @param {(Number|String)[]} selector
+           * @return {NodeList}
+           */
+          $textNodes(selector = [Node.TEXT_NODE, Node.COMMENT_NODE, Node.CDATA_SECTION_NODE]) {
+            kQuery.logger.assertElementsOf(selector, [Node.TEXT_NODE, Node.COMMENT_NODE, Node.CDATA_SECTION_NODE, "metadata"])();
+            const texts = [];
+            for (const child of this.childNodes) {
+              if (child instanceof CharacterData) {
+                if (selector.includes(child.nodeType)) {
+                  texts.push(child);
+                }
+              } else {
+                if (selector.includes("metadata") || !child.$isMetadataContent) {
+                  texts.push(...child.$textNodes(selector));
+                }
+              }
             }
-          }
-        }, "nodeGenerateSiblings");
-        return (
-          /** @lends Node.prototype */
-          {
-            /**
-             * alias to ownerDocument.defaultView or global Window
-             *
-             * @descriptor get
-             *
-             * @return {Window}
-             */
-            get $window() {
-              return this.ownerDocument?.defaultView ?? window;
-            },
-            /**
-             * alias to ownerDocument or global Document
-             *
-             * @descriptor get
-             *
-             * @return {Document}
-             */
-            get $document() {
-              return this.ownerDocument ?? window.document;
-            },
-            /**
-             * get all textnodes
-             *
-             * @param {(Number|String)[]} selector
-             * @return {NodeList}
-             */
-            $textNodes(selector = [Node.TEXT_NODE, Node.COMMENT_NODE, Node.CDATA_SECTION_NODE]) {
-              kQuery.logger.assertElementsOf(selector, [Node.TEXT_NODE, Node.COMMENT_NODE, Node.CDATA_SECTION_NODE, "metadata"])();
-              const texts = [];
-              for (const child of this.childNodes) {
-                if (child instanceof CharacterData) {
-                  if (selector.includes(child.nodeType)) {
-                    texts.push(child);
-                  }
-                } else {
-                  if (selector.includes("metadata") || !child.$isMetadataContent) {
-                    texts.push(...child.$textNodes(selector));
-                  }
-                }
-              }
-              return F.iterableToNodeList(texts);
-            },
-            /**
-             * functional closest
-             *
-             * @param {String|Node|Function} selectorFn
-             * @return {?Element}
-             */
-            $closest(selectorFn) {
-              kQuery.logger.assertInstanceOf(selectorFn, String, Element, Function)();
-              if (typeof selectorFn === "string") {
-                return this.closest(selectorFn);
-              }
-              for (let parent = this; parent != null; parent = parent.parentElement) {
-                if (parent.$matches(selectorFn)) {
-                  return parent;
-                }
-              }
-              return null;
-            },
-            /**
-             * get matched parent elements
-             *
-             * @param {String|Function} [selectorFn]
-             * @return {NodeList}
-             */
-            $parents(selectorFn) {
-              kQuery.logger.assertInstanceOf(selectorFn, Nullable, String, Function)();
-              const parents = [];
-              for (let parent = this.parentElement; parent != null; parent = parent.parentElement) {
-                if (selectorFn == null || parent.$matches(selectorFn)) {
-                  parents.push(parent);
-                }
-              }
-              return F.iterableToNodeList(parents);
-            },
-            /**
-             * get first matched child element
-             *
-             * @param {Number|String|Node|Function} [selectorFn]
-             * @return {?Element}
-             */
-            $childElement(selectorFn) {
-              kQuery.logger.assertInstanceOf(selectorFn, Nullable, Number, String, Element, Function)();
-              if (typeof selectorFn === "number") {
-                return this.children.$at(selectorFn);
-              }
-              for (const child of this.children) {
-                if (selectorFn == null || child.$matches(selectorFn)) {
-                  return child;
-                }
-              }
-              return null;
-            },
-            /**
-             * get matched child elements
-             *
-             * @param {String|Function} [selectorFn]
-             * @return {NodeList}
-             */
-            $childElements(selectorFn) {
-              kQuery.logger.assertInstanceOf(selectorFn, Nullable, String, Function)();
-              const children = F.iterableToNodeList(this.children);
-              if (selectorFn == null) {
-                return children;
-              }
-              return children.$filter(selectorFn);
-            },
-            /**
-             * get first matched previous element
-             *
-             * this isn't jQuery like, search all previous elements
-             *
-             * @param {String|Function} [selectorFn]
-             * @return {Element}
-             */
-            $prevElement(selectorFn) {
-              kQuery.logger.assertInstanceOf(selectorFn, Nullable, String, Function)();
-              return nodeGenerateSiblings(this, selectorFn, "previousElementSibling").next().value ?? null;
-            },
-            /**
-             * get matched previous elements
-             *
-             * @param {String|Function} [selectorFn]
-             * @return {NodeList}
-             */
-            $prevElements(selectorFn) {
-              kQuery.logger.assertInstanceOf(selectorFn, Nullable, String, Function)();
-              return F.iterableToNodeList([...nodeGenerateSiblings(this, selectorFn, "previousElementSibling")].reverse());
-            },
-            /**
-             * get first matched next element
-             *
-             * this isn't jQuery like, search all next elements
-             *
-             * @param {String|Function} [selectorFn]
-             * @return {Element}
-             */
-            $nextElement(selectorFn) {
-              kQuery.logger.assertInstanceOf(selectorFn, Nullable, String, Function)();
-              return nodeGenerateSiblings(this, selectorFn, "nextElementSibling").next().value ?? null;
-            },
-            /**
-             * get matched next elements
-             *
-             * @param {String|Function} [selectorFn]
-             * @return {NodeList}
-             */
-            $nextElements(selectorFn) {
-              kQuery.logger.assertInstanceOf(selectorFn, Nullable, String, Function)();
-              return F.iterableToNodeList(nodeGenerateSiblings(this, selectorFn, "nextElementSibling"));
-            },
-            /**
-             * get matched sibling elements
-             *
-             * @param {String|Node|Function} [selectorFn]
-             * @return {NodeList}
-             */
-            $siblingElements(selectorFn) {
-              kQuery.logger.assertInstanceOf(selectorFn, Nullable, String, Node, Function)();
-              return F.iterableToNodeList([...this.parentNode.children].filter((child) => child !== this && (selectorFn == null || child.$matches?.(selectorFn))));
+            return F.iterableToNodeList(texts);
+          },
+          /**
+           * functional closest
+           *
+           * @param {String|Node|Function} selectorFn
+           * @return {?Element}
+           */
+          $closest(selectorFn) {
+            kQuery.logger.assertInstanceOf(selectorFn, String, Element, Function)();
+            if (typeof selectorFn === "string") {
+              return this.closest(selectorFn);
             }
+            for (let parent = this; parent != null; parent = parent.parentElement) {
+              if (parent.$matches(selectorFn)) {
+                return parent;
+              }
+            }
+            return null;
+          },
+          /**
+           * get matched parent elements
+           *
+           * @param {String|Function} [selectorFn]
+           * @return {NodeList}
+           */
+          $parents(selectorFn) {
+            kQuery.logger.assertInstanceOf(selectorFn, Nullable, String, Function)();
+            const parents = [];
+            for (let parent = this.parentElement; parent != null; parent = parent.parentElement) {
+              if (selectorFn == null || parent.$matches(selectorFn)) {
+                parents.push(parent);
+              }
+            }
+            return F.iterableToNodeList(parents);
+          },
+          /**
+           * get first matched child element
+           *
+           * @param {Number|String|Node|Function} [selectorFn]
+           * @return {?Element}
+           */
+          $childElement(selectorFn) {
+            kQuery.logger.assertInstanceOf(selectorFn, Nullable, Number, String, Element, Function)();
+            if (typeof selectorFn === "number") {
+              return this.children.$at(selectorFn);
+            }
+            for (const child of this.children) {
+              if (selectorFn == null || child.$matches(selectorFn)) {
+                return child;
+              }
+            }
+            return null;
+          },
+          /**
+           * get matched child elements
+           *
+           * @param {String|Function} [selectorFn]
+           * @return {NodeList}
+           */
+          $childElements(selectorFn) {
+            kQuery.logger.assertInstanceOf(selectorFn, Nullable, String, Function)();
+            const children = F.iterableToNodeList(this.children);
+            if (selectorFn == null) {
+              return children;
+            }
+            return children.$filter(selectorFn);
+          },
+          /**
+           * get first matched previous element
+           *
+           * this isn't jQuery like, search all previous elements
+           *
+           * @param {String|Function} [selectorFn]
+           * @return {Element}
+           */
+          $prevElement(selectorFn) {
+            kQuery.logger.assertInstanceOf(selectorFn, Nullable, String, Function)();
+            return nodeGenerateSiblings(this, selectorFn, "previousElementSibling").next().value ?? null;
+          },
+          /**
+           * get matched previous elements
+           *
+           * @param {String|Function} [selectorFn]
+           * @return {NodeList}
+           */
+          $prevElements(selectorFn) {
+            kQuery.logger.assertInstanceOf(selectorFn, Nullable, String, Function)();
+            return F.iterableToNodeList([...nodeGenerateSiblings(this, selectorFn, "previousElementSibling")].reverse());
+          },
+          /**
+           * get first matched next element
+           *
+           * this isn't jQuery like, search all next elements
+           *
+           * @param {String|Function} [selectorFn]
+           * @return {Element}
+           */
+          $nextElement(selectorFn) {
+            kQuery.logger.assertInstanceOf(selectorFn, Nullable, String, Function)();
+            return nodeGenerateSiblings(this, selectorFn, "nextElementSibling").next().value ?? null;
+          },
+          /**
+           * get matched next elements
+           *
+           * @param {String|Function} [selectorFn]
+           * @return {NodeList}
+           */
+          $nextElements(selectorFn) {
+            kQuery.logger.assertInstanceOf(selectorFn, Nullable, String, Function)();
+            return F.iterableToNodeList(nodeGenerateSiblings(this, selectorFn, "nextElementSibling"));
+          },
+          /**
+           * get matched sibling elements
+           *
+           * @param {String|Node|Function} [selectorFn]
+           * @return {NodeList}
+           */
+          $siblingElements(selectorFn) {
+            kQuery.logger.assertInstanceOf(selectorFn, Nullable, String, Node, Function)();
+            return F.iterableToNodeList([...this.parentNode.children].filter((child) => child !== this && (selectorFn == null || child.$matches?.(selectorFn))));
           }
-        );
-      }(),
+        }
+      ),
       [[HTMLInputElement.name, $NodeList.name]]: (
         /** @lends HTMLInputElement.prototype */
         {
