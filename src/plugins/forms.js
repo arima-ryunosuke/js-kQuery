@@ -559,8 +559,27 @@ export function forms(kQuery) {
              * @param {HTMLOptionElement[]|HTMLOptGroupElement[]|Object} options
              * @param {Boolean|String} [preserveValue]
              * @return {this}
+             *
+             * @example
+             * // object mode
+             * $('select').$options({
+             *     a1: 'A1',
+             *     a2: {label: 'A1', 'data-custom': 'custom'},
+             *     b1: {label: 'B1', optgroup: 'optgroup'},
+             *     b2: {label: 'B2', optgroup: 'optgroup'},
+             *     c1: document.$createElement('option', {label: 'C1'}),
+             * });
+             * // array mode
+             * $('select').$options([
+             *     'a1',
+             *     {value: 'a1', label: 'A1', 'data-custom': 'custom'},
+             *     {value: 'b1', label: 'B1', optgroup: 'optgroup'},
+             *     {value: 'b2', label: 'B2', optgroup: 'optgroup'},
+             *     document.$createElement('option', {value: 'c1', label: 'C1'}),
+             * ]);
              */
             $options(options, preserveValue = undefined) {
+                kQuery.logger.assertInstanceOf(options, Object, Array)();
                 preserveValue ??= this instanceof HTMLSelectElement ? 'append' : null;
                 kQuery.logger.assertInstanceOf(preserveValue, Nullable, Boolean, String)();
 
@@ -578,13 +597,32 @@ export function forms(kQuery) {
                 };
 
                 const build = (data) => {
+                    const optgroups = {};
                     const options = [];
-                    for (const [value, label] of F.objectToEntries(data)) {
+                    for (let [value, label] of F.objectToEntries(data)) {
                         if (label instanceof Array) {
-                            options.push(this.$document.$createElement('optgroup', {label: value}, ...label));
+                            options.push(this.$document.$createElement('optgroup', {label: value}, ...build(label)));
+                        }
+                        else if (label instanceof Node) {
+                            label.value ||= value;
+                            options.push(label);
                         }
                         else if (F.objectIsPlain(label)) {
-                            options.push(this.$document.$createElement('optgroup', {label: value}, ...build(label)));
+                            label = {...label};
+                            label.value ??= value;
+                            label.title ??= label.label;
+                            if (label.optgroup) {
+                                const optgroup = label.optgroup;
+                                delete label.optgroup;
+                                if (!optgroups[optgroup]) {
+                                    optgroups[optgroup] = this.$document.$createElement('optgroup', {label: optgroup});
+                                    options.push(optgroups[optgroup]);
+                                }
+                                optgroups[optgroup].append(this.$document.$createElement('option', label, label.label));
+                            }
+                            else {
+                                options.push(this.$document.$createElement('option', label, label.label));
+                            }
                         }
                         else {
                             options.push(this.$document.$createElement('option', {value: value, title: label}, label));
@@ -592,9 +630,7 @@ export function forms(kQuery) {
                     }
                     return options;
                 };
-                if (F.objectIsPlain(options)) {
-                    options = build(options);
-                }
+                options = build(options);
 
                 const $value = preserveValue ? this.$value : null;
 
