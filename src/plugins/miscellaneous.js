@@ -6,6 +6,8 @@ import {$NodeList, F, IntersectionObserver, Nullable, Promise, Timer} from '../A
  * @ignore
  */
 export function miscellaneous(kQuery) {
+    let scrollIntoViewing = false;
+
     return {
         [[Window.name]]: /** @lends Window.prototype */{
             /**
@@ -88,164 +90,160 @@ export function miscellaneous(kQuery) {
                 return this.open(url, target, feature);
             },
         },
-        [[Element.name, $NodeList.name]]: function () {
-            let scrollIntoViewing = false;
+        [[Element.name, $NodeList.name]]: /** @lends Element.prototype */{
+            /**
+             * is metadata content
+             *
+             * @see https://html.spec.whatwg.org/multipage/dom.html#metadata-content
+             *
+             * @descriptor get
+             *
+             * @return {Boolean}
+             */
+            get $isMetadataContent() {
+                return ['base', 'link', 'meta', 'noscript', 'script', 'style', 'template', 'title'].includes(this.localName.toLowerCase());
+            },
+            /**
+             * get no content outerHTML
+             *
+             * @param {Boolean} [withClose=true]
+             * @return {String}
+             *
+             * @example
+             * document.$createElement('div', {a: 'A', b: 'B'}, 'child').$outerTag();
+             * // '<div a="A" b="B"></div>'
+             */
+            $outerTag(withClose = true) {
+                const name = this.localName;
+                const attrs = '' + this.$attrs;
 
-            return /** @lends Element.prototype */{
-                /**
-                 * is metadata content
-                 *
-                 * @see https://html.spec.whatwg.org/multipage/dom.html#metadata-content
-                 *
-                 * @descriptor get
-                 *
-                 * @return {Boolean}
-                 */
-                get $isMetadataContent() {
-                    return ['base', 'link', 'meta', 'noscript', 'script', 'style', 'template', 'title'].includes(this.localName.toLowerCase());
-                },
-                /**
-                 * get no content outerHTML
-                 *
-                 * @param {Boolean} [withClose=true]
-                 * @return {String}
-                 *
-                 * @example
-                 * document.$createElement('div', {a: 'A', b: 'B'}, 'child').$outerTag();
-                 * // '<div a="A" b="B"></div>'
-                 */
-                $outerTag(withClose = true) {
-                    const name = this.localName;
-                    const attrs = '' + this.$attrs;
+                let result = `<${name}${attrs ? ' ' + attrs : ''}>`;
+                if (withClose) {
+                    result += `</${name}>`;
+                }
+                return result;
+            },
+            /**
+             * mark matched text nodes
+             *
+             * @param {String|RegExp} word
+             * @param {String|Element} [wrapper]
+             * @param {String|Node|Function} [notSelectorFn]
+             * @return {this}
+             *
+             * @example
+             * <hgroup>
+             *   <h1>this is header</h1>
+             *   <p>this is subheader</p>
+             * </hgroup>
+             *
+             * $('hgroup').$markText('is');
+             *
+             * <hgroup>
+             *   <h1>th<mark>is</mark> <mark>is</mark> header</h1>
+             *   <p>th<mark>is</mark> <mark>is</mark> subheader</p>
+             * </hgroup>
+             */
+            $markText(word, wrapper, notSelectorFn) {
+                kQuery.logger.assertInstanceOf(word, String, RegExp)();
+                kQuery.logger.assertInstanceOf(wrapper, Nullable, String, Element)();
 
-                    let result = `<${name}${attrs ? ' ' + attrs : ''}>`;
-                    if (withClose) {
-                        result += `</${name}>`;
-                    }
-                    return result;
-                },
-                /**
-                 * mark matched text nodes
-                 *
-                 * @param {String|RegExp} word
-                 * @param {String|Element} [wrapper]
-                 * @param {String|Node|Function} [notSelectorFn]
-                 * @return {this}
-                 *
-                 * @example
-                 * <hgroup>
-                 *   <h1>this is header</h1>
-                 *   <p>this is subheader</p>
-                 * </hgroup>
-                 *
-                 * $('hgroup').$markText('is');
-                 *
-                 * <hgroup>
-                 *   <h1>th<mark>is</mark> <mark>is</mark> header</h1>
-                 *   <p>th<mark>is</mark> <mark>is</mark> subheader</p>
-                 * </hgroup>
-                 */
-                $markText(word, wrapper, notSelectorFn) {
-                    kQuery.logger.assertInstanceOf(word, String, RegExp)();
-                    kQuery.logger.assertInstanceOf(wrapper, Nullable, String, Element)();
+                if (!(word instanceof RegExp)) {
+                    word = new RegExp(F.stringEscape(word, 'regex'));
+                }
+                if (!(wrapper instanceof Element)) {
+                    wrapper = this.$document.$createElement(wrapper ?? 'mark');
+                }
 
-                    if (!(word instanceof RegExp)) {
-                        word = new RegExp(F.stringEscape(word, 'regex'));
-                    }
-                    if (!(wrapper instanceof Element)) {
-                        wrapper = this.$document.$createElement(wrapper ?? 'mark');
-                    }
-
-                    const core = (node) => {
-                        for (const child of node.children) {
-                            if (child.$isMetadataContent || (notSelectorFn != null && child.$matches(notSelectorFn)) || child.$outerTag(false) === wrapper.$outerTag(false)) {
-                                continue;
-                            }
-                            core(child);
+                const core = (node) => {
+                    for (const child of node.children) {
+                        if (child.$isMetadataContent || (notSelectorFn != null && child.$matches(notSelectorFn)) || child.$outerTag(false) === wrapper.$outerTag(false)) {
+                            continue;
                         }
-                        for (const child of node.childNodes) {
-                            if (child instanceof CharacterData) {
-                                const matches = child.nodeValue.match(word);
-                                if (matches) {
-                                    const after = child.splitText(matches.index);
-                                    after.splitText(matches[0].length);
-                                    after.$wrap(wrapper.$clone(true));
-                                }
+                        core(child);
+                    }
+                    for (const child of node.childNodes) {
+                        if (child instanceof CharacterData) {
+                            const matches = child.nodeValue.match(word);
+                            if (matches) {
+                                const after = child.splitText(matches.index);
+                                after.splitText(matches[0].length);
+                                after.$wrap(wrapper.$clone(true));
                             }
                         }
-                        return node;
-                    };
-
-                    this.normalize();
-                    return core(this);
-                },
-                /**
-                 * asynchronous scrollIntoView
-                 *
-                 * @param {ScrollIntoViewOptions|Object} [options={}]
-                 * @return {Promise<Boolean>}
-                 */
-                async $scrollIntoView(options = {}) {
-                    kQuery.logger.assertInstanceOf(options, Object)();
-                    options = Object.assign({
-                        // standard https://developer.mozilla.org/docs/Web/API/Element/scrollIntoView
-                        ...{
-                            // string: "smooth" | "instant" | "auto"
-                            behavior: undefined,
-                            // string: "start" | "center" | "end" | "nearest"
-                            block: undefined,
-                            // string: "start" | "center" | "end" | "nearest"
-                            inline: undefined,
-                        },
-                        // extends
-                        ...{
-                            // bool
-                            global: true,
-                            // number
-                            timeout: undefined,
-                            // number https://developer.mozilla.org/docs/Web/API/IntersectionObserver/thresholds
-                            threshold: undefined,
-                            // bool emulate https://developer.mozilla.org/docs/Web/API/Element/scrollIntoViewIfNeeded
-                            ifNeeded: false,
-                        },
-                    }, options);
-
-                    if (options.global && scrollIntoViewing) {
-                        return Promise.resolve(false);
                     }
+                    return node;
+                };
 
-                    return new Promise((resolve, reject) => {
-                        const observer = new IntersectionObserver((entry, last) => {
-                            if (!last && entry.isIntersecting && options.ifNeeded) {
-                                resolve(false);
-                                observer.unobserve(entry.target);
-                                return;
-                            }
+                this.normalize();
+                return core(this);
+            },
+            /**
+             * asynchronous scrollIntoView
+             *
+             * @param {ScrollIntoViewOptions|Object} [options={}]
+             * @return {Promise<Boolean>}
+             */
+            async $scrollIntoView(options = {}) {
+                kQuery.logger.assertInstanceOf(options, Object)();
+                options = Object.assign({
+                    // standard https://developer.mozilla.org/docs/Web/API/Element/scrollIntoView
+                    ...{
+                        // string: "smooth" | "instant" | "auto"
+                        behavior: undefined,
+                        // string: "start" | "center" | "end" | "nearest"
+                        block: undefined,
+                        // string: "start" | "center" | "end" | "nearest"
+                        inline: undefined,
+                    },
+                    // extends
+                    ...{
+                        // bool
+                        global: true,
+                        // number
+                        timeout: undefined,
+                        // number https://developer.mozilla.org/docs/Web/API/IntersectionObserver/thresholds
+                        threshold: undefined,
+                        // bool emulate https://developer.mozilla.org/docs/Web/API/Element/scrollIntoViewIfNeeded
+                        ifNeeded: false,
+                    },
+                }, options);
 
-                            entry.target.scrollIntoView(options);
-                            scrollIntoViewing = true;
+                if (options.global && scrollIntoViewing) {
+                    return Promise.resolve(false);
+                }
 
-                            if (entry.isIntersecting) {
-                                timeouter?.stop();
-                                observer.unobserve(entry.target);
-                                scrollIntoViewing = false;
-                                resolve(true);
-                            }
-                        }, {
-                            threshold: options.threshold ?? 0.0,
-                        });
-                        const timeouter = options.timeout ? new Timer() : null;
-                        timeouter?.addEventListener('alarm', (e) => {
-                            observer.unobserve(this);
+                return new Promise((resolve, reject) => {
+                    const observer = new IntersectionObserver((entry, last) => {
+                        if (!last && entry.isIntersecting && options.ifNeeded) {
+                            resolve(false);
+                            observer.unobserve(entry.target);
+                            return;
+                        }
+
+                        entry.target.scrollIntoView(options);
+                        scrollIntoViewing = true;
+
+                        if (entry.isIntersecting) {
+                            timeouter?.stop();
+                            observer.unobserve(entry.target);
                             scrollIntoViewing = false;
-                            reject(this);
-                        });
-                        timeouter?.start(options.timeout);
-                        observer.observe(this);
+                            resolve(true);
+                        }
+                    }, {
+                        threshold: options.threshold ?? 0.0,
                     });
-                },
-            };
-        }(),
+                    const timeouter = options.timeout ? new Timer() : null;
+                    timeouter?.addEventListener('alarm', (e) => {
+                        observer.unobserve(this);
+                        scrollIntoViewing = false;
+                        reject(this);
+                    });
+                    timeouter?.start(options.timeout);
+                    observer.observe(this);
+                });
+            },
+        },
         [[HTMLDialogElement.name, $NodeList.name]]: /** @lends HTMLDialogElement.prototype */{
             /**
              * asynchronous showModal

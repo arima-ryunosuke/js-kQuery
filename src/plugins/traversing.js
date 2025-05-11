@@ -6,6 +6,16 @@ import {$NodeList, F, Nullable} from '../API.js';
  * @ignore
  */
 export function traversing(kQuery) {
+    const nodeGenerateSiblings = function* (node, selectorFn, flow) {
+        kQuery.logger.assertInstanceOf(node, Node)();
+
+        for (let sibling = node[flow]; sibling; sibling = sibling[flow]) {
+            if (selectorFn == null || sibling.$matches(selectorFn)) {
+                yield sibling;
+            }
+        }
+    };
+
     return {
         [[Document.name, DocumentFragment.name, Element.name]]: /** @lends DocumentLikeElement.prototype */{
             /**
@@ -259,194 +269,182 @@ export function traversing(kQuery) {
                 return F.iterableToNodeList(Array.prototype.slice.call(this, start, end));
             },
         },
-        [[Node.name, $NodeList.name]]: function () {
-            const nodeGenerateSiblings = function* (node, selectorFn, flow) {
-                kQuery.logger.assertInstanceOf(node, Node)();
+        [[Node.name, $NodeList.name]]: /** @lends Node.prototype */{
+            /**
+             * alias to ownerDocument.defaultView or global Window
+             *
+             * @descriptor get
+             *
+             * @return {Window}
+             */
+            get $window() {
+                return this.ownerDocument?.defaultView ?? window;
+            },
+            /**
+             * alias to ownerDocument or global Document
+             *
+             * @descriptor get
+             *
+             * @return {Document}
+             */
+            get $document() {
+                return this.ownerDocument ?? window.document;
+            },
+            /**
+             * get all textnodes
+             *
+             * @param {(Number|String)[]} selector
+             * @return {NodeList}
+             */
+            $textNodes(selector = [Node.TEXT_NODE, Node.COMMENT_NODE, Node.CDATA_SECTION_NODE]) {
+                kQuery.logger.assertElementsOf(selector, [Node.TEXT_NODE, Node.COMMENT_NODE, Node.CDATA_SECTION_NODE, 'metadata'])();
 
-                for (let sibling = node[flow]; sibling; sibling = sibling[flow]) {
-                    if (selectorFn == null || sibling.$matches(selectorFn)) {
-                        yield sibling;
+                const texts = [];
+                for (const child of this.childNodes) {
+                    if (child instanceof CharacterData) {
+                        if (selector.includes(child.nodeType)) {
+                            texts.push(child);
+                        }
+                    }
+                    else {
+                        if (selector.includes('metadata') || !child.$isMetadataContent) {
+                            texts.push(...child.$textNodes(selector));
+                        }
                     }
                 }
-            };
+                return F.iterableToNodeList(texts);
+            },
+            /**
+             * functional closest
+             *
+             * @param {String|Node|Function} selectorFn
+             * @return {?Element}
+             */
+            $closest(selectorFn) {
+                kQuery.logger.assertInstanceOf(selectorFn, String, Element, Function)();
 
-            return /** @lends Node.prototype */{
-                /**
-                 * alias to ownerDocument.defaultView or global Window
-                 *
-                 * @descriptor get
-                 *
-                 * @return {Window}
-                 */
-                get $window() {
-                    return this.ownerDocument?.defaultView ?? window;
-                },
-                /**
-                 * alias to ownerDocument or global Document
-                 *
-                 * @descriptor get
-                 *
-                 * @return {Document}
-                 */
-                get $document() {
-                    return this.ownerDocument ?? window.document;
-                },
-                /**
-                 * get all textnodes
-                 *
-                 * @param {(Number|String)[]} selector
-                 * @return {NodeList}
-                 */
-                $textNodes(selector = [Node.TEXT_NODE, Node.COMMENT_NODE, Node.CDATA_SECTION_NODE]) {
-                    kQuery.logger.assertElementsOf(selector, [Node.TEXT_NODE, Node.COMMENT_NODE, Node.CDATA_SECTION_NODE, 'metadata'])();
+                if (typeof (selectorFn) === 'string') {
+                    return this.closest(selectorFn);
+                }
 
-                    const texts = [];
-                    for (const child of this.childNodes) {
-                        if (child instanceof CharacterData) {
-                            if (selector.includes(child.nodeType)) {
-                                texts.push(child);
-                            }
-                        }
-                        else {
-                            if (selector.includes('metadata') || !child.$isMetadataContent) {
-                                texts.push(...child.$textNodes(selector));
-                            }
-                        }
+                for (let parent = this; parent != null; parent = parent.parentElement) {
+                    if (parent.$matches(selectorFn)) {
+                        return parent;
                     }
-                    return F.iterableToNodeList(texts);
-                },
-                /**
-                 * functional closest
-                 *
-                 * @param {String|Node|Function} selectorFn
-                 * @return {?Element}
-                 */
-                $closest(selectorFn) {
-                    kQuery.logger.assertInstanceOf(selectorFn, String, Element, Function)();
+                }
+                return null;
+            },
+            /**
+             * get matched parent elements
+             *
+             * @param {String|Function} [selectorFn]
+             * @return {NodeList}
+             */
+            $parents(selectorFn) {
+                kQuery.logger.assertInstanceOf(selectorFn, Nullable, String, Function)();
 
-                    if (typeof (selectorFn) === 'string') {
-                        return this.closest(selectorFn);
+                const parents = [];
+                for (let parent = this.parentElement; parent != null; parent = parent.parentElement) {
+                    if (selectorFn == null || parent.$matches(selectorFn)) {
+                        parents.push(parent);
                     }
+                }
+                return F.iterableToNodeList(parents);
+            },
+            /**
+             * get first matched child element
+             *
+             * @param {Number|String|Node|Function} [selectorFn]
+             * @return {?Element}
+             */
+            $childElement(selectorFn) {
+                kQuery.logger.assertInstanceOf(selectorFn, Nullable, Number, String, Element, Function)();
 
-                    for (let parent = this; parent != null; parent = parent.parentElement) {
-                        if (parent.$matches(selectorFn)) {
-                            return parent;
-                        }
+                if (typeof (selectorFn) === 'number') {
+                    return this.children.$at(selectorFn);
+                }
+                for (const child of this.children) {
+                    if (selectorFn == null || child.$matches(selectorFn)) {
+                        return child;
                     }
-                    return null;
-                },
-                /**
-                 * get matched parent elements
-                 *
-                 * @param {String|Function} [selectorFn]
-                 * @return {NodeList}
-                 */
-                $parents(selectorFn) {
-                    kQuery.logger.assertInstanceOf(selectorFn, Nullable, String, Function)();
+                }
+                return null;
+            },
+            /**
+             * get matched child elements
+             *
+             * @param {String|Function} [selectorFn]
+             * @return {NodeList}
+             */
+            $childElements(selectorFn) {
+                kQuery.logger.assertInstanceOf(selectorFn, Nullable, String, Function)();
 
-                    const parents = [];
-                    for (let parent = this.parentElement; parent != null; parent = parent.parentElement) {
-                        if (selectorFn == null || parent.$matches(selectorFn)) {
-                            parents.push(parent);
-                        }
-                    }
-                    return F.iterableToNodeList(parents);
-                },
-                /**
-                 * get first matched child element
-                 *
-                 * @param {Number|String|Node|Function} [selectorFn]
-                 * @return {?Element}
-                 */
-                $childElement(selectorFn) {
-                    kQuery.logger.assertInstanceOf(selectorFn, Nullable, Number, String, Element, Function)();
+                const children = F.iterableToNodeList(this.children);
+                if (selectorFn == null) {
+                    return children;
+                }
+                return children.$filter(selectorFn);
+            },
+            /**
+             * get first matched previous element
+             *
+             * this isn't jQuery like, search all previous elements
+             *
+             * @param {String|Function} [selectorFn]
+             * @return {Element}
+             */
+            $prevElement(selectorFn) {
+                kQuery.logger.assertInstanceOf(selectorFn, Nullable, String, Function)();
 
-                    if (typeof (selectorFn) === 'number') {
-                        return this.children.$at(selectorFn);
-                    }
-                    for (const child of this.children) {
-                        if (selectorFn == null || child.$matches(selectorFn)) {
-                            return child;
-                        }
-                    }
-                    return null;
-                },
-                /**
-                 * get matched child elements
-                 *
-                 * @param {String|Function} [selectorFn]
-                 * @return {NodeList}
-                 */
-                $childElements(selectorFn) {
-                    kQuery.logger.assertInstanceOf(selectorFn, Nullable, String, Function)();
+                return nodeGenerateSiblings(this, selectorFn, 'previousElementSibling').next().value ?? null;
+            },
+            /**
+             * get matched previous elements
+             *
+             * @param {String|Function} [selectorFn]
+             * @return {NodeList}
+             */
+            $prevElements(selectorFn) {
+                kQuery.logger.assertInstanceOf(selectorFn, Nullable, String, Function)();
 
-                    const children = F.iterableToNodeList(this.children);
-                    if (selectorFn == null) {
-                        return children;
-                    }
-                    return children.$filter(selectorFn);
-                },
-                /**
-                 * get first matched previous element
-                 *
-                 * this isn't jQuery like, search all previous elements
-                 *
-                 * @param {String|Function} [selectorFn]
-                 * @return {Element}
-                 */
-                $prevElement(selectorFn) {
-                    kQuery.logger.assertInstanceOf(selectorFn, Nullable, String, Function)();
+                return F.iterableToNodeList([...nodeGenerateSiblings(this, selectorFn, 'previousElementSibling')].reverse());
+            },
+            /**
+             * get first matched next element
+             *
+             * this isn't jQuery like, search all next elements
+             *
+             * @param {String|Function} [selectorFn]
+             * @return {Element}
+             */
+            $nextElement(selectorFn) {
+                kQuery.logger.assertInstanceOf(selectorFn, Nullable, String, Function)();
 
-                    return nodeGenerateSiblings(this, selectorFn, 'previousElementSibling').next().value ?? null;
-                },
-                /**
-                 * get matched previous elements
-                 *
-                 * @param {String|Function} [selectorFn]
-                 * @return {NodeList}
-                 */
-                $prevElements(selectorFn) {
-                    kQuery.logger.assertInstanceOf(selectorFn, Nullable, String, Function)();
+                return nodeGenerateSiblings(this, selectorFn, 'nextElementSibling').next().value ?? null;
+            },
+            /**
+             * get matched next elements
+             *
+             * @param {String|Function} [selectorFn]
+             * @return {NodeList}
+             */
+            $nextElements(selectorFn) {
+                kQuery.logger.assertInstanceOf(selectorFn, Nullable, String, Function)();
 
-                    return F.iterableToNodeList([...nodeGenerateSiblings(this, selectorFn, 'previousElementSibling')].reverse());
-                },
-                /**
-                 * get first matched next element
-                 *
-                 * this isn't jQuery like, search all next elements
-                 *
-                 * @param {String|Function} [selectorFn]
-                 * @return {Element}
-                 */
-                $nextElement(selectorFn) {
-                    kQuery.logger.assertInstanceOf(selectorFn, Nullable, String, Function)();
+                return F.iterableToNodeList(nodeGenerateSiblings(this, selectorFn, 'nextElementSibling'));
+            },
+            /**
+             * get matched sibling elements
+             *
+             * @param {String|Node|Function} [selectorFn]
+             * @return {NodeList}
+             */
+            $siblingElements(selectorFn) {
+                kQuery.logger.assertInstanceOf(selectorFn, Nullable, String, Node, Function)();
 
-                    return nodeGenerateSiblings(this, selectorFn, 'nextElementSibling').next().value ?? null;
-                },
-                /**
-                 * get matched next elements
-                 *
-                 * @param {String|Function} [selectorFn]
-                 * @return {NodeList}
-                 */
-                $nextElements(selectorFn) {
-                    kQuery.logger.assertInstanceOf(selectorFn, Nullable, String, Function)();
-
-                    return F.iterableToNodeList(nodeGenerateSiblings(this, selectorFn, 'nextElementSibling'));
-                },
-                /**
-                 * get matched sibling elements
-                 *
-                 * @param {String|Node|Function} [selectorFn]
-                 * @return {NodeList}
-                 */
-                $siblingElements(selectorFn) {
-                    kQuery.logger.assertInstanceOf(selectorFn, Nullable, String, Node, Function)();
-
-                    return F.iterableToNodeList([...this.parentNode.children].filter((child) => child !== this && (selectorFn == null || child.$matches?.(selectorFn))));
-                },
-            };
-        }(),
+                return F.iterableToNodeList([...this.parentNode.children].filter((child) => child !== this && (selectorFn == null || child.$matches?.(selectorFn))));
+            },
+        },
         [[HTMLInputElement.name, $NodeList.name]]: /** @lends HTMLInputElement.prototype */{
             /**
              * get belonging RadioNodeList

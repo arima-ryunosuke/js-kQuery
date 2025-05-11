@@ -6,6 +6,21 @@ import {$NodeList, F, WeakMap} from '../API.js';
  * @ignore
  */
 export function manipulation(kQuery) {
+    const renderedNodes = new WeakMap();
+    const normalizeNodes = function (nodes) {
+        return [...nodes].flatMap(node => node instanceof NodeList ? [...node] : node);
+    };
+
+    class Value {
+        constructor(value) {
+            this.value = value;
+        }
+
+        toString() {
+            return '' + this.value;
+        }
+    }
+
     return {
         [[Window.name]]: /** @lends Window.prototype */{
             /**
@@ -135,373 +150,353 @@ export function manipulation(kQuery) {
                 return element;
             },
         },
-        [[HTMLTemplateElement.name, $NodeList.name]]: function () {
-            const renderedNodes = new WeakMap();
+        [[HTMLTemplateElement.name, $NodeList.name]]: /** @lends HTMLTemplateElement.prototype */{
+            /**
+             * render template content
+             *
+             * this is experimental, very magical,evil and slow.
+             *
+             * vars:
+             * - Array: per below
+             * - String: text node
+             * - other Object: text node without escape
+             * - plain Object: render recursive
+             *
+             * rendered nodes are auto inserted to after this
+             * if specified insert:null, no inserted
+             *
+             * @param {Object|Object[]} vars
+             * @param {{escape?: String|Function, logical?: String, insert?: String}} [options={}]
+             * @return {NodeList}
+             */
+            $render(vars, options = {}) {
+                options = Object.assign({
+                    escape: 'html',
+                    logical: '---logical<false/>---',
+                    insert: 'after',
+                }, options);
 
-            class Value {
-                constructor(value) {
-                    this.value = value;
-                }
+                const tag = function (value) {
+                    if (options.logical) {
+                        if (value === false) {
+                            return options.logical;
+                        }
+                        if (value === true) {
+                            return '';
+                        }
+                    }
+                    if (typeof (value) === 'object' && !(value instanceof Value)) {
+                        return value;
+                    }
+                    if (typeof (options.escape) === 'function') {
+                        return options.escape(value);
+                    }
+                    return F.stringEscape(value, options.escape);
+                };
 
-                toString() {
-                    return '' + this.value;
-                }
-            }
+                const core = function (current, parent) {
+                    if (!current) {
+                        return [];
+                    }
+                    if (!(current instanceof Array)) {
+                        current = [current];
+                    }
 
-            return /** @lends HTMLTemplateElement.prototype */{
-                /**
-                 * render template content
-                 *
-                 * this is experimental, very magical,evil and slow.
-                 *
-                 * vars:
-                 * - Array: per below
-                 * - String: text node
-                 * - other Object: text node without escape
-                 * - plain Object: render recursive
-                 *
-                 * rendered nodes are auto inserted to after this
-                 * if specified insert:null, no inserted
-                 *
-                 * @param {Object|Object[]} vars
-                 * @param {{escape?: String|Function, logical?: String, insert?: String}} [options={}]
-                 * @return {NodeList}
-                 */
-                $render(vars, options = {}) {
-                    options = Object.assign({
-                        escape: 'html',
-                        logical: '---logical<false/>---',
-                        insert: 'after',
-                    }, options);
+                    const elements = [];
+                    for (let [i, value] of current.entries()) {
+                        const fragment = this.content.cloneNode(true);
 
-                    const tag = function (value) {
+                        if (F.anyIsPrimitive(value)) {
+                            value = new Value(value);
+                        }
+
+                        // magic values
+                        Object.assign(value, {
+                            $parent: parent,
+                            $index: i,
+                            $length: current.length,
+                            $first: i === 0,
+                            $last: i === current.length - 1,
+                        });
+
+                        // child first and remove
+                        const children = fragment.$$('template[data-slot-name]');
+                        for (const child of children) {
+                            child.after(...core.call(child, value[child.dataset.slotName], value));
+                            child.remove();
+                        }
+
+                        // render
+                        kQuery.logger.assert(() => fragment.$contains(e => !e.$isMetadataContent))();
+                        const template = [...fragment.childNodes].join('');
+                        const html = F.stringRender(template, value, tag);
+                        const nodes = this.$document.$createNodeListFromHTML(html);
+
                         if (options.logical) {
-                            if (value === false) {
-                                return options.logical;
-                            }
-                            if (value === true) {
-                                return '';
-                            }
-                        }
-                        if (typeof (value) === 'object' && !(value instanceof Value)) {
-                            return value;
-                        }
-                        if (typeof (options.escape) === 'function') {
-                            return options.escape(value);
-                        }
-                        return F.stringEscape(value, options.escape);
-                    };
-
-                    const core = function (current, parent) {
-                        if (!current) {
-                            return [];
-                        }
-                        if (!(current instanceof Array)) {
-                            current = [current];
-                        }
-
-                        const elements = [];
-                        for (let [i, value] of current.entries()) {
-                            const fragment = this.content.cloneNode(true);
-
-                            if (F.anyIsPrimitive(value)) {
-                                value = new Value(value);
-                            }
-
-                            // magic values
-                            Object.assign(value, {
-                                $parent: parent,
-                                $index: i,
-                                $length: current.length,
-                                $first: i === 0,
-                                $last: i === current.length - 1,
-                            });
-
-                            // child first and remove
-                            const children = fragment.$$('template[data-slot-name]');
-                            for (const child of children) {
-                                child.after(...core.call(child, value[child.dataset.slotName], value));
-                                child.remove();
-                            }
-
-                            // render
-                            kQuery.logger.assert(() => fragment.$contains(e => !e.$isMetadataContent))();
-                            const template = [...fragment.childNodes].join('');
-                            const html = F.stringRender(template, value, tag);
-                            const nodes = this.$document.$createNodeListFromHTML(html);
-
-                            if (options.logical) {
-                                for (const node of nodes.$$$('*')) {
-                                    for (const attribute of Array.from(node.attributes)) {
-                                        if (attribute.value === options.logical) {
-                                            node.attributes.removeNamedItem(attribute.name);
-                                        }
+                            for (const node of nodes.$$$('*')) {
+                                for (const attribute of Array.from(node.attributes)) {
+                                    if (attribute.value === options.logical) {
+                                        node.attributes.removeNamedItem(attribute.name);
                                     }
                                 }
                             }
-                            elements.push(...nodes);
                         }
-
-                        return elements;
-                    };
-
-                    const elements = core.call(this, vars, null);
-
-                    if (options.insert) {
-                        const olds = renderedNodes.reset(this, () => elements) ?? [];
-                        olds.forEach(old => old.remove());
-                        this[options.insert](...elements);
+                        elements.push(...nodes);
                     }
 
-                    return F.iterableToNodeList(elements);
-                },
-            };
-        }(),
-        [[Node.name, $NodeList.name]]: function () {
-            const normalizeNodes = function (nodes) {
-                return [...nodes].flatMap(node => node instanceof NodeList ? [...node] : node);
-            };
+                    return elements;
+                };
 
-            return /** @lends Node.prototype */{
-                /**
-                 * clone Node
-                 *
-                 * withEvent:
-                 * - false: same as cloneNode(true)
-                 * - true: deep clone with event handler
-                 *
-                 * @param {Boolean} [withEvent = false]
-                 * @return {Node}
-                 */
-                $clone(withEvent = false) {
-                    if (!withEvent) {
-                        return this.cloneNode(true);
+                const elements = core.call(this, vars, null);
+
+                if (options.insert) {
+                    const olds = renderedNodes.reset(this, () => elements) ?? [];
+                    olds.forEach(old => old.remove());
+                    this[options.insert](...elements);
+                }
+
+                return F.iterableToNodeList(elements);
+            },
+        },
+        [[Node.name, $NodeList.name]]: /** @lends Node.prototype */{
+            /**
+             * clone Node
+             *
+             * withEvent:
+             * - false: same as cloneNode(true)
+             * - true: deep clone with event handler
+             *
+             * @param {Boolean} [withEvent = false]
+             * @return {Node}
+             */
+            $clone(withEvent = false) {
+                if (!withEvent) {
+                    return this.cloneNode(true);
+                }
+
+                // clone self
+                const cloned = this.cloneNode(false);
+                for (const ev of this.$events(null, false, false)) {
+                    cloned.$on(ev.type + ev.namespaces.map(ns => `.${ns}`).join(), ev.selector, ev.listener, ev.options);
+                }
+
+                // recursion
+                for (const child of this.childNodes) {
+                    // @todo: What should we do with the $bag...?
+                    if (child instanceof Element) {
+                        cloned.appendChild(child.$clone(true));
                     }
-
-                    // clone self
-                    const cloned = this.cloneNode(false);
-                    for (const ev of this.$events(null, false, false)) {
-                        cloned.$on(ev.type + ev.namespaces.map(ns => `.${ns}`).join(), ev.selector, ev.listener, ev.options);
+                    else {
+                        cloned.appendChild(child.cloneNode(true));
                     }
+                }
 
-                    // recursion
-                    for (const child of this.childNodes) {
-                        // @todo: What should we do with the $bag...?
-                        if (child instanceof Element) {
-                            cloned.appendChild(child.$clone(true));
-                        }
-                        else {
-                            cloned.appendChild(child.cloneNode(true));
-                        }
-                    }
-
-                    return cloned;
-                },
-                /**
-                 * insert before this
-                 *
-                 * almost the same as before, however, accept NodeList
-                 *
-                 * @param {...String|Node|NodeList} [nodes=[]]
-                 * @return {this}
-                 *
-                 * @example
-                 * {!!!insert here!!!}
-                 * <this>
-                 *     child
-                 * </this>
-                 */
-                $before(...nodes) {
-                    this.before(...normalizeNodes(nodes));
-                    return this;
-                },
-                /**
-                 * insert first child
-                 *
-                 * almost the same as prepend, however, accept NodeList
-                 *
-                 * @param {...String|Node|NodeList} [nodes=[]]
-                 * @return {this}
-                 *
-                 * @example
-                 * <this>
-                 *     {!!!insert here!!!}
-                 *     child
-                 * </this>
-                 */
-                $prepend(...nodes) {
-                    this.prepend(...normalizeNodes(nodes));
-                    return this;
-                },
-                /**
-                 * insert specified child
-                 *
-                 * @param {Number|String|Node|Function} selectorFn
-                 * @param {...String|Node|NodeList} [nodes=[]]
-                 * @return {this}
-                 *
-                 * @example
-                 * <this>
-                 *     child
-                 *     {!!!insert here!!!}
-                 *     child
-                 * </this>
-                 */
-                $insert(selectorFn, ...nodes) {
-                    this.$childElement(selectorFn)?.$before?.(...normalizeNodes(nodes));
-                    return this;
-                },
-                /**
-                 * insert last child
-                 *
-                 * almost the same as append, however, accept NodeList
-                 *
-                 * @param {...String|Node|NodeList} [nodes=[]]
-                 * @return {this}
-                 *
-                 * @example
-                 * <this>
-                 *     child
-                 *     {!!!insert here!!!}
-                 * </this>
-                 */
-                $append(...nodes) {
-                    this.append(...normalizeNodes(nodes));
-                    return this;
-                },
-                /**
-                 * insert after this
-                 *
-                 * almost the same as after, however, accept NodeList
-                 *
-                 * @param {...String|Node|NodeList} [nodes=[]]
-                 * @return {this}
-                 *
-                 * @example
-                 * <this>
-                 *     child
-                 * </this>
-                 * {!!!insert here!!!}
-                 */
-                $after(...nodes) {
-                    this.after(...normalizeNodes(nodes));
-                    return this;
-                },
-                /**
-                 * replace this
-                 *
-                 * almost the same as replaceWith, however, accept NodeList
-                 *
-                 * @param {...String|Node|NodeList} [nodes=[]]
-                 * @return {this}
-                 */
-                $replace(...nodes) {
-                    this.replaceWith(...normalizeNodes(nodes));
-                    return this;
-                },
-                /**
-                 * replace children
-                 *
-                 * exhange parameter of replaceChild, and variadic
-                 * @see https://developer.mozilla.org/docs/Web/API/Node/replaceChild
-                 * > The parameter order, new before old, is unusual
-                 *
-                 * @param {Node} oldChild
-                 * @param {...String|Node|NodeList} [nodes=[]]
-                 * @return {this}
-                 */
-                $replaceChild(oldChild, ...nodes) {
-                    this.$insert(oldChild, ...nodes);
-                    this.$childElement(oldChild)?.remove();
-                    return this;
-                },
-                /**
-                 * replace children
-                 *
-                 * almost the same as replaceChildren, however, accept NodeList
-                 *
-                 * @param {...String|Node|NodeList} [nodes=[]]
-                 * @return {this}
-                 */
-                $replaceChildren(...nodes) {
-                    this.replaceChildren(...normalizeNodes(nodes));
-                    return this;
-                },
-                /**
-                 * wrap this element
-                 *
-                 * @param {Element} node
-                 * @return {this}
-                 *
-                 * @example
-                 * <div>
-                 *   text
-                 *   <span>span</span>
-                 * </div>
-                 *
-                 * $('div').$wrap($('<section></section>'));
-                 *
-                 * <section>
-                 *   <div>
-                 *     text
-                 *     <span>span</span>
-                 *   </div>
-                 * </section>
-                 */
-                $wrap(node) {
-                    this.parentNode.insertBefore(node, this);
-                    node.appendChild(this);
-                    return this;
-                },
-                /**
-                 * unwrap parent
-                 *
-                 * @return {this}
-                 *
-                 * @example
-                 * <section>
-                 *   <div>
-                 *     text
-                 *     <span>span</span>
-                 *   </div>
-                 * </section>
-                 *
-                 * $('div').$unwrap();
-                 *
-                 * <div>
-                 *   text
-                 *   <span>span</span>
-                 * </div>
-                 */
-                $unwrap() {
-                    this.parentNode.$unwrapChildren();
-                    return this;
-                },
-                /**
-                 * unwrap children
-                 *
-                 * @return {this}
-                 *
-                 * @example
-                 * <section>
-                 *   <div>
-                 *     text
-                 *     <span>span</span>
-                 *   </div>
-                 * </section>
-                 *
-                 * $('div').$unwrapChildren();
-                 *
-                 * <section>
-                 *   text
-                 *   <span>span</span>
-                 * </section>
-                 */
-                $unwrapChildren() {
-                    this.replaceWith(...this.childNodes);
-                    return this;
-                },
-            };
-        }(),
+                return cloned;
+            },
+            /**
+             * insert before this
+             *
+             * almost the same as before, however, accept NodeList
+             *
+             * @param {...String|Node|NodeList} [nodes=[]]
+             * @return {this}
+             *
+             * @example
+             * {!!!insert here!!!}
+             * <this>
+             *     child
+             * </this>
+             */
+            $before(...nodes) {
+                this.before(...normalizeNodes(nodes));
+                return this;
+            },
+            /**
+             * insert first child
+             *
+             * almost the same as prepend, however, accept NodeList
+             *
+             * @param {...String|Node|NodeList} [nodes=[]]
+             * @return {this}
+             *
+             * @example
+             * <this>
+             *     {!!!insert here!!!}
+             *     child
+             * </this>
+             */
+            $prepend(...nodes) {
+                this.prepend(...normalizeNodes(nodes));
+                return this;
+            },
+            /**
+             * insert specified child
+             *
+             * @param {Number|String|Node|Function} selectorFn
+             * @param {...String|Node|NodeList} [nodes=[]]
+             * @return {this}
+             *
+             * @example
+             * <this>
+             *     child
+             *     {!!!insert here!!!}
+             *     child
+             * </this>
+             */
+            $insert(selectorFn, ...nodes) {
+                this.$childElement(selectorFn)?.$before?.(...normalizeNodes(nodes));
+                return this;
+            },
+            /**
+             * insert last child
+             *
+             * almost the same as append, however, accept NodeList
+             *
+             * @param {...String|Node|NodeList} [nodes=[]]
+             * @return {this}
+             *
+             * @example
+             * <this>
+             *     child
+             *     {!!!insert here!!!}
+             * </this>
+             */
+            $append(...nodes) {
+                this.append(...normalizeNodes(nodes));
+                return this;
+            },
+            /**
+             * insert after this
+             *
+             * almost the same as after, however, accept NodeList
+             *
+             * @param {...String|Node|NodeList} [nodes=[]]
+             * @return {this}
+             *
+             * @example
+             * <this>
+             *     child
+             * </this>
+             * {!!!insert here!!!}
+             */
+            $after(...nodes) {
+                this.after(...normalizeNodes(nodes));
+                return this;
+            },
+            /**
+             * replace this
+             *
+             * almost the same as replaceWith, however, accept NodeList
+             *
+             * @param {...String|Node|NodeList} [nodes=[]]
+             * @return {this}
+             */
+            $replace(...nodes) {
+                this.replaceWith(...normalizeNodes(nodes));
+                return this;
+            },
+            /**
+             * replace children
+             *
+             * exhange parameter of replaceChild, and variadic
+             * @see https://developer.mozilla.org/docs/Web/API/Node/replaceChild
+             * > The parameter order, new before old, is unusual
+             *
+             * @param {Node} oldChild
+             * @param {...String|Node|NodeList} [nodes=[]]
+             * @return {this}
+             */
+            $replaceChild(oldChild, ...nodes) {
+                this.$insert(oldChild, ...nodes);
+                this.$childElement(oldChild)?.remove();
+                return this;
+            },
+            /**
+             * replace children
+             *
+             * almost the same as replaceChildren, however, accept NodeList
+             *
+             * @param {...String|Node|NodeList} [nodes=[]]
+             * @return {this}
+             */
+            $replaceChildren(...nodes) {
+                this.replaceChildren(...normalizeNodes(nodes));
+                return this;
+            },
+            /**
+             * wrap this element
+             *
+             * @param {Element} node
+             * @return {this}
+             *
+             * @example
+             * <div>
+             *   text
+             *   <span>span</span>
+             * </div>
+             *
+             * $('div').$wrap($('<section></section>'));
+             *
+             * <section>
+             *   <div>
+             *     text
+             *     <span>span</span>
+             *   </div>
+             * </section>
+             */
+            $wrap(node) {
+                this.parentNode.insertBefore(node, this);
+                node.appendChild(this);
+                return this;
+            },
+            /**
+             * unwrap parent
+             *
+             * @return {this}
+             *
+             * @example
+             * <section>
+             *   <div>
+             *     text
+             *     <span>span</span>
+             *   </div>
+             * </section>
+             *
+             * $('div').$unwrap();
+             *
+             * <div>
+             *   text
+             *   <span>span</span>
+             * </div>
+             */
+            $unwrap() {
+                this.parentNode.$unwrapChildren();
+                return this;
+            },
+            /**
+             * unwrap children
+             *
+             * @return {this}
+             *
+             * @example
+             * <section>
+             *   <div>
+             *     text
+             *     <span>span</span>
+             *   </div>
+             * </section>
+             *
+             * $('div').$unwrapChildren();
+             *
+             * <section>
+             *   text
+             *   <span>span</span>
+             * </section>
+             */
+            $unwrapChildren() {
+                this.replaceWith(...this.childNodes);
+                return this;
+            },
+        },
     };
 }

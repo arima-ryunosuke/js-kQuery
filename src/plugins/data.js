@@ -6,78 +6,76 @@ import {$FileList, $NodeList, F, FileReader, Nullable, Promise, Proxy, WeakMap} 
  * @ignore
  */
 export function data(kQuery) {
+    const nodeBag = new WeakMap();
+
     return {
-        [[Node.name, $NodeList.name]]: function () {
-            const nodeBag = new WeakMap();
+        [[Node.name, $NodeList.name]]: /** @lends Node.prototype */{
+            /**
+             * get Bag for anything
+             *
+             * @descriptor get
+             *
+             * @example
+             * $('input').$bag.hoge;             // getter
+             * $('input').$bag.hoge = 'value';   // setter
+             * $('input').$bag({hoge: 'value'}); // mass setting(keep other)
+             * $('input').$bag();                // get all key-value object
+             */
+            get $bag() {
+                const bag = {};
+                return nodeBag.getOrSet(this, () => new Proxy(function $Bag() {}, {
+                    has(target, property) {
+                        return Reflect.has(bag, property);
+                    },
+                    get(target, property) {
+                        if (property === Symbol.toPrimitive || property === 'toString') {
+                            return () => JSON.stringify(bag);
+                        }
+                        return Reflect.get(bag, property);
+                    },
+                    set(target, property, value) {
+                        Reflect.set(bag, property, value);
+                        return true;
+                    },
+                    deleteProperty(target, property) {
+                        Reflect.deleteProperty(bag, property);
+                        return true;
+                    },
+                    apply(target, thisArg, argArray) {
+                        if (F.objectIsPlain(argArray[0])) {
+                            Object.assign(bag, argArray[0]);
+                        }
+                        return bag;
+                    },
+                }));
+            },
+            /**
+             * mass assign $bag
+             *
+             * @descriptor set
+             *
+             * @param {Object} value
+             *
+             * @example
+             * $('input').$bag = {hoge: 'value'};                // mass assign(delete other)
+             * $('input').$bag = (node, i) => ({hoge: 'value'}); // mass assign by callback(delete other)
+             */
+            set $bag(value) {
+                kQuery.logger.assertInstanceOf(value, Nullable, Object)();
 
-            return /** @lends Node.prototype */{
-                /**
-                 * get Bag for anything
-                 *
-                 * @descriptor get
-                 *
-                 * @example
-                 * $('input').$bag.hoge;             // getter
-                 * $('input').$bag.hoge = 'value';   // setter
-                 * $('input').$bag({hoge: 'value'}); // mass setting(keep other)
-                 * $('input').$bag();                // get all key-value object
-                 */
-                get $bag() {
-                    const bag = {};
-                    return nodeBag.getOrSet(this, () => new Proxy(function $Bag() {}, {
-                        has(target, property) {
-                            return Reflect.has(bag, property);
-                        },
-                        get(target, property) {
-                            if (property === Symbol.toPrimitive || property === 'toString') {
-                                return () => JSON.stringify(bag);
-                            }
-                            return Reflect.get(bag, property);
-                        },
-                        set(target, property, value) {
-                            Reflect.set(bag, property, value);
-                            return true;
-                        },
-                        deleteProperty(target, property) {
-                            Reflect.deleteProperty(bag, property);
-                            return true;
-                        },
-                        apply(target, thisArg, argArray) {
-                            if (F.objectIsPlain(argArray[0])) {
-                                Object.assign(bag, argArray[0]);
-                            }
-                            return bag;
-                        },
-                    }));
-                },
-                /**
-                 * mass assign $bag
-                 *
-                 * @descriptor set
-                 *
-                 * @param {Object} value
-                 *
-                 * @example
-                 * $('input').$bag = {hoge: 'value'};                // mass assign(delete other)
-                 * $('input').$bag = (node, i) => ({hoge: 'value'}); // mass assign by callback(delete other)
-                 */
-                set $bag(value) {
-                    kQuery.logger.assertInstanceOf(value, Nullable, Object)();
+                // null guard for function return (void). keep current values
+                if (value == null) {
+                    return;
+                }
 
-                    // null guard for function return (void). keep current values
-                    if (value == null) {
-                        return;
-                    }
+                const $bag = this.$bag;
+                for (const key of Object.keys($bag())) {
+                    delete $bag[key];
+                }
 
-                    const $bag = this.$bag;
-                    for (const key of Object.keys($bag())) {
-                        delete $bag[key];
-                    }
-
-                    $bag(value);
-                },
-            };
-        }(),
+                $bag(value);
+            },
+        },
         [[HTMLStyleElement.name, HTMLLinkElement.name, $NodeList.name]]: /** @lends HTMLStylableElement.prototype */{
             /**
              * get contents as text
