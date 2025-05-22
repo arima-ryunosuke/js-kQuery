@@ -64,8 +64,18 @@ export function attributes(kQuery) {
             if (typeof (value) === 'function') {
                 value = this._setFunction(property, value);
             }
+            if (property.charAt(0) === '$') {
+                const $value = this._set$Value(property.substring(1), value);
+                if ($value !== ProxyProperty.NotImplemented) {
+                    return true;
+                }
+            }
             this._setValue(property, value);
             return true;
+        }
+
+        _set$Value(property, value) {
+            return ProxyProperty.NotImplemented;
         }
 
         _setFunction(property, value) {
@@ -237,10 +247,22 @@ export function attributes(kQuery) {
                             }
                         }
 
+                        if (Object.keys(member).length === 0 && property in node.dataset) {
+                            try {
+                                return JSON.parse(node.dataset[property]);
+                            }
+                            catch (e) {
+                            }
+                        }
+
                         const entries = Object.entries(member).map(([name, value]) => [name.split('-'), value]);
                         const object = F.entriesToObject(entries, true);
 
                         return targetPrefix ? targetPrefix.split('-').reduce((target, key) => target?.[key], object) ?? {} : object;
+                    }
+
+                    _set$Value(property, value) {
+                        node.dataset[property] = JSON.stringify(value);
                     }
 
                     _applySet(object) {

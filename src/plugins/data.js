@@ -7,6 +7,7 @@ import {$FileList, $NodeList, F, FileReader, Nullable, Promise, Proxy, WeakMap} 
  */
 export function data(kQuery) {
     const nodeBag = new WeakMap();
+    const nodeJson = new WeakMap();
 
     return {
         [[Node.name, $NodeList.name]]: /** @lends Node.prototype */{
