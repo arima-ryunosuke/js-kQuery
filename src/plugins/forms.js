@@ -194,43 +194,43 @@ export function forms(kQuery) {
                 if (this.type === 'datetime-local') {
                     const strtime = toLocalISOString(value, 'notz');
                     if (this.value !== '') {
-                        this.value = strtime.slice(0, this.value.length);
+                        this.$value = strtime.slice(0, this.value.length);
                     }
                     else if (!this.step) {
-                        this.value = strtime.slice(0, 16);
+                        this.$value = strtime.slice(0, 16);
                     }
                     else if (this.step.includes('.')) {
-                        this.value = strtime.slice(0, 23);
+                        this.$value = strtime.slice(0, 23);
                     }
                     else {
-                        this.value = strtime.slice(0, 19);
+                        this.$value = strtime.slice(0, 19);
                     }
                     return;
                 }
 
                 // other.valueAsDate is UTC
                 if (this.type === 'month') {
-                    return this.value = toLocalISOString(value, 'notz').slice(0, 7);
+                    return this.$value = toLocalISOString(value, 'notz').slice(0, 7);
                 }
                 if (this.type === 'week') {
-                    return this.value = toLocalISOString(value, 'week').slice(0, 8);
+                    return this.$value = toLocalISOString(value, 'week').slice(0, 8);
                 }
                 if (this.type === 'date') {
-                    return this.value = toLocalISOString(value, 'notz').slice(0, 10);
+                    return this.$value = toLocalISOString(value, 'notz').slice(0, 10);
                 }
                 if (this.type === 'time') {
                     const strtime = toLocalISOString(value, 'notz');
                     if (this.value !== '') {
-                        this.value = strtime.slice(11, 11 + this.value.length);
+                        this.$value = strtime.slice(11, 11 + this.value.length);
                     }
                     else if (!this.step) {
-                        this.value = strtime.slice(11, 16);
+                        this.$value = strtime.slice(11, 16);
                     }
                     else if (this.step.includes('.')) {
-                        this.value = strtime.slice(11, 23);
+                        this.$value = strtime.slice(11, 23);
                     }
                     else {
-                        this.value = strtime.slice(11, 19);
+                        this.$value = strtime.slice(11, 19);
                     }
                 }
             },
@@ -348,12 +348,12 @@ export function forms(kQuery) {
                 // all false
                 else if (value.every(v => !v)) {
                     this.indeterminate = false;
-                    this.checked = false;
+                    this.$value = null;
                 }
                 // all true
                 else if (value.every(v => v)) {
                     this.indeterminate = false;
-                    this.checked = true;
+                    this.$value = this.value;
                 }
                 // mixed
                 else {
@@ -473,33 +473,64 @@ export function forms(kQuery) {
              * - file(single): must be File|FileList
              * - file(multiple): must be FileList
              *
+             * this trigger $change event
+             *
              * @descriptor set
              */
             set $value(value) {
+                let changed = false;
+
                 if (['select-one'].includes(this.type)) {
-                    this.value = value;
+                    if (this.value !== value) {
+                        this.value = value;
+                        changed = true;
+                    }
                 }
                 else if (['select-multiple'].includes(this.type)) {
-                    const values = (value instanceof Array ? value : [value]).map(v => '' + v);
+                    const values = (value instanceof Array ? value : [value]).filter(v => v !== null).map(v => '' + v);
                     for (const option of this.options) {
-                        option.selected = values.includes(option.value);
+                        const selected = values.includes(option.value);
+                        if (option.selected !== selected) {
+                            option.selected = selected;
+                            changed = true;
+                        }
                     }
                 }
                 else if (['radio', 'checkbox'].includes(this.type)) {
-                    this.checked = this.value === value;
+                    const checked = this.value === value;
+                    if (this.checked !== checked) {
+                        this.checked = checked;
+                        changed = true;
+                    }
                 }
                 else if (['file'].includes(this.type)) {
+                    const files = Array.from(this.files, (f) => f.name).join('/');
                     if (value instanceof File) {
-                        const dataTransfer = new DataTransfer();
-                        dataTransfer.items.add(value);
-                        this.files = dataTransfer.files;
+                        if (value.name !== files) {
+                            const dataTransfer = new DataTransfer();
+                            dataTransfer.items.add(value);
+                            this.files = dataTransfer.files;
+                            changed = true;
+                        }
                     }
                     else if (value instanceof FileList) {
-                        this.files = value;
+                        if (Array.from(value, (f) => f.name).join('/') !== files) {
+                            this.files = value;
+                            changed = true;
+                        }
                     }
                 }
                 else if (this.type) {
-                    this.value = value;
+                    if (this.value !== value) {
+                        this.value = value;
+                        changed = true;
+                    }
+                }
+
+                if (changed) {
+                    this.dispatchEvent(new Event('$change', {
+                        bubbles: true,
+                    }));
                 }
             },
             /**
@@ -511,16 +542,16 @@ export function forms(kQuery) {
              */
             $clear() {
                 if (['select-one', 'select-multiple'].includes(this.type)) {
-                    this.value = null;
+                    this.$value = null;
                 }
                 else if (['radio', 'checkbox'].includes(this.type)) {
-                    this.checked = false;
+                    this.$value = null;
                 }
                 else if (['file'].includes(this.type)) {
-                    this.files = new DataTransfer().files;
+                    this.$value = new DataTransfer().files;
                 }
                 else if (this.type) {
-                    this.value = '';
+                    this.$value = '';
                 }
 
                 return this;
