@@ -1,4 +1,4 @@
-import {$NodeList, F, IntersectionObserver, Nullable, Promise, Timer} from '../API.js';
+import {$NodeList, F, IntersectionObserver, Nullable, Promise, Timer, WeakMap} from '../API.js';
 
 /**
  * @param {KQuery} kQuery
@@ -6,6 +6,15 @@ import {$NodeList, F, IntersectionObserver, Nullable, Promise, Timer} from '../A
  * @ignore
  */
 export function miscellaneous(kQuery) {
+    const interlockings = new WeakMap();
+    const documentChange = function (e) {
+        for (const [parent, selector] of interlockings.entries()) {
+            if (e.target.$matches(selector)) {
+                parent.$indeterminate = window.$query(selector).$filter('[type=checkbox]').checked;
+            }
+        }
+    };
+
     let scrollIntoViewing = false;
 
     return {
@@ -242,6 +251,51 @@ export function miscellaneous(kQuery) {
                     timeouter?.start(options.timeout);
                     observer.observe(this);
                 });
+            },
+        },
+        [[HTMLInputElement.name, $NodeList.name]]: /** @lends HTMLInputElement.prototype */{
+            /**
+             * synchronous checked
+             *
+             * parent checked -> sync all children checked
+             * child checked -> sync parent checked/indeterminate
+             *
+             * @param {Object} [selector]
+             * @return {this}
+             */
+            $interlock(selector) {
+                kQuery.logger.assertInstanceOf(selector, Nullable, String)();
+
+                if (this.type !== 'checkbox') {
+                    return this;
+                }
+
+                // trigger mode
+                if (selector == null) {
+                    const selector = interlockings.get(this);
+                    if (selector == null) {
+                        throw new Error(this + ' is not have child selector');
+                    }
+
+                    this.$indeterminate = window.$query(selector).$filter('[type=checkbox]').checked;
+                }
+                // initialize mode
+                else {
+                    interlockings.set(this, selector);
+                    this.$indeterminate = window.$query(selector).$filter('[type=checkbox]').checked;
+
+                    ['change', '$change'].forEach(e => {
+                        this.$document.addEventListener(e, documentChange);
+                        this.addEventListener(e, (e) => {
+                            const parent = e.target;
+                            const children = window.$query(selector).$filter('[type=checkbox]');
+                            for (const child of children) {
+                                child.$value = parent.checked ? child.value : null;
+                            }
+                        });
+                    });
+                }
+                return this;
             },
         },
         [[HTMLDialogElement.name, $NodeList.name]]: /** @lends HTMLDialogElement.prototype */{
