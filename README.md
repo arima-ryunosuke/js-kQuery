@@ -292,8 +292,11 @@ $$('input').$class.toggle('hoge', (node, i) => i == 1);
   - `<fieldset disabled><input></fieldset>`
   - 例えば上記の時に `$('input').$attrs.$disabled` とするとその要素の「本当の disabled（≒fieldset も見る）」を得ることができます
 - $data.$hoge: data 属性をオブジェクトとみなして返します
-  - `<span data-hoge-a="A" data-hoge-b="B"></span>`
+  - `<span data-hoge-a="A" data-hoge-b="B" data-fuga="[1,2,3]"></span>`
   - 例えば上記の時に `$('span').$data.$hoge` とすると `{a: 'A', b: 'B'}` というオブジェクトを得ることができます
+  - オブジェクトとして扱えずかつ JSON パースが可能な場合はパース結果を返します
+  - 例えば上記の時に `$('span').$data.$fuga` とすると `[1, 2, 3]` という配列を得ることができます
+  - 逆に `$('span').$data.$fuga = [1, 2, 3]` とすると JSON.stringify を経由して data-fuga に設定されます
 - $style.$hoge: 継承された CSS の実効値を返します
   - `<div style="color:red"><span></span></div>`
   - 例えば上記の時に `$('span').$style.$color` とするとその要素の「本当の color（≒getComputedStyle の値）」を得ることができます
@@ -483,6 +486,17 @@ swipe の亜種であり、単位時間当たりの移動量が閾値を超え�
 
 速度は概ね「弱めのフリック」で 0.5 前後、「普通のフリック」で 1.0 前後、「強めのフリック」で 2.0 以上、が目安となります。
 
+#### $change イベント
+
+ちょっと特殊なイベントで、 js で value や checked を変更したときに内部的に発火されるイベントです。
+
+js で value や checked を弄っても通常 change イベントは発火されませんが、往々にして値を変えたあとは change を呼びたいものです。
+`$on('change $change')` 等としておけば js での変更時にも発火するため、発火漏れが少なくなります。
+
+イベントの輻輳を防ぐために $ がついていますが、非常に微妙なため $ は外すかもしれません。
+なお、飛ぶのは $value で変更したときのみです。普通に value や checked を変更しても発火されません。
+つまり「値の変更は必ず $value を使う」という前提が必要です。
+
 ### ユーティリティ
 
 他にもいくつか jQuery Like なユーティリティ・ヘルパーメソッドが生えています。
@@ -557,6 +571,16 @@ MIT
 - メジャー: 大規模な互換性破壊の際にアップします（アーキテクチャ、クラス構造の変更など）
 - マイナー: 小規模な互換性破壊の際にアップします（引数の変更、小規模破壊を伴う修正など）
 - パッチ: 互換性破壊はありません（デフォルト引数の追加や、新たなクラスの追加、コードフォーマットなど）
+
+### 0.3.0
+
+- [feature] SSE をハンドリングする $listen メソッド
+- [feature] チェックボックスが連動する interlock 機能
+- [feature] value 変化時に疑似 $change イベントを送出
+- [feature] $data で自動で JSON で出し入れされる機能
+- [feature] $createCSSRule
+- [*change] $options の仕様変更
+- [refactor] 静的変数のための一部の閉じ込めを解除
 
 ### 0.2.2
 
