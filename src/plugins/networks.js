@@ -1,4 +1,4 @@
-import {$FileList, $NodeList, F, Promise} from '../API.js';
+import {$FileList, $NodeList, F, Promise, WeakMap} from '../API.js';
 
 /**
  * @param {KQuery} kQuery
@@ -6,7 +6,75 @@ import {$FileList, $NodeList, F, Promise} from '../API.js';
  * @ignore
  */
 export function networks(kQuery) {
+    const eventSources = {};
+
     return {
+        [[Node.name, $NodeList.name]]: /** @lends Node.prototype */{
+            /**
+             * listen SSE event
+             *
+             * - same url connection is shared
+             *   - when all dom were deleted, close connection
+             * - url's hash means eventName
+             *
+             * @param {URL|String} url
+             * @param {Function} listener
+             * @param {Object} [options={}]
+             * @return {this}
+             */
+            $listen(url, listener, options = {}) {
+                options = Object.assign({
+                    credentials: false,
+                }, options);
+
+                url = new URL(url, this.baseURI);
+                const eventName = url.hash.substring(1) || 'message';
+                url.hash = '';
+
+                const eventSource = eventSources[url] ??= new class extends EventSource {
+                    #$nodeListeners;
+
+                    constructor(url, options) {
+                        super(url, options);
+
+                        kQuery.logger.debug(`SSE open ${url}#`);
+                        this.#$nodeListeners = new WeakMap();
+                    }
+
+                    $listen(node, name, listener) {
+                        const names = [...this.#$nodeListeners.entries()].flatMap(([, namedListeners]) => Object.keys(namedListeners));
+                        if (!names.includes(name)) {
+                            kQuery.logger.debug(`SSE listen ${this.url}#${name}`);
+                            this.addEventListener(name, e => {
+                                if (this.#$nodeListeners.size === 0) {
+                                    delete eventSources[this.url];
+                                    this.close();
+                                    kQuery.logger.debug(`SSE close ${this.url}`);
+                                }
+                                for (const [node, namedListeners] of this.#$nodeListeners.entries()) {
+                                    for (const listener of namedListeners[name] ?? []) {
+                                        listener.call(node, e);
+                                    }
+                                }
+                            });
+                        }
+
+                        const namedListeners = this.#$nodeListeners.getOrSet(node, () => ({}));
+                        namedListeners[name] ??= [];
+                        namedListeners[name].push(listener);
+                    }
+                }(url, {
+                    withCredentials: options.credentials,
+                });
+                if (eventSource.withCredentials !== !!options.credentials) {
+                    kQuery.logger.error(`SSE url(credentials) is difference`);
+                }
+
+                eventSource.$listen(this, eventName, listener);
+
+                return this;
+            },
+        },
         [[HTMLAnchorElement.name, $NodeList.name]]: /** @lends HTMLAnchorElement.prototype */{
             /**
              * submit based on a href
