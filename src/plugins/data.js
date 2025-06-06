@@ -521,5 +521,40 @@ export function data(kQuery) {
                 return reader.promise();
             },
         },
+        [[Storage.name]]: /** @lends Storage.prototype */{
+            /**
+             * get item as JSON
+             *
+             * @param {String} keyName
+             * @return {any}
+             */
+            $getJson(keyName) {
+                const item = this.getItem(keyName);
+                return item === null ? undefined : JSON.parse(item);
+            },
+            /**
+             * set item as JSON
+             *
+             * @param {String} keyName
+             * @param {any} keyValue
+             * @return {this}
+             */
+            $setJson(keyName, keyValue) {
+                this.setItem(keyName, JSON.stringify(keyValue));
+                return this;
+            },
+            /**
+             * entries all storage items
+             *
+             * @return {Generator<string[], void, *>}
+             */
+            * $entries() {
+                for (let i = 0; i < this.length; i++) {
+                    const key = this.key(i);
+                    const item = this.getItem(key);
+                    yield [key, item];
+                }
+            },
+        },
     };
 }
