@@ -93,10 +93,10 @@ import {traversing} from './src/plugins/traversing.js';
  * @typedef {Blob} Blob
  */
 /**
- * @typedef {DOMRectReadOnly} DOMRectReadOnly
+ * @typedef {Storage} Storage
  */
 /**
- * @typedef {CSSStyleRule} CSSStyleRule
+ * @typedef {DOMRectReadOnly} DOMRectReadOnly
  */
 /**
  * @typedef {NodeList} NodeList

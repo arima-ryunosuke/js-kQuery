@@ -2916,8 +2916,157 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
   // src/plugins/data.js
   function data(kQuery) {
     const nodeBag = new WeakMap();
-    const nodeJson = new WeakMap();
+    const documentCookie = new WeakMap();
     return {
+      [[Document.name]]: (
+        /** @lends Document.prototype */
+        {
+          /**
+           * get Cookie accessor
+           *
+           * @descriptor get
+           *
+           * @example
+           * document.$cookie.hoge;           // getter
+           * document.$cookie.hoge = 'value'; // setter
+           * document.$cookie.hoge = {        // setter with attributes
+           *     value: 'value',
+           *     path: "/path/to/cookie",
+           *     maxAge: 3600,
+           * };
+           * document.$cookie.hoge = null;    // delete
+           * document.$cookie();              // get all key-value object
+           * document.$cookie({               // mass assign(keep other, no attributes use default attributes)
+           *     hoge: 'HOGE',
+           *     fuga: {
+           *         value: 'FUGA',
+           *         path: '/',
+           *     },
+           * });
+           * document.$cookie.$defaultAttributes({path: '/'});  // mass setting default attributes(keep other)
+           * document.$cookie.$defaultAttributes = {path: '/'}; // mass assign default attributes(delete other)
+           */
+          get $cookie() {
+            return documentCookie.getOrSet(this, (document2) => new Proxy2(/* @__PURE__ */ __name(function $Cookie() {
+            }, "$Cookie"), {
+              has(target, property) {
+                return this.get(target, property) != null;
+              },
+              get(target, property) {
+                if (property === Symbol.toPrimitive || property === "toString") {
+                  return () => document2.cookie;
+                }
+                if (property === "$defaultAttributes") {
+                  return (defaultAttributes) => {
+                    if (!defaultAttributes) {
+                      return target.$defaultAttributes ?? {};
+                    }
+                    this.set(target, property, Object.assign(target.$defaultAttributes, defaultAttributes));
+                    return documentCookie.get(document2);
+                  };
+                }
+                const cookies = document2.cookie.split(/; ?/);
+                for (const cookie of cookies) {
+                  const [name, value] = cookie.split(/=(.*)/s).map(decodeURIComponent);
+                  if (name === property) {
+                    return value;
+                  }
+                }
+                return void 0;
+              },
+              set(target, property, value) {
+                if (property === "$defaultAttributes") {
+                  kQuery.logger.assertInstanceOf(value, Object)();
+                  if (value.expires) {
+                    kQuery.logger.warn(`Should not specify expire as the default value, because Absolute time and may be an unintended value at the time of actual use`);
+                  }
+                  target.$defaultAttributes = value;
+                  return true;
+                }
+                if (value == null) {
+                  value = {
+                    value: "",
+                    maxAge: -1
+                  };
+                }
+                const attributes2 = Object.assign({
+                  domain: "",
+                  path: "/",
+                  secure: document2.defaultView.isSecureContext,
+                  sameSite: "lax"
+                }, target.$defaultAttributes);
+                if (F.objectIsPlain(value)) {
+                  Object.assign(attributes2, value);
+                  value = value.value ?? value[""];
+                }
+                delete attributes2.value;
+                delete attributes2[""];
+                kQuery.logger.assertInstanceOf(attributes2.maxAge, Nullable, Number)();
+                kQuery.logger.assertInstanceOf(attributes2.expires, Nullable, Date)();
+                let cookie = `${encodeURIComponent(property)}=${encodeURIComponent(value)}`;
+                if (attributes2.domain) {
+                  cookie += `; domain=${attributes2.domain}`;
+                }
+                if (attributes2.path) {
+                  cookie += `; path=${attributes2.path}`;
+                }
+                if (attributes2.secure) {
+                  cookie += `; secure`;
+                }
+                if (attributes2.sameSite) {
+                  cookie += `; samesite=${attributes2.sameSite}`;
+                }
+                if (attributes2.maxAge) {
+                  cookie += `; max-age=${+attributes2.maxAge}`;
+                }
+                if (attributes2.expires) {
+                  cookie += `; expires=${attributes2.expires.toUTCString()}`;
+                }
+                document2.cookie = cookie;
+                return true;
+              },
+              deleteProperty(target, property) {
+                this.set(target, property, null);
+                return true;
+              },
+              apply(target, thisArg, argArray) {
+                if (F.objectIsPlain(argArray[0])) {
+                  for (const [name, value] of F.objectToEntries(argArray[0])) {
+                    this.set(target, name, value);
+                  }
+                }
+                return Object.fromEntries(document2.cookie.split(/; ?/).map((v) => v.split(/=(.*)/s).map(decodeURIComponent)));
+              }
+            }));
+          },
+          /**
+           * set Cookie value
+           *
+           * @descriptor set
+           *
+           * @param {Object} value
+           *
+           * @example
+           * document.$cookie = { // mass assign(delete other, no attributes use default attributes)
+           *     hoge: 'HOGE',
+           *     fuga: {
+           *         value: 'FUGA',
+           *         path: '/',
+           *     },
+           * };
+           */
+          set $cookie(value) {
+            kQuery.logger.assertInstanceOf(value, Nullable, Object)();
+            if (value == null) {
+              return;
+            }
+            for (const [name] of F.objectToEntries(this.$cookie())) {
+              this.$cookie[name] = null;
+            }
+            this.$cookie(value);
+          }
+        }
+      ),
       [[Node.name, $NodeList.name]]: (
         /** @lends Node.prototype */
         {
@@ -3260,6 +3409,44 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
             const reader = new FileReader();
             reader.readAsDataURL(that);
             return reader.promise();
+          }
+        }
+      ),
+      [[Storage.name]]: (
+        /** @lends Storage.prototype */
+        {
+          /**
+           * get item as JSON
+           *
+           * @param {String} keyName
+           * @return {any}
+           */
+          $getJson(keyName) {
+            const item = this.getItem(keyName);
+            return item === null ? void 0 : JSON.parse(item);
+          },
+          /**
+           * set item as JSON
+           *
+           * @param {String} keyName
+           * @param {any} keyValue
+           * @return {this}
+           */
+          $setJson(keyName, keyValue) {
+            this.setItem(keyName, JSON.stringify(keyValue));
+            return this;
+          },
+          /**
+           * entries all storage items
+           *
+           * @return {Generator<string[], void, *>}
+           */
+          *$entries() {
+            for (let i = 0; i < this.length; i++) {
+              const key = this.key(i);
+              const item = this.getItem(key);
+              yield [key, item];
+            }
           }
         }
       )

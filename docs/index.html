@@ -135,6 +135,18 @@
                     <ul class='list-reset py1-ul pl1'>
                       
                       <li><a
+                        href='#documentget__cookie'
+                        class='regular pre-open'>
+                        get $cookie</a>
+                        <small>get Cookie accessor</small></li>
+                      
+                      <li><a
+                        href='#documentset__cookie'
+                        class='regular pre-open'>
+                        set $cookie</a>
+                        <small>set Cookie value</small></li>
+                      
+                      <li><a
                         href='#documenttoplayerelement'
                         class='regular pre-open'>
                         $topLayerElement</a>
@@ -1170,6 +1182,45 @@
               
                 
                 <li><a
+                  href='#storage'
+                  class=" toggle-sibling">
+                  Storage
+                  <span class='icon'>▾</span>
+                </a>
+                
+                <div class='toggle-target'>
+                  
+                  
+                    <ul class='list-reset py1-ul pl1'>
+                      
+                      <li><a
+                        href='#storagegetjson'
+                        class='regular pre-open'>
+                        $getJson</a>
+                        <small>get item as JSON</small></li>
+                      
+                      <li><a
+                        href='#storagesetjson'
+                        class='regular pre-open'>
+                        $setJson</a>
+                        <small>set item as JSON</small></li>
+                      
+                      <li><a
+                        href='#storageentries'
+                        class='regular pre-open'>
+                        $entries</a>
+                        <small>entries all storage items</small></li>
+                      
+                    </ul>
+                  
+                  
+                  
+                </div>
+                
+                </li>
+              
+                
+                <li><a
                   href='#domrectreadonly'
                   class=" toggle-sibling">
                   DOMRectReadOnly
@@ -1198,16 +1249,6 @@
                   
                   
                 </div>
-                
-                </li>
-              
-                
-                <li><a
-                  href='#cssstylerule'
-                  class="">
-                  CSSStyleRule
-                  
-                </a>
                 
                 </li>
               
@@ -2079,6 +2120,152 @@ eventdata is live, changing it changes the handler itself</p>
     <div class='py1 quiet mt1 prose-big'>Instance Members</div>
     <div class="clearfix">
   
+    <div class='border-bottom' id='documentget__cookie'>
+      <div class="clearfix small pointer toggle-sibling">
+        <div class="py1 contain">
+            <a class='icon pin-right py1 dark-link caret-right'>▸</a>
+            <span class='code strong strong truncate'>get $cookie</span>
+        </div>
+      </div>
+      <div class="clearfix display-none toggle-target">
+        <section class='p2 mb2 clearfix bg-white minishadow'>
+
+  
+
+  <p>get Cookie accessor</p>
+
+    <div class='pre p1 fill-light mt0'>get $cookie</div>
+  
+  
+
+  
+  
+  
+  
+  
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <div class='py1 quiet mt1 prose-big'>Example</div>
+    
+      
+      <pre class='p1 overflow-auto round fill-light'><span class="hljs-variable language_">document</span>.<span class="hljs-property">$cookie</span>.<span class="hljs-property">hoge</span>;           <span class="hljs-comment">// getter</span>
+<span class="hljs-variable language_">document</span>.<span class="hljs-property">$cookie</span>.<span class="hljs-property">hoge</span> = <span class="hljs-string">&#x27;value&#x27;</span>; <span class="hljs-comment">// setter</span>
+<span class="hljs-variable language_">document</span>.<span class="hljs-property">$cookie</span>.<span class="hljs-property">hoge</span> = {        <span class="hljs-comment">// setter with attributes</span>
+    <span class="hljs-attr">value</span>: <span class="hljs-string">&#x27;value&#x27;</span>,
+    <span class="hljs-attr">path</span>: <span class="hljs-string">&quot;/path/to/cookie&quot;</span>,
+    <span class="hljs-attr">maxAge</span>: <span class="hljs-number">3600</span>,
+};
+<span class="hljs-variable language_">document</span>.<span class="hljs-property">$cookie</span>.<span class="hljs-property">hoge</span> = <span class="hljs-literal">null</span>;    <span class="hljs-comment">// delete</span>
+<span class="hljs-variable language_">document</span>.$cookie();              <span class="hljs-comment">// get all key-value object</span>
+<span class="hljs-variable language_">document</span>.$cookie({               <span class="hljs-comment">// mass assign(keep other, no attributes use default attributes)</span>
+    <span class="hljs-attr">hoge</span>: <span class="hljs-string">&#x27;HOGE&#x27;</span>,
+    <span class="hljs-attr">fuga</span>: {
+        <span class="hljs-attr">value</span>: <span class="hljs-string">&#x27;FUGA&#x27;</span>,
+        <span class="hljs-attr">path</span>: <span class="hljs-string">&#x27;/&#x27;</span>,
+    },
+});
+<span class="hljs-variable language_">document</span>.<span class="hljs-property">$cookie</span>.$defaultAttributes({<span class="hljs-attr">path</span>: <span class="hljs-string">&#x27;/&#x27;</span>});  <span class="hljs-comment">// mass setting default attributes(keep other)</span>
+<span class="hljs-variable language_">document</span>.<span class="hljs-property">$cookie</span>.<span class="hljs-property">$defaultAttributes</span> = {<span class="hljs-attr">path</span>: <span class="hljs-string">&#x27;/&#x27;</span>}; <span class="hljs-comment">// mass assign default attributes(delete other)</span></pre>
+    
+  
+
+  
+
+  
+
+  
+
+  
+</section>
+
+      </div>
+    </div>
+  
+    <div class='border-bottom' id='documentset__cookie'>
+      <div class="clearfix small pointer toggle-sibling">
+        <div class="py1 contain">
+            <a class='icon pin-right py1 dark-link caret-right'>▸</a>
+            <span class='code strong strong truncate'>set $cookie</span>
+        </div>
+      </div>
+      <div class="clearfix display-none toggle-target">
+        <section class='p2 mb2 clearfix bg-white minishadow'>
+
+  
+
+  <p>set Cookie value</p>
+
+    <div class='pre p1 fill-light mt0'>set $cookie</div>
+  
+  
+
+  
+  
+  
+  
+  
+  
+
+  
+    <div class='py1 quiet mt1 prose-big'>Parameters</div>
+    <div class='prose'>
+      
+        <div class='space-bottom0'>
+          <div>
+            <span class='code bold'>value</span> <code class='quiet'>(<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>)</code>
+	    
+          </div>
+          
+        </div>
+      
+    </div>
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <div class='py1 quiet mt1 prose-big'>Example</div>
+    
+      
+      <pre class='p1 overflow-auto round fill-light'><span class="hljs-variable language_">document</span>.<span class="hljs-property">$cookie</span> = { <span class="hljs-comment">// mass assign(delete other, no attributes use default attributes)</span>
+    <span class="hljs-attr">hoge</span>: <span class="hljs-string">&#x27;HOGE&#x27;</span>,
+    <span class="hljs-attr">fuga</span>: {
+        <span class="hljs-attr">value</span>: <span class="hljs-string">&#x27;FUGA&#x27;</span>,
+        <span class="hljs-attr">path</span>: <span class="hljs-string">&#x27;/&#x27;</span>,
+    },
+};</pre>
+    
+  
+
+  
+
+  
+
+  
+
+  
+</section>
+
+      </div>
+    </div>
+  
     <div class='border-bottom' id='documenttoplayerelement'>
       <div class="clearfix small pointer toggle-sibling">
         <div class="py1 contain">
@@ -2416,7 +2603,7 @@ eventdata is live, changing it changes the handler itself</p>
 </li>
 </ul>
 
-    <div class='pre p1 fill-light mt0'>$createCSSRule(media: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>??): (CSSRule | <a href="#cssstylerule">CSSStyleRule</a>)</div>
+    <div class='pre p1 fill-light mt0'>$createCSSRule(media: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>??): (CSSRule | CSSStyleRule)</div>
   
   
 
@@ -2447,7 +2634,7 @@ eventdata is live, changing it changes the handler itself</p>
   
     
       <div class='py1 quiet mt1 prose-big'>Returns</div>
-      <code>(CSSRule | <a href="#cssstylerule">CSSStyleRule</a>)</code>:
+      <code>(CSSRule | CSSStyleRule)</code>:
         
       
     
@@ -10866,6 +11053,268 @@ $(<span class="hljs-string">&#x27;select&#x27;</span>).$options([
   
   <div class='clearfix'>
     
+    <h3 class='fl m0' id='storage'>
+      Storage
+    </h3>
+    
+    
+  </div>
+  
+
+  
+    <div class='pre p1 fill-light mt0'>Storage</div>
+  
+    <p>
+      Type:
+      <a href="#storage">Storage</a>
+    </p>
+  
+  
+
+  
+  
+  
+  
+  
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <div class='py1 quiet mt1 prose-big'>Instance Members</div>
+    <div class="clearfix">
+  
+    <div class='border-bottom' id='storagegetjson'>
+      <div class="clearfix small pointer toggle-sibling">
+        <div class="py1 contain">
+            <a class='icon pin-right py1 dark-link caret-right'>▸</a>
+            <span class='code strong strong truncate'>$getJson(keyName)</span>
+        </div>
+      </div>
+      <div class="clearfix display-none toggle-target">
+        <section class='p2 mb2 clearfix bg-white minishadow'>
+
+  
+
+  <p>get item as JSON</p>
+
+    <div class='pre p1 fill-light mt0'>$getJson(keyName: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>): any</div>
+  
+  
+
+  
+  
+  
+  
+  
+  
+
+  
+    <div class='py1 quiet mt1 prose-big'>Parameters</div>
+    <div class='prose'>
+      
+        <div class='space-bottom0'>
+          <div>
+            <span class='code bold'>keyName</span> <code class='quiet'>(<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>)</code>
+	    
+          </div>
+          
+        </div>
+      
+    </div>
+  
+
+  
+
+  
+    
+      <div class='py1 quiet mt1 prose-big'>Returns</div>
+      <code>any</code>:
+        
+      
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+</section>
+
+      </div>
+    </div>
+  
+    <div class='border-bottom' id='storagesetjson'>
+      <div class="clearfix small pointer toggle-sibling">
+        <div class="py1 contain">
+            <a class='icon pin-right py1 dark-link caret-right'>▸</a>
+            <span class='code strong strong truncate'>$setJson(keyName, keyValue)</span>
+        </div>
+      </div>
+      <div class="clearfix display-none toggle-target">
+        <section class='p2 mb2 clearfix bg-white minishadow'>
+
+  
+
+  <p>set item as JSON</p>
+
+    <div class='pre p1 fill-light mt0'>$setJson(keyName: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>, keyValue: any): this</div>
+  
+  
+
+  
+  
+  
+  
+  
+  
+
+  
+    <div class='py1 quiet mt1 prose-big'>Parameters</div>
+    <div class='prose'>
+      
+        <div class='space-bottom0'>
+          <div>
+            <span class='code bold'>keyName</span> <code class='quiet'>(<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>)</code>
+	    
+          </div>
+          
+        </div>
+      
+        <div class='space-bottom0'>
+          <div>
+            <span class='code bold'>keyValue</span> <code class='quiet'>(any)</code>
+	    
+          </div>
+          
+        </div>
+      
+    </div>
+  
+
+  
+
+  
+    
+      <div class='py1 quiet mt1 prose-big'>Returns</div>
+      <code>this</code>:
+        
+      
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+</section>
+
+      </div>
+    </div>
+  
+    <div class='border-bottom' id='storageentries'>
+      <div class="clearfix small pointer toggle-sibling">
+        <div class="py1 contain">
+            <a class='icon pin-right py1 dark-link caret-right'>▸</a>
+            <span class='code strong strong truncate'>$entries()</span>
+        </div>
+      </div>
+      <div class="clearfix display-none toggle-target">
+        <section class='p2 mb2 clearfix bg-white minishadow'>
+
+  
+
+  <p>entries all storage items</p>
+
+    <div class='pre p1 fill-light mt0'>$entries(): Generator&#x3C;<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a>&#x3C;<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>>, void, any></div>
+  
+  
+
+  
+  
+  
+  
+  
+  
+
+  
+
+  
+
+  
+    
+      <div class='py1 quiet mt1 prose-big'>Returns</div>
+      <code>Generator&#x3C;<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a>&#x3C;<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>>, void, any></code>:
+        
+      
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+</section>
+
+      </div>
+    </div>
+  
+</div>
+
+  
+
+  
+
+  
+</section>
+
+          
+        
+          
+          <section class='p2 mb2 clearfix bg-white minishadow'>
+
+  
+  <div class='clearfix'>
+    
     <h3 class='fl m0' id='domrectreadonly'>
       DOMRectReadOnly
     </h3>
@@ -11108,60 +11557,6 @@ false:
     </div>
   
 </div>
-
-  
-
-  
-
-  
-</section>
-
-          
-        
-          
-          <section class='p2 mb2 clearfix bg-white minishadow'>
-
-  
-  <div class='clearfix'>
-    
-    <h3 class='fl m0' id='cssstylerule'>
-      CSSStyleRule
-    </h3>
-    
-    
-  </div>
-  
-
-  
-    <div class='pre p1 fill-light mt0'>CSSStyleRule</div>
-  
-    <p>
-      Type:
-      <a href="#cssstylerule">CSSStyleRule</a>
-    </p>
-  
-  
-
-  
-  
-  
-  
-  
-  
-
-  
-
-  
-
-  
-
-  
-
-  
-
-  
-
-  
 
   
 
