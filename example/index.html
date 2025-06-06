@@ -685,7 +685,7 @@
                     first: false,
                 });
                 container.$on('click', '.change-cookie', function (e) {
-                    document.cookie = e.target.dataset.cookieName + '=' + Date.now();
+                    document.$cookie[e.target.dataset.cookieName] = Date.now();
                 });
                 document.$on('cookie', function (e) {
                     console.log(e);

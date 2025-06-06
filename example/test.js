@@ -1660,6 +1660,59 @@ document.addEventListener('DOMContentLoaded', function () {
                     const selectoredElement2 = document.$createElement('div[a=A][b=B][c].c1.c2#id', {class: 'x', x: 'X'}, 'child1', 'child2');
                     expect(selectoredElement2 + '').toEqual('<div class="x c1 c2" x="X" id="id" a="A" b="B" c="">child1child2</div>');
                 });
+                it('$cookie', async function () {
+                    document.$cookie.$defaultAttributes = {
+                        maxAge: 999,
+                        path: location.pathname,
+                    };
+
+                    document.$cookie.hoge = null;
+                    document.$cookie.fuga = null;
+                    document.$cookie.piyo = null;
+
+                    document.$cookie.hoge = 'HOGE';
+                    expect('hoge' in document.$cookie).toEqual(true);
+                    expect(document.$cookie.hoge).toEqual('HOGE');
+                    document.$cookie.hoge = null;
+                    expect('hoge' in document.$cookie).toEqual(false);
+
+                    document.$cookie.$defaultAttributes({
+                        maxAge: 1,
+                    });
+                    expect(document.$cookie.$defaultAttributes()).toEqual({
+                        maxAge: 1,               // changed
+                        path: location.pathname, // keep
+                    });
+
+                    document.$cookie.hoge = 'HOGE';
+                    document.$cookie = {
+                        fuga: 'FUGA',
+                        piyo: {
+                            value: 'PIYO',
+                            maxAge: 2, // prefer over default
+                        },
+                    };
+
+                    expect(document.$cookie.hoge).toEqual(undefined);
+                    expect(document.$cookie.fuga).toEqual('FUGA');
+                    expect(document.$cookie.piyo).toEqual('PIYO');
+
+                    await sleep(1500);
+                    expect(document.$cookie.hoge).toEqual(undefined);
+                    expect(document.$cookie.fuga).toEqual(undefined);
+                    expect(document.$cookie.piyo).toEqual('PIYO');
+
+                    await sleep(1500);
+                    expect(document.$cookie.hoge).toEqual(undefined);
+                    expect(document.$cookie.fuga).toEqual(undefined);
+                    expect(document.$cookie.piyo).toEqual(undefined);
+                });
+                it('$cookie misc', async function () {
+                    document.$cookie['hoge=fuga'] = 'foo=bar';
+                    expect(document.$cookie + '').toEqual(document.cookie);
+                    expect(document.$cookie['hoge=fuga']).toEqual('foo=bar');
+                    expect(document.$cookie()['hoge=fuga']).toEqual('foo=bar');
+                });
             });
 
             describe('DocumentLikeElement', function () {
@@ -2663,7 +2716,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     const parent2 = this.checkboxes.$matches('.test-parent2-checkbox');
                     const child1s = this.checkboxes.$filter('.test-child1-checkbox');
                     const child2s = this.checkboxes.$filter('.test-child2-checkbox');
-                    
+
                     total.$interlock('.test-parent1-checkbox,.test-parent2-checkbox');
                     parent1.$interlock('.test-child1-checkbox');
                     parent2.$interlock('.test-child2-checkbox');
@@ -3468,6 +3521,28 @@ document.addEventListener('DOMContentLoaded', function () {
                         },
                         body: '',
                     });
+                });
+            });
+
+            describe('Storage', function () {
+                beforeEach(function () {
+                    window.sessionStorage.clear();
+                });
+
+                it('set/get $json', async function () {
+                    expect(window.sessionStorage.$getJson('hoge')).toEqual(undefined);
+                    expect(window.sessionStorage.$setJson('hoge', {hoge: 'HOGE'})).toEqual(window.sessionStorage);
+                    expect(window.sessionStorage.$getJson('hoge')).toEqual({hoge: 'HOGE'});
+                });
+                it('$entries', async function () {
+                    window.sessionStorage.$setJson('hoge', 'HOGE');
+                    window.sessionStorage.$setJson('fuga', {fuga: 'FUGA'});
+                    window.sessionStorage.setItem('piyo', 'PIYO');
+                    expect([...window.sessionStorage.$entries()]).toEqual([
+                        ['fuga', '{"fuga":"FUGA"}'],
+                        ['piyo', 'PIYO'],
+                        ['hoge', '"HOGE"'],
+                    ]);
                 });
             });
 
