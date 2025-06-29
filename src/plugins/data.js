@@ -12,6 +12,16 @@ export function data(kQuery) {
     return {
         [[Document.name]]: /** @lends Document.prototype */{
             /**
+             * create URL based on this URL
+             *
+             * @descriptor get
+             *
+             * @return {URL}
+             */
+            get $URL() {
+                return new URL(this.URL, this.baseURI);
+            },
+            /**
              * get Cookie accessor
              *
              * @descriptor get
