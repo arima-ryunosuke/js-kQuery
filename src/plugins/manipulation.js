@@ -452,6 +452,23 @@ export function manipulation(kQuery) {
                 return this;
             },
             /**
+             * trim whitespace textnode
+             *
+             * @return {this}
+             */
+            $trim() {
+                this.normalize();
+
+                if (this.firstChild?.nodeType === Node.TEXT_NODE && this.firstChild.nodeValue.trim() === '') {
+                    this.firstChild.remove();
+                }
+                if (this.lastChild?.nodeType === Node.TEXT_NODE && this.lastChild.nodeValue.trim() === '') {
+                    this.lastChild.remove();
+                }
+
+                return this;
+            },
+            /**
              * wrap this element
              *
              * @param {Element} node
