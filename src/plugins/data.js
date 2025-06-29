@@ -10,6 +10,86 @@ export function data(kQuery) {
     const documentCookie = new WeakMap();
 
     return {
+        [[URL.name]]: /** @lends URL.prototype */{
+            /**
+             * assign URL parts
+             *
+             * @param {Object} parts
+             * @return {this}
+             */
+            $assign(parts) {
+                kQuery.logger.assertInstanceOf(parts, Object)();
+
+                for (const [key, value] of F.objectToEntries(parts)) {
+                    if (key === 'searchParams') {
+                        this[key].$assign(value);
+                    }
+                    else if (key in this) {
+                        this[key] = value;
+                    }
+                }
+                return this;
+            },
+            /**
+             * assign URL parts and new URL
+             *
+             * @param {Object} parts
+             * @return {this}
+             */
+            $replace(parts) {
+                kQuery.logger.assertInstanceOf(parts, Object)();
+
+                return new URL(this).$assign(parts);
+            },
+            /**
+             * shortcut to this.$assign({searchParams})
+             *
+             * @param {Object} params
+             * @return {this}
+             */
+            $params(params) {
+                kQuery.logger.assertInstanceOf(params, Object)();
+
+                return this.$assign({searchParams: params});
+            },
+        },
+        [[URLSearchParams.name]]: /** @lends URLSearchParams.prototype */{
+            /**
+             * assign params
+             *
+             * - null/undefined: delete parameter
+             * - array: append per element
+             * - other: simple set
+             *
+             * @param {Object} params
+             * @return {this}
+             */
+            $assign(params) {
+                kQuery.logger.assertInstanceOf(params, Object)();
+
+                for (const [name, value] of F.objectToEntries(params)) {
+                    if (value == null) {
+                        this.delete(name);
+                    }
+                    else if (value instanceof Array) {
+                        this.delete(name);
+                        for (const e of value) {
+                            this.append(name, e);
+                        }
+                    }
+                    else {
+                        this.set(name, value);
+                    }
+                }
+                return this;
+            },
+            $clear() {
+                for (const key of [...this.keys()]) {
+                    this.delete(key);
+                }
+                return this;
+            },
+        },
         [[Document.name]]: /** @lends Document.prototype */{
             /**
              * create URL based on this URL
