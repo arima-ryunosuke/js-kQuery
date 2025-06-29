@@ -521,6 +521,13 @@ export const F = {
 
             delete options.timeout;
         }
+
+        options.headers ??= {};
+        if (!(options.headers instanceof Headers)) {
+            options.headers = new Headers(options.headers);
+        }
+        options.headers.append('X-Requested-With', 'XMLHttpRequest');
+
         const response = await GT.fetch(url, options);
         if (!(options.ok ?? false) && !response.ok) {
             throw new Error(`${response.status}: ${response.statusText}`, {
