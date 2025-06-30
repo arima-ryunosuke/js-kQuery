@@ -572,6 +572,13 @@ MIT
 - マイナー: 小規模な互換性破壊の際にアップします（引数の変更、小規模破壊を伴う修正など）
 - パッチ: 互換性破壊はありません（デフォルト引数の追加や、新たなクラスの追加、コードフォーマットなど）
 
+### 0.3.2
+
+- [feature] URL/URLSearchParams を拡張
+- [feature] document.$URL を追加
+- [feature] 内部 fetch に X-Requested-With を付与
+- [feature] 前後のホワイトスペースノードを削除する $trim メソッド
+
 ### 0.3.1
 
 - [feature] Storage に便利メソッドを追加
