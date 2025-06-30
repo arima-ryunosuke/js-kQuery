@@ -1660,6 +1660,9 @@ document.addEventListener('DOMContentLoaded', function () {
                     const selectoredElement2 = document.$createElement('div[a=A][b=B][c].c1.c2#id', {class: 'x', x: 'X'}, 'child1', 'child2');
                     expect(selectoredElement2 + '').toEqual('<div class="x c1 c2" x="X" id="id" a="A" b="B" c="">child1child2</div>');
                 });
+                it('$URL', async function () {
+                    expect(document.$URL).toEqual(new URL(document.URL));
+                });
                 it('$cookie', async function () {
                     document.$cookie.$defaultAttributes = {
                         maxAge: 999,
@@ -2021,6 +2024,22 @@ document.addEventListener('DOMContentLoaded', function () {
                     this.elements[1].$replaceChildren();
                     expect(this.elements[0].innerHTML).toEqual('text<span>span</span>');
                     expect(this.elements[1].innerHTML).toEqual('');
+                });
+                it('$trim', async function () {
+                    this.element.$trim();
+                    expect(this.element.innerHTML).toEqual('<div><span>1</span>div<span>2</span></div>');
+
+                    this.element.innerHTML = ' <div>X</div>\n';
+                    this.element.$trim();
+                    expect(this.element.innerHTML).toEqual('<div>X</div>');
+
+                    this.element.prepend(document.createTextNode(' '));
+                    this.element.prepend(document.createTextNode(' '));
+                    this.element.append(document.createTextNode(' '));
+                    this.element.append(document.createTextNode(' '));
+                    this.element.$trim();
+                    expect(this.element.childNodes.length).toEqual(1);
+                    expect(this.element.innerHTML).toEqual('<div>X</div>');
                 });
                 it('$wrap/$unwrap', async function () {
                     const div = this.element.$('div');
@@ -3390,6 +3409,73 @@ document.addEventListener('DOMContentLoaded', function () {
                 });
             });
 
+            describe('URL', function () {
+                beforeEach(function () {
+                    this.url = new URL('http://example.com:8080/path/to/test?query1=a&query2=b#hash');
+                });
+
+                it('$assign', async function () {
+                    const that_url = this.url.$assign({
+                        protocol: 'https:',
+                        port: 8443,
+                        searchParams: {
+                            query1: null,
+                            query3: 'c',
+                        },
+                        hash: 'changed-hash',
+                    });
+                    expect(that_url.toString()).toEqual('https://example.com:8443/path/to/test?query2=b&query3=c#changed-hash');
+                    expect(this.url.toString()).toEqual('https://example.com:8443/path/to/test?query2=b&query3=c#changed-hash');
+                });
+                it('$replace', async function () {
+                    const that_url = this.url.$replace({
+                        protocol: 'https:',
+                        port: 8443,
+                        searchParams: {
+                            query1: null,
+                            query3: 'c',
+                        },
+                        hash: 'changed-hash',
+                    });
+                    expect(that_url.toString()).toEqual('https://example.com:8443/path/to/test?query2=b&query3=c#changed-hash');
+                    expect(this.url.toString()).toEqual('http://example.com:8080/path/to/test?query1=a&query2=b#hash');
+                });
+                it('$params', async function () {
+                    const that_url = this.url.$params({
+                        query1: null,
+                        query3: 'c',
+                    });
+                    expect(that_url.toString()).toEqual('http://example.com:8080/path/to/test?query2=b&query3=c#hash');
+                    expect(this.url.toString()).toEqual('http://example.com:8080/path/to/test?query2=b&query3=c#hash');
+                });
+            });
+
+            describe('URLSearchParams', function () {
+                beforeEach(function () {
+                    this.searchParams = new URLSearchParams({
+                        query1: 'a',
+                        query2: 'b',
+                        query3: 'c',
+                        "queryX[]": "X",
+                    });
+                });
+
+                it('$assign', async function () {
+                    this.searchParams.$assign({
+                        query1: null,
+                        query3: 'CX',
+                        "queryX[]": [1, 2, 3],
+                    });
+                    expect(this.searchParams.toString()).toEqual('query2=b&query3=CX&queryX%5B%5D=1&queryX%5B%5D=2&queryX%5B%5D=3');
+                });
+                it('$clear', async function () {
+                    this.searchParams.append('query1', 'a2');
+                    expect(this.searchParams.toString()).toEqual('query1=a&query2=b&query3=c&queryX%5B%5D=X&query1=a2');
+                    this.searchParams.$clear();
+                    expect(this.searchParams.toString()).toEqual('');
+                });
+            });
+
             describe('FormData', function () {
                 beforeEach(function () {
                     this.textfile = new File(['hoge'], 'textfile', {type: 'text/plain'});
@@ -3722,6 +3808,10 @@ insert-text
 replace-text
 <strong>replace-strong</strong>
 after-text`);
+                });
+                it('$trim', async function () {
+                    this.container.$('.trim').click();
+                    expect(this.container.$('.trim-empty').matches(':empty')).toEqual(true);
                 });
             });
 

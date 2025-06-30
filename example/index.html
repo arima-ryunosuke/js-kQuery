@@ -353,6 +353,8 @@
             <br>
             <button type="button" class="replace">replace</button>
             <br>
+            <button type="button" class="trim">trim</button>
+            <br>
             <button type="button" class="render">render</button>
         </div>
 
@@ -361,9 +363,16 @@
                 dummy {
                     color: red;
                 }
+                .trim-empty:empty:before {
+                    color: red;
+                    content: "this is empty";
+                }
             </style>
             <div class="dom-container">
                 first node
+            </div>
+            <div class="trim-empty">
+
             </div>
             <script type="module">
                 function dummy() {
@@ -454,6 +463,9 @@
                 container.$on('click', '.replace', function () {
                     container.$('.dom-container').$replace('replace-text\n', document.$createNodeListFromHTML('<strong>replace-strong</strong>\n'));
                     output.textContent = input.innerHTML;
+                });
+                container.$on('click', '.trim', function () {
+                    output.textContent = container.$('.trim-empty').$trim().$outerTag();
                 });
                 container.$on('click', '.render', function () {
                     $('#tr-template').$render([
