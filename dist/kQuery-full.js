@@ -477,6 +477,11 @@
         }
         delete options.timeout;
       }
+      options.headers ??= {};
+      if (!(options.headers instanceof Headers)) {
+        options.headers = new Headers(options.headers);
+      }
+      options.headers.append("X-Requested-With", "XMLHttpRequest");
       const response = await GT.fetch(url, options);
       if (!(options.ok ?? false) && !response.ok) {
         throw new Error(`${response.status}: ${response.statusText}`, {
@@ -2918,9 +2923,98 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
     const nodeBag = new WeakMap();
     const documentCookie = new WeakMap();
     return {
+      [[URL.name]]: (
+        /** @lends URL.prototype */
+        {
+          /**
+           * assign URL parts
+           *
+           * @param {Object} parts
+           * @return {this}
+           */
+          $assign(parts) {
+            kQuery.logger.assertInstanceOf(parts, Object)();
+            for (const [key, value] of F.objectToEntries(parts)) {
+              if (key === "searchParams") {
+                this[key].$assign(value);
+              } else if (key in this) {
+                this[key] = value;
+              }
+            }
+            return this;
+          },
+          /**
+           * assign URL parts and new URL
+           *
+           * @param {Object} parts
+           * @return {this}
+           */
+          $replace(parts) {
+            kQuery.logger.assertInstanceOf(parts, Object)();
+            return new URL(this).$assign(parts);
+          },
+          /**
+           * shortcut to this.$assign({searchParams})
+           *
+           * @param {Object} params
+           * @return {this}
+           */
+          $params(params) {
+            kQuery.logger.assertInstanceOf(params, Object)();
+            return this.$assign({ searchParams: params });
+          }
+        }
+      ),
+      [[URLSearchParams.name]]: (
+        /** @lends URLSearchParams.prototype */
+        {
+          /**
+           * assign params
+           *
+           * - null/undefined: delete parameter
+           * - array: append per element
+           * - other: simple set
+           *
+           * @param {Object} params
+           * @return {this}
+           */
+          $assign(params) {
+            kQuery.logger.assertInstanceOf(params, Object)();
+            for (const [name, value] of F.objectToEntries(params)) {
+              if (value == null) {
+                this.delete(name);
+              } else if (value instanceof Array) {
+                this.delete(name);
+                for (const e of value) {
+                  this.append(name, e);
+                }
+              } else {
+                this.set(name, value);
+              }
+            }
+            return this;
+          },
+          $clear() {
+            for (const key of [...this.keys()]) {
+              this.delete(key);
+            }
+            return this;
+          }
+        }
+      ),
       [[Document.name]]: (
         /** @lends Document.prototype */
         {
+          /**
+           * create URL based on this URL
+           *
+           * @descriptor get
+           *
+           * @return {URL}
+           */
+          get $URL() {
+            return new URL(this.URL, this.baseURI);
+          },
           /**
            * get Cookie accessor
            *
@@ -5237,6 +5331,21 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
            */
           $replaceChildren(...nodes) {
             this.replaceChildren(...normalizeNodes(nodes));
+            return this;
+          },
+          /**
+           * trim whitespace textnode
+           *
+           * @return {this}
+           */
+          $trim() {
+            this.normalize();
+            if (this.firstChild?.nodeType === Node.TEXT_NODE && this.firstChild.nodeValue.trim() === "") {
+              this.firstChild.remove();
+            }
+            if (this.lastChild?.nodeType === Node.TEXT_NODE && this.lastChild.nodeValue.trim() === "") {
+              this.lastChild.remove();
+            }
             return this;
           },
           /**

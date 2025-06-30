@@ -135,6 +135,12 @@
                     <ul class='list-reset py1-ul pl1'>
                       
                       <li><a
+                        href='#documentget__url'
+                        class='regular pre-open'>
+                        get $URL</a>
+                        <small>create URL based on this URL</small></li>
+                      
+                      <li><a
                         href='#documentget__cookie'
                         class='regular pre-open'>
                         get $cookie</a>
@@ -319,6 +325,12 @@
                         class='regular pre-open'>
                         $replaceChildren</a>
                         <small>replace children</small></li>
+                      
+                      <li><a
+                        href='#nodetrim'
+                        class='regular pre-open'>
+                        $trim</a>
+                        <small>trim whitespace textnode</small></li>
                       
                       <li><a
                         href='#nodewrap'
@@ -1075,6 +1087,72 @@
                         class='regular pre-open'>
                         set name</a>
                         <small>set name of RadioNodeList</small></li>
+                      
+                    </ul>
+                  
+                  
+                  
+                </div>
+                
+                </li>
+              
+                
+                <li><a
+                  href='#url'
+                  class=" toggle-sibling">
+                  URL
+                  <span class='icon'>▾</span>
+                </a>
+                
+                <div class='toggle-target'>
+                  
+                  
+                    <ul class='list-reset py1-ul pl1'>
+                      
+                      <li><a
+                        href='#urlassign'
+                        class='regular pre-open'>
+                        $assign</a>
+                        <small>assign URL parts</small></li>
+                      
+                      <li><a
+                        href='#urlreplace'
+                        class='regular pre-open'>
+                        $replace</a>
+                        <small>assign URL parts and new URL</small></li>
+                      
+                      <li><a
+                        href='#urlparams'
+                        class='regular pre-open'>
+                        $params</a>
+                        <small>shortcut to this.$assign({searchParams})</small></li>
+                      
+                    </ul>
+                  
+                  
+                  
+                </div>
+                
+                </li>
+              
+                
+                <li><a
+                  href='#urlsearchparams'
+                  class=" toggle-sibling">
+                  URLSearchParams
+                  <span class='icon'>▾</span>
+                </a>
+                
+                <div class='toggle-target'>
+                  
+                  
+                    <ul class='list-reset py1-ul pl1'>
+                      
+                      <li><a
+                        href='#urlsearchparamsassign'
+                        class='regular pre-open'>
+                        $assign</a>
+                        <small>assign params</small></li>
                       
                     </ul>
                   
@@ -2119,6 +2197,62 @@ eventdata is live, changing it changes the handler itself</p>
   
     <div class='py1 quiet mt1 prose-big'>Instance Members</div>
     <div class="clearfix">
+  
+    <div class='border-bottom' id='documentget__url'>
+      <div class="clearfix small pointer toggle-sibling">
+        <div class="py1 contain">
+            <a class='icon pin-right py1 dark-link caret-right'>▸</a>
+            <span class='code strong strong truncate'>get $URL</span>
+        </div>
+      </div>
+      <div class="clearfix display-none toggle-target">
+        <section class='p2 mb2 clearfix bg-white minishadow'>
+
+  
+
+  <p>create URL based on this URL</p>
+
+    <div class='pre p1 fill-light mt0'>get $URL</div>
+  
+  
+
+  
+  
+  
+  
+  
+  
+
+  
+
+  
+
+  
+    
+      <div class='py1 quiet mt1 prose-big'>Returns</div>
+      <code><a href="#url">URL</a></code>:
+        
+      
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+</section>
+
+      </div>
+    </div>
   
     <div class='border-bottom' id='documentget__cookie'>
       <div class="clearfix small pointer toggle-sibling">
@@ -4021,6 +4155,62 @@ $(<span class="hljs-string">&#x27;input&#x27;</span>).<span class="hljs-property
       </div>
     </div>
   
+    <div class='border-bottom' id='nodetrim'>
+      <div class="clearfix small pointer toggle-sibling">
+        <div class="py1 contain">
+            <a class='icon pin-right py1 dark-link caret-right'>▸</a>
+            <span class='code strong strong truncate'>$trim()</span>
+        </div>
+      </div>
+      <div class="clearfix display-none toggle-target">
+        <section class='p2 mb2 clearfix bg-white minishadow'>
+
+  
+
+  <p>trim whitespace textnode</p>
+
+    <div class='pre p1 fill-light mt0'>$trim(): this</div>
+  
+  
+
+  
+  
+  
+  
+  
+  
+
+  
+
+  
+
+  
+    
+      <div class='py1 quiet mt1 prose-big'>Returns</div>
+      <code>this</code>:
+        
+      
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+</section>
+
+      </div>
+    </div>
+  
     <div class='border-bottom' id='nodewrap'>
       <div class="clearfix small pointer toggle-sibling">
         <div class="py1 contain">
@@ -4278,7 +4468,7 @@ $(<span class="hljs-string">&#x27;div&#x27;</span>).$unwrapChildren();
 <li>url's hash means eventName</li>
 </ul>
 
-    <div class='pre p1 fill-light mt0'>$listen(url: (<a href="https://developer.mozilla.org/docs/Web/API/URL/URL">URL</a> | <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>), listener: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Statements/function">Function</a>, options: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>): this</div>
+    <div class='pre p1 fill-light mt0'>$listen(url: (<a href="#url">URL</a> | <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>), listener: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Statements/function">Function</a>, options: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>): this</div>
   
   
 
@@ -4295,7 +4485,7 @@ $(<span class="hljs-string">&#x27;div&#x27;</span>).$unwrapChildren();
       
         <div class='space-bottom0'>
           <div>
-            <span class='code bold'>url</span> <code class='quiet'>((<a href="https://developer.mozilla.org/docs/Web/API/URL/URL">URL</a> | <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>))</code>
+            <span class='code bold'>url</span> <code class='quiet'>((<a href="#url">URL</a> | <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">String</a>))</code>
 	    
           </div>
           
@@ -7821,7 +8011,7 @@ if specified insert:null, no inserted</p>
   
     
       <div class='py1 quiet mt1 prose-big'>Returns</div>
-      <code><a href="https://developer.mozilla.org/docs/Web/API/URL/URL">URL</a></code>:
+      <code><a href="#url">URL</a></code>:
         
       
     
@@ -7876,7 +8066,7 @@ if specified insert:null, no inserted</p>
       
         <div class='space-bottom0'>
           <div>
-            <span class='code bold'>url</span> <code class='quiet'>(<a href="https://developer.mozilla.org/docs/Web/API/URL/URL">URL</a>)</code>
+            <span class='code bold'>url</span> <code class='quiet'>(<a href="#url">URL</a>)</code>
 	    
           </div>
           
@@ -8073,7 +8263,7 @@ if specified insert:null, no inserted</p>
   
     
       <div class='py1 quiet mt1 prose-big'>Returns</div>
-      <code><a href="https://developer.mozilla.org/docs/Web/API/URL/URL">URL</a></code>:
+      <code><a href="#url">URL</a></code>:
         
       
     
@@ -8128,7 +8318,7 @@ if specified insert:null, no inserted</p>
       
         <div class='space-bottom0'>
           <div>
-            <span class='code bold'>url</span> <code class='quiet'>(<a href="https://developer.mozilla.org/docs/Web/API/URL/URL">URL</a>)</code>
+            <span class='code bold'>url</span> <code class='quiet'>(<a href="#url">URL</a>)</code>
 	    
           </div>
           
@@ -8681,7 +8871,7 @@ if specified insert:null, no inserted</p>
   
     
       <div class='py1 quiet mt1 prose-big'>Returns</div>
-      <code><a href="https://developer.mozilla.org/docs/Web/API/URL/URL">URL</a></code>:
+      <code><a href="#url">URL</a></code>:
         
       
     
@@ -8736,7 +8926,7 @@ if specified insert:null, no inserted</p>
       
         <div class='space-bottom0'>
           <div>
-            <span class='code bold'>url</span> <code class='quiet'>(<a href="https://developer.mozilla.org/docs/Web/API/URL/URL">URL</a>)</code>
+            <span class='code bold'>url</span> <code class='quiet'>(<a href="#url">URL</a>)</code>
 	    
           </div>
           
@@ -10355,6 +10545,407 @@ $(<span class="hljs-string">&#x27;select&#x27;</span>).$options([
   
   <div class='clearfix'>
     
+    <h3 class='fl m0' id='url'>
+      URL
+    </h3>
+    
+    
+  </div>
+  
+
+  
+    <div class='pre p1 fill-light mt0'>URL</div>
+  
+    <p>
+      Type:
+      <a href="#url">URL</a>
+    </p>
+  
+  
+
+  
+  
+  
+  
+  
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <div class='py1 quiet mt1 prose-big'>Instance Members</div>
+    <div class="clearfix">
+  
+    <div class='border-bottom' id='urlassign'>
+      <div class="clearfix small pointer toggle-sibling">
+        <div class="py1 contain">
+            <a class='icon pin-right py1 dark-link caret-right'>▸</a>
+            <span class='code strong strong truncate'>$assign(parts)</span>
+        </div>
+      </div>
+      <div class="clearfix display-none toggle-target">
+        <section class='p2 mb2 clearfix bg-white minishadow'>
+
+  
+
+  <p>assign URL parts</p>
+
+    <div class='pre p1 fill-light mt0'>$assign(parts: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>): this</div>
+  
+  
+
+  
+  
+  
+  
+  
+  
+
+  
+    <div class='py1 quiet mt1 prose-big'>Parameters</div>
+    <div class='prose'>
+      
+        <div class='space-bottom0'>
+          <div>
+            <span class='code bold'>parts</span> <code class='quiet'>(<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>)</code>
+	    
+          </div>
+          
+        </div>
+      
+    </div>
+  
+
+  
+
+  
+    
+      <div class='py1 quiet mt1 prose-big'>Returns</div>
+      <code>this</code>:
+        
+      
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+</section>
+
+      </div>
+    </div>
+  
+    <div class='border-bottom' id='urlreplace'>
+      <div class="clearfix small pointer toggle-sibling">
+        <div class="py1 contain">
+            <a class='icon pin-right py1 dark-link caret-right'>▸</a>
+            <span class='code strong strong truncate'>$replace(parts)</span>
+        </div>
+      </div>
+      <div class="clearfix display-none toggle-target">
+        <section class='p2 mb2 clearfix bg-white minishadow'>
+
+  
+
+  <p>assign URL parts and new URL</p>
+
+    <div class='pre p1 fill-light mt0'>$replace(parts: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>): this</div>
+  
+  
+
+  
+  
+  
+  
+  
+  
+
+  
+    <div class='py1 quiet mt1 prose-big'>Parameters</div>
+    <div class='prose'>
+      
+        <div class='space-bottom0'>
+          <div>
+            <span class='code bold'>parts</span> <code class='quiet'>(<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>)</code>
+	    
+          </div>
+          
+        </div>
+      
+    </div>
+  
+
+  
+
+  
+    
+      <div class='py1 quiet mt1 prose-big'>Returns</div>
+      <code>this</code>:
+        
+      
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+</section>
+
+      </div>
+    </div>
+  
+    <div class='border-bottom' id='urlparams'>
+      <div class="clearfix small pointer toggle-sibling">
+        <div class="py1 contain">
+            <a class='icon pin-right py1 dark-link caret-right'>▸</a>
+            <span class='code strong strong truncate'>$params(params)</span>
+        </div>
+      </div>
+      <div class="clearfix display-none toggle-target">
+        <section class='p2 mb2 clearfix bg-white minishadow'>
+
+  
+
+  <p>shortcut to this.$assign({searchParams})</p>
+
+    <div class='pre p1 fill-light mt0'>$params(params: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>): this</div>
+  
+  
+
+  
+  
+  
+  
+  
+  
+
+  
+    <div class='py1 quiet mt1 prose-big'>Parameters</div>
+    <div class='prose'>
+      
+        <div class='space-bottom0'>
+          <div>
+            <span class='code bold'>params</span> <code class='quiet'>(<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>)</code>
+	    
+          </div>
+          
+        </div>
+      
+    </div>
+  
+
+  
+
+  
+    
+      <div class='py1 quiet mt1 prose-big'>Returns</div>
+      <code>this</code>:
+        
+      
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+</section>
+
+      </div>
+    </div>
+  
+</div>
+
+  
+
+  
+
+  
+</section>
+
+          
+        
+          
+          <section class='p2 mb2 clearfix bg-white minishadow'>
+
+  
+  <div class='clearfix'>
+    
+    <h3 class='fl m0' id='urlsearchparams'>
+      URLSearchParams
+    </h3>
+    
+    
+  </div>
+  
+
+  
+    <div class='pre p1 fill-light mt0'>URLSearchParams</div>
+  
+    <p>
+      Type:
+      <a href="#urlsearchparams">URLSearchParams</a>
+    </p>
+  
+  
+
+  
+  
+  
+  
+  
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <div class='py1 quiet mt1 prose-big'>Instance Members</div>
+    <div class="clearfix">
+  
+    <div class='border-bottom' id='urlsearchparamsassign'>
+      <div class="clearfix small pointer toggle-sibling">
+        <div class="py1 contain">
+            <a class='icon pin-right py1 dark-link caret-right'>▸</a>
+            <span class='code strong strong truncate'>$assign(params)</span>
+        </div>
+      </div>
+      <div class="clearfix display-none toggle-target">
+        <section class='p2 mb2 clearfix bg-white minishadow'>
+
+  
+
+  <p>assign params</p>
+<ul>
+<li>null/undefined: delete parameter</li>
+<li>array: append per element</li>
+<li>other: simple set</li>
+</ul>
+
+    <div class='pre p1 fill-light mt0'>$assign(params: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>): this</div>
+  
+  
+
+  
+  
+  
+  
+  
+  
+
+  
+    <div class='py1 quiet mt1 prose-big'>Parameters</div>
+    <div class='prose'>
+      
+        <div class='space-bottom0'>
+          <div>
+            <span class='code bold'>params</span> <code class='quiet'>(<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</a>)</code>
+	    
+          </div>
+          
+        </div>
+      
+    </div>
+  
+
+  
+
+  
+    
+      <div class='py1 quiet mt1 prose-big'>Returns</div>
+      <code>this</code>:
+        
+      
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+</section>
+
+      </div>
+    </div>
+  
+</div>
+
+  
+
+  
+
+  
+</section>
+
+          
+        
+          
+          <section class='p2 mb2 clearfix bg-white minishadow'>
+
+  
+  <div class='clearfix'>
+    
     <h3 class='fl m0' id='formdata'>
       FormData
     </h3>
@@ -10474,7 +11065,7 @@ $(<span class="hljs-string">&#x27;select&#x27;</span>).$options([
 
   <p>to SearchParam(unset File entry)</p>
 
-    <div class='pre p1 fill-light mt0'>$toSearchParams(): URLSearchParams</div>
+    <div class='pre p1 fill-light mt0'>$toSearchParams(): <a href="#urlsearchparams">URLSearchParams</a></div>
   
   
 
@@ -10492,7 +11083,7 @@ $(<span class="hljs-string">&#x27;select&#x27;</span>).$options([
   
     
       <div class='py1 quiet mt1 prose-big'>Returns</div>
-      <code>URLSearchParams</code>:
+      <code><a href="#urlsearchparams">URLSearchParams</a></code>:
         
       
     
@@ -10972,7 +11563,7 @@ $(<span class="hljs-string">&#x27;select&#x27;</span>).$options([
 
   <p>upload file</p>
 
-    <div class='pre p1 fill-light mt0'>$upload(urlOrOptions: (<a href="https://developer.mozilla.org/docs/Web/API/URL/URL">URL</a> | <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">String</a> | RequestInit), options: RequestInit): <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise">Promise</a>&#x3C;<a href="https://developer.mozilla.org/docs/Web/Guide/HTML/HTML5">Response</a>></div>
+    <div class='pre p1 fill-light mt0'>$upload(urlOrOptions: (<a href="#url">URL</a> | <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">String</a> | RequestInit), options: RequestInit): <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise">Promise</a>&#x3C;<a href="https://developer.mozilla.org/docs/Web/Guide/HTML/HTML5">Response</a>></div>
   
   
 
@@ -10989,7 +11580,7 @@ $(<span class="hljs-string">&#x27;select&#x27;</span>).$options([
       
         <div class='space-bottom0'>
           <div>
-            <span class='code bold'>urlOrOptions</span> <code class='quiet'>((<a href="https://developer.mozilla.org/docs/Web/API/URL/URL">URL</a> | <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">String</a> | RequestInit))</code>
+            <span class='code bold'>urlOrOptions</span> <code class='quiet'>((<a href="#url">URL</a> | <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">String</a> | RequestInit))</code>
 	    
           </div>
           

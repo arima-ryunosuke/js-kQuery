@@ -87,6 +87,12 @@ import {traversing} from './src/plugins/traversing.js';
  * @typedef {RadioNodeList} RadioNodeList
  */
 /**
+ * @typedef {URL} URL
+ */
+/**
+ * @typedef {URLSearchParams} URLSearchParams
+ */
+/**
  * @typedef {FormData} FormData
  */
 /**
