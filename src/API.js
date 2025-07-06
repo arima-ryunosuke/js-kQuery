@@ -526,7 +526,9 @@ export const F = {
         if (!(options.headers instanceof Headers)) {
             options.headers = new Headers(options.headers);
         }
-        options.headers.append('X-Requested-With', 'XMLHttpRequest');
+        if (window.location.origin === new URL(url, window.location.href).origin) {
+            options.headers.append('X-Requested-With', 'XMLHttpRequest');
+        }
 
         const response = await GT.fetch(url, options);
         if (!(options.ok ?? false) && !response.ok) {
