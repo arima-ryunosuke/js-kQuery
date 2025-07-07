@@ -363,6 +363,7 @@
                 dummy {
                     color: red;
                 }
+
                 .trim-empty:empty:before {
                     color: red;
                     content: "this is empty";
@@ -929,6 +930,14 @@
             <button type="button" class="scroll" data-width="true" data-height="true">scroll parent</button>
             <button type="button" class="scroll" data-width="true" data-height="">scroll parent(width)</button>
             <button type="button" class="scroll" data-width="" data-height="true">scroll parent(height)</button>
+            <br>
+            <button type="button" class="visible" data-target="normal">visible normal</button>
+            <button type="button" class="visible" data-target="child">visible child</button>
+            <button type="button" class="visible" data-target="empty">visible empty</button>
+            <button type="button" class="visible" data-target="display-none">visible display:none</button>
+            <button type="button" class="visible" data-target="visibility-hidden">visible visibility:hidden</button>
+            <button type="button" class="visible" data-target="opacity-0">visible opacity:0</button>
+            <button type="button" class="visible" data-target="overflow-hidden">visible overflow:hidden</button>
         </div>
 
         <div class="input">
@@ -944,6 +953,18 @@
             <div class="scroll-parent" style="box-sizing:border-box; width:200px; height:100px; overflow:scroll;">
                 <textarea class="scroll-child">1
 2</textarea>
+            </div>
+
+            <div id="visible" style="height:200px;overflow:scroll;">
+                normal <span id="normal">normal</span>
+                child <span id="child"><span>child</span></span>
+                empty <span id="empty"></span>
+                display:none <span id="display-none" style="display:none">display:none</span>
+                visibility:hidden <span id="visibility-hidden" style="visibility:hidden">visibility:hidden</span>
+                opacity:0 <span id="opacity-0" style="opacity:0">opacity:0</span>
+                <div style="position: relative;width:2000px; height:300px;">
+                    <span id="overflow-hidden" style="position:absolute;bottom:0;right:0;">overflow-hidden</span>
+                </div>
             </div>
         </div>
 
@@ -980,6 +1001,10 @@
                     };
                     const parent = input.$('.scroll-child').$scrollParent(options);
                     output.textContent += `$scrollParent(${JSON.stringify(options)}): ${parent?.tagName}.${parent?.classList}\n`;
+                });
+                container.$on('click', '.visible', function (e) {
+                    const visible = input.$(`#${e.target.dataset.target}`).$visible;
+                    output.textContent += `$visible ${e.target.dataset.target}: ${visible}\n`;
                 });
             })();
         </script>
@@ -1112,6 +1137,16 @@
             <button type="button" class="load-get">load(GET)</button>
             <button type="button" class="load-gets">load(GETs)</button>
             <button type="button" class="load-posts">load(POSTs)</button>
+            <br>
+            <button type="button" class="load-error1">load(network error)</button>
+            <button type="button" class="load-error2">load(503 error)</button>
+            <br>
+            <button type="button" class="start-sse">start SSE</button>
+            <button type="button" class="stop-sse">stop SSE</button>
+            <br>
+            <button type="button" class="start-polling">start polling</button>
+            <button type="button" class="stop-polling">stop polling</button>
+            <button type="button" class="error-polling">error polling</button>
         </div>
 
         <div class="input">
@@ -1125,6 +1160,7 @@
                 <div data-sse="2"></div>
                 <div data-sse="3"></div>
             </div>
+            <div id="polling">polling</div>
         </div>
 
         <output class="output"></output>
@@ -1134,19 +1170,6 @@
                 const container = document.$('.network');
                 const input = container.$('.input');
                 const output = container.$('.output');
-
-                input.$('#sse').$listen('sse.php#ping', function (e) {
-                    this.$('span').textContent = e.data;
-                    console.log(e.data);
-                });
-                input.$$('[data-sse]').$listen('sse.php', function (e) {
-                    this.__called ??= 0;
-                    if (++this.__called >= this.dataset.sse) {
-                        this.remove();
-                    }
-                    this.textContent = e.data;
-                    console.log(e.data);
-                });
 
                 container.$on('click', '.load-get', async function () {
                     await input.$$('[data-index]')[0].$load('response.php');
@@ -1169,6 +1192,67 @@
                         },
                     });
                     output.textContent += `$load: done\n`;
+                });
+                container.$on('click', '.load-error1', async function () {
+                    try {
+                        await input.$$('[data-index]')[0].$load('https://example.invalid', {
+                            method: 'post',
+                            data: {
+                                index: (node) => node.dataset.index,
+                            },
+                        });
+                    }
+                    catch (e) {
+                        console.error(e);
+                        output.textContent += `$load: ${e}\n`;
+                    }
+                });
+                container.$on('click', '.load-error2', async function () {
+                    try {
+                        await input.$$('[data-index]')[0].$load('response.php?status=503', {
+                            method: 'post',
+                            data: {
+                                index: (node) => node.dataset.index,
+                            },
+                        });
+                    }
+                    catch (e) {
+                        console.error(e);
+                        output.textContent += `$load: ${e}\n`;
+                    }
+                });
+                container.$on('click', '.start-sse', async function () {
+                    input.$('#sse').$listen('sse.php#ping', function (e) {
+                        this.$('span').textContent = e.data;
+                        console.log(e.data);
+                    });
+                    input.$$('[data-sse]').$listen('sse.php', function (e) {
+                        this.__called ??= 0;
+                        if (this.__called++ >= this.dataset.sse) {
+                            this.remove();
+                        }
+                        this.textContent = `${this.dataset.sse}:${e.data}`;
+                        console.log(e.data);
+                    });
+                });
+                container.$on('click', '.stop-sse', async function () {
+                    input.$('#sse').$unlisten('sse.php#ping');
+                    input.$('[data-sse="3"]')?.$unlisten('sse.php');
+                });
+                container.$on('click', '.start-polling', async function () {
+                    input.$('#polling').$polling('polling.php', async function (response) {
+                        this.textContent = await response.text();
+                        console.log(response);
+                    }, {
+                        interval: 1000,
+                    });
+                });
+                container.$on('click', '.stop-polling', async function () {
+                    input.$('#polling').$unpolling('polling.php');
+                });
+                container.$on('click', '.error-polling', async function () {
+                    input.$('#polling').$polling('https://example.invalid', function (response) {});
+                    input.$('#polling').$polling('response.php?status=503', function (response) {});
                 });
             })();
         </script>
@@ -1227,7 +1311,9 @@
             <button type="button" class="file-dataurl">file dataURL</button>
             <button type="button" class="file-upload" data-method="put">file upload(PUT)</button>
             <button type="button" class="file-upload" data-method="post">file upload(POST)</button>
-            <span class="progress"></span>
+            <button type="button" class="files-upload" data-method="put">files upload(PUT)</button>
+            <button type="button" class="files-upload" data-method="post">files upload(POST)</button>
+            <pre class="progress"></pre>
             <br>
             <button type="button" class="link-contents">link contents</button>
             <button type="button" class="script-contents">script contents</button>
@@ -1335,8 +1421,8 @@
                         progress.textContent = '';
                         const response = await this.files[0].$upload('./response.php', {
                             method: e.target.dataset.method,
-                            progress: function (e) {
-                                progress.textContent = `${e.loaded.toLocaleString()}/${e.total.toLocaleString()}(${(e.loaded / e.total * 100).toFixed(2)}%)`;
+                            progress: function (e, file) {
+                                progress.textContent += `${file.name ?? 'formdata'}: ${e.loaded.toLocaleString()}/${e.total.toLocaleString()}(${(e.loaded / e.total * 100).toFixed(2)}%)\n`;
                             },
                         });
                         output.textContent += JSON.stringify({
@@ -1347,6 +1433,30 @@
                             headers: Object.fromEntries(response.headers.entries()),
                             json: await response.json(),
                         }, null, 2);
+                    });
+                    file.dispatchEvent(new MouseEvent('click'));
+                });
+                container.$on('click', '.files-upload', function (e) {
+                    const file = document.$createElement('input', {type: 'file', multiple: true, webkitdirectory: true});
+                    file.$on('change', async function () {
+                        const progress = $('.progress');
+                        progress.textContent = '';
+                        const responses = await this.files.$upload('./response.php', {
+                            method: e.target.dataset.method,
+                            progress: function (e, file) {
+                                progress.textContent += `${file?.name ?? 'formdata'}: ${e.loaded.toLocaleString()}/${e.total.toLocaleString()}(${(e.loaded / e.total * 100).toFixed(2)}%)\n`;
+                            },
+                        });
+                        for await (const response of responses) {
+                            output.textContent += JSON.stringify({
+                                url: response.url,
+                                type: response.type,
+                                status: response.status,
+                                statusText: response.statusText,
+                                headers: Object.fromEntries(response.headers.entries()),
+                                json: await response.json(),
+                            }, null, 2);
+                        }
                     });
                     file.dispatchEvent(new MouseEvent('click'));
                 });

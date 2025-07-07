@@ -474,6 +474,51 @@ document.addEventListener('DOMContentLoaded', function () {
                     keyValues.forEach(([k, v]) => span.classList.add(v));
                     expect(API.F.objectToEntries(span.classList)).toEqual(indexValues);
                 });
+                it('F.objectToArrayEntries', async function () {
+                    expect(API.F.objectToArrayEntries({a: 'A', b: 'B'})).toEqual([['a', 'A'], ['b', 'B']]);
+
+                    expect(API.F.objectToArrayEntries({a: [1, 2]})).toEqual([['a[]', 1], ['a[]', 2]]);
+                    expect(API.F.objectToArrayEntries({a: [{n: 1}, {n: 2}]})).toEqual([['a[0][n]', 1], ['a[1][n]', 2]]);
+
+                    expect(API.F.objectToArrayEntries({a: {b: {c: 'ABC'}}})).toEqual([['a[b][c]', 'ABC']]);
+                    expect(API.F.objectToArrayEntries({a: {b: {c: ['A', 'B', 'C']}}})).toEqual([['a[b][c][]', 'A'], ['a[b][c][]', 'B'], ['a[b][c][]', 'C']]);
+
+                    expect(API.F.objectToArrayEntries({
+                        rows: [
+                            {name: 'A'},
+                            {name: 'B'},
+                            {name: 'C'},
+                        ],
+                    })).toEqual([['rows[0][name]', 'A'], ['rows[1][name]', 'B'], ['rows[2][name]', 'C']]);
+                });
+                it('F.objectDeleteProperties', async function () {
+                    const object = {
+                        bool: 0,
+                        number: '123',
+                        string: 456,
+                        array1: [7, 8, 9],
+                        array2: 10,
+                        other: true,
+                    };
+                    expect(API.F.objectDeleteProperties(object, {
+                        bool: true,
+                        number: 0,
+                        string: '',
+                        array1: [],
+                        array2: [],
+                        undef: 'default',
+                    })).toEqual({
+                        bool: false,
+                        number: 123,
+                        string: '456',
+                        array1: [7, 8, 9],
+                        array2: [10],
+                        undef: 'default',
+                    });
+                    expect(object).toEqual({
+                        other: true,
+                    });
+                });
                 it('F.objectJoin', async function () {
                     expect(API.F.objectJoin({}, ';', ':')).toEqual('');
                     expect(API.F.objectJoin({undefined: undefined, null: null, false: false, true: true}, ',')).toEqual('null=null,false=false,true=true');
@@ -715,6 +760,136 @@ document.addEventListener('DOMContentLoaded', function () {
                     expect(API.F.functionIsNative(Object.create)).toEqual(true);
                     expect(API.F.functionIsNative(function () {})).toEqual(false);
                     expect(API.F.functionIsNative(() => '[native code]')).toEqual(false);
+                });
+                it('F.fetch', async function () {
+                    let response;
+
+                    response = await API.F.fetch('./response.php', {
+                        body: 'a=A&b=B',
+                    });
+                    expect(new URL(response.url).searchParams + '').toEqual('a=A&b=B');
+
+                    response = await API.F.fetch('./response.php?i=I', {
+                        body: {a: 'A', b: 'B'},
+                    });
+                    expect(new URL(response.url).searchParams + '').toEqual('i=I&a=A&b=B');
+
+                    response = await API.F.fetch('./response.php?i=I', {
+                        body: new URLSearchParams({a: 'A', b: 'B'}),
+                    });
+                    expect(new URL(response.url).searchParams + '').toEqual('i=I&a=A&b=B');
+
+                    response = await API.F.fetch('./response.php', {
+                        method: 'post',
+                        body: {a: 'A', b: 'B'},
+                    });
+                    expect(await response.json()).toEqual({
+                        method: 'POST',
+                        header: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                        get: {},
+                        post: {
+                            a: 'A',
+                            b: 'B',
+                        },
+                        files: {},
+                        body: 'a=A&b=B',
+                    });
+
+                    response = await API.F.fetch('./response.php', {
+                        method: 'post',
+                        body: {a: 'A', b: new File(['hoge'], 'textfile', {type: 'text/plain'})},
+                    });
+                    expect(await response.json()).toEqual({
+                        method: 'POST',
+                        header: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                        get: {},
+                        post: {
+                            a: 'A',
+                        },
+                        files: {
+                            b: {name: 'textfile', type: 'text/plain', size: 4},
+                        },
+                        body: '',
+                    });
+
+                    await expectAsync(API.F.fetch('./response.php?sleep=5000', {
+                        timeout: 1000,
+                    })).toBeRejected();
+
+                    const aborter = new AbortController();
+                    setTimeout(() => aborter.abort(), 1000);
+                    await expectAsync(API.F.fetch('./response.php?sleep=5000', {
+                        signal: aborter.signal,
+                    })).toBeRejected();
+                });
+                it('F.xhr', async function () {
+                    let response;
+
+                    response = await API.F.xhr('./response.php', {
+                        body: 'a=A&b=B',
+                    });
+                    expect(new URL(response.url).searchParams + '').toEqual('a=A&b=B');
+
+                    response = await API.F.xhr('./response.php?i=I', {
+                        body: {a: 'A', b: 'B'},
+                    });
+                    expect(new URL(response.url).searchParams + '').toEqual('i=I&a=A&b=B');
+
+                    response = await API.F.xhr('./response.php?i=I', {
+                        body: new URLSearchParams({a: 'A', b: 'B'}),
+                    });
+                    expect(new URL(response.url).searchParams + '').toEqual('i=I&a=A&b=B');
+
+                    response = await API.F.xhr('./response.php', {
+                        method: 'post',
+                        body: {a: 'A', b: 'B'},
+                    });
+                    expect(await response.json()).toEqual({
+                        method: 'POST',
+                        header: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                        get: {},
+                        post: {
+                            a: 'A',
+                            b: 'B',
+                        },
+                        files: {},
+                        body: 'a=A&b=B',
+                    });
+
+                    response = await API.F.xhr('./response.php', {
+                        method: 'post',
+                        body: {a: 'A', b: new File(['hoge'], 'textfile', {type: 'text/plain'})},
+                    });
+                    expect(await response.json()).toEqual({
+                        method: 'POST',
+                        header: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                        get: {},
+                        post: {
+                            a: 'A',
+                        },
+                        files: {
+                            b: {name: 'textfile', type: 'text/plain', size: 4},
+                        },
+                        body: '',
+                    });
+
+                    await expectAsync(API.F.xhr('./response.php?sleep=5000', {
+                        timeout: 1000,
+                    })).toBeRejected();
+
+                    const aborter = new AbortController();
+                    setTimeout(() => aborter.abort(), 1000);
+                    await expectAsync(API.F.xhr('./response.php?sleep=5000', {
+                        signal: aborter.signal,
+                    })).toBeRejected();
                 });
                 it('Collection', async function () {
                     const elements = new API.Collection([
@@ -1643,6 +1818,74 @@ document.addEventListener('DOMContentLoaded', function () {
                     ]);
                     expect(array instanceof NodeList).toEqual(true);
                 });
+                it('$ajax', async function () {
+                    let response;
+
+                    const $ajax0 = window.$ajax();
+                    const $ajax1 = $ajax0({headers: {'x-hoge': 'HOGE'}});
+                    const $ajax2 = $ajax1({headers: new Headers({'x-fuga': 'FUGA'})});
+
+                    response = await $ajax2.post('./response.php', {
+                        headers: {
+                            'x-hoge': 'HOGE2',
+                            'x-piyo': 'PIYO',
+                        },
+                        body: {a: '2'},
+                    });
+                    expect(await response.json()).toEqual({
+                        method: 'POST',
+                        header: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-Hoge': 'HOGE2',
+                            'X-Fuga': 'FUGA',
+                            'X-Piyo': 'PIYO',
+                        },
+                        get: {},
+                        post: {a: '2'},
+                        files: {},
+                        body: 'a=2',
+                    });
+
+                    response = await $ajax1.post('./response.php', {
+                        headers: {
+                            'x-hoge': 'HOGE1',
+                            'x-piyo': 'PIYO',
+                        },
+                        body: {a: '1'},
+                    });
+                    expect(await response.json()).toEqual({
+                        method: 'POST',
+                        header: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-Hoge': 'HOGE1',
+                            'X-Piyo': 'PIYO',
+                        },
+                        get: {},
+                        post: {a: '1'},
+                        files: {},
+                        body: 'a=1',
+                    });
+
+                    response = await $ajax0.post('./response.php', {
+                        headers: {
+                            'x-hoge': 'HOGE0',
+                            'x-piyo': 'PIYO',
+                        },
+                        body: {a: '0'},
+                    });
+                    expect(await response.json()).toEqual({
+                        method: 'POST',
+                        header: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-Hoge': 'HOGE0',
+                            'X-Piyo': 'PIYO',
+                        },
+                        get: {},
+                        post: {a: '0'},
+                        files: {},
+                        body: 'a=0',
+                    });
+                });
             });
 
             describe('Document', function () {
@@ -2088,9 +2331,18 @@ document.addEventListener('DOMContentLoaded', function () {
                     this.parent = $('<div style="font-size:12pt" inert><span></span></div>');
                     this.child = this.parent.$('span');
 
+                    this.transparent = $(`<div>
+                        <span style="content-visibility:hidden">content-visibility</span>
+                        <span style="visibility:hidden">visibility</span>
+                        <span style="opacity:0">visibility</span>
+                        <span></span>
+                        <span>intersection</span>
+                    </div>`);
+
                     document.body.append(this.element);
                     document.body.append(this.style);
                     document.body.append(this.parent);
+                    document.body.append(this.transparent);
                 });
                 afterEach(function () {
                     this.element.remove();
@@ -2459,6 +2711,52 @@ document.addEventListener('DOMContentLoaded', function () {
                     target.$markText('text', $('<b class="marker"></b>'), 'span');
                     expect(target + '').toEqual('<div>con<b class="marker">text</b>1<span>context2<span>context3</span></span><template>context</template></div>');
                 });
+                it('$checkVisibility', async function () {
+                    const contentVisibility = this.transparent.$$('span')[0];
+                    const visibility = this.transparent.$$('span')[1];
+                    const opacity = this.transparent.$$('span')[2];
+                    const size = this.transparent.$$('span')[3];
+                    const intersection = this.transparent.$$('span')[4];
+
+                    expect(contentVisibility.$checkVisibility({
+                        contentVisibilityProperty: true,
+                    })).toEqual(false);
+                    expect(contentVisibility.$checkVisibility({
+                        contentVisibilityProperty: false,
+                    })).toEqual(true);
+
+                    expect(visibility.$checkVisibility({
+                        visibilityProperty: true,
+                    })).toEqual(false);
+                    expect(visibility.$checkVisibility({
+                        visibilityProperty: false,
+                    })).toEqual(true);
+
+                    expect(opacity.$checkVisibility({
+                        opacityProperty: true,
+                    })).toEqual(false);
+                    expect(opacity.$checkVisibility({
+                        opacityProperty: false,
+                    })).toEqual(true);
+
+                    expect(size.$checkVisibility({
+                        size: true,
+                    })).toEqual(false);
+                    expect(size.$checkVisibility({
+                        size: false,
+                    })).toEqual(true);
+
+                    expect(intersection.$checkVisibility({
+                        intersection: true,
+                    })).toEqual(false);
+                    expect(intersection.$checkVisibility({
+                        intersection: false,
+                    })).toEqual(true);
+                    intersection.scrollIntoView({block: 'center'});
+                    expect(intersection.$checkVisibility({
+                        intersection: true,
+                    })).toEqual(true);
+                });
             });
 
             describe('HTMLElement', function () {
@@ -2658,9 +2956,10 @@ document.addEventListener('DOMContentLoaded', function () {
                     this.anchor.target = 'form-target';
 
                     this.anchor.$submit({raw: true});
-                    await sleep(200);
+                    await sleep(500);
                     expect(JSON.parse(this.iframe.contentWindow.document.body.innerText)).toEqual({
                         method: 'POST',
+                        header: {},
                         get: {},
                         post: {
                             a: 'A',
@@ -2676,6 +2975,9 @@ document.addEventListener('DOMContentLoaded', function () {
                     response = await (await this.anchor.$submit({raw: true})).json();
                     expect(response).toEqual({
                         method: 'POST',
+                        header: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
                         get: {},
                         post: {
                             a: 'A',
@@ -2688,6 +2990,9 @@ document.addEventListener('DOMContentLoaded', function () {
                     response = await (await this.anchor.$submit({raw: true, form: this.form})).json();
                     expect(response).toEqual({
                         method: 'GET',
+                        header: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
                         get: {
                             form: 'form',
                             a: 'A',
@@ -2701,6 +3006,9 @@ document.addEventListener('DOMContentLoaded', function () {
                     response = await (await this.anchor.$submit({raw: true, form: this.form, method: 'post'})).json();
                     expect(response).toEqual({
                         method: 'POST',
+                        header: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
                         get: {},
                         post: {
                             form: 'form',
@@ -3303,6 +3611,25 @@ document.addEventListener('DOMContentLoaded', function () {
                         </optgroup>
                     `.replaceAll(/\n\s+/g, ''));
                 });
+                it('$selectedOptions', async function () {
+                    expect(this.single.$selectedOptions).toEqual({
+                        a: 'A',
+                    });
+                    expect(this.multiple.$selectedOptions).toEqual({
+                        a: 'A',
+                        c: 'C',
+                    });
+
+                    this.single.$value = 'b';
+                    this.multiple.$value = ['b'];
+
+                    expect(this.single.$selectedOptions).toEqual({
+                        b: 'B',
+                    });
+                    expect(this.multiple.$selectedOptions).toEqual({
+                        b: 'B',
+                    });
+                });
             });
 
             describe('HTMLFormElement', function () {
@@ -3337,6 +3664,9 @@ document.addEventListener('DOMContentLoaded', function () {
                     }))).json();
                     expect(response).toEqual({
                         method: 'GET',
+                        header: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
                         get: {
                             test: 'test',
                             file: '',
@@ -3356,6 +3686,9 @@ document.addEventListener('DOMContentLoaded', function () {
                     }))).json();
                     expect(response).toEqual({
                         method: 'POST',
+                        header: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
                         get: {},
                         post: {
                             test: 'test',
@@ -3375,12 +3708,19 @@ document.addEventListener('DOMContentLoaded', function () {
                     }))).json();
                     expect(response).toEqual({
                         method: 'POST',
+                        header: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
                         get: {},
                         post: {
                             test: 'test',
                         },
                         files: {
-                            textfile: 'text/plain',
+                            file: {
+                                name: 'textfile',
+                                type: 'text/plain',
+                                size: 4,
+                            },
                         },
                         body: '',
                     });
@@ -3396,6 +3736,9 @@ document.addEventListener('DOMContentLoaded', function () {
                     }))).json();
                     expect(response).toEqual({
                         method: 'PUT',
+                        header: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
                         get: {},
                         post: {},
                         files: {},
@@ -3460,6 +3803,23 @@ document.addEventListener('DOMContentLoaded', function () {
                     });
                 });
 
+                it('$appendFromEntries', async function () {
+                    this.searchParams.$appendFromEntries({
+                        object: {a: {b: {c: 'ABC'}}},
+                        array: ['A', 'B', 'C'],
+                        objectArray: {
+                            a: [1, 2],
+                            b: [3, 4],
+                            c: [5, 6],
+                        },
+                        arrayObject: [
+                            {name: 'A'},
+                            {name: 'B'},
+                            {name: 'C'},
+                        ],
+                    });
+                    expect(this.searchParams.toString()).toEqual('query1=a&query2=b&query3=c&queryX%5B%5D=X&object%5Ba%5D%5Bb%5D%5Bc%5D=ABC&array%5B%5D=A&array%5B%5D=B&array%5B%5D=C&objectArray%5Ba%5D%5B%5D=1&objectArray%5Ba%5D%5B%5D=2&objectArray%5Bb%5D%5B%5D=3&objectArray%5Bb%5D%5B%5D=4&objectArray%5Bc%5D%5B%5D=5&objectArray%5Bc%5D%5B%5D=6&arrayObject%5B0%5D%5Bname%5D=A&arrayObject%5B1%5D%5Bname%5D=B&arrayObject%5B2%5D%5Bname%5D=C');
+                });
                 it('$assign', async function () {
                     this.searchParams.$assign({
                         query1: null,
@@ -3570,6 +3930,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 beforeEach(function () {
                     this.textfile = new File(['hoge'], 'textfile', {type: 'text/plain'});
                     this.htmlfile = new File(['<q id="a"><span id="b">hey!</span></q>'], 'htmlfile', {type: 'text/html'});
+
+                    const dataTransfer = new DataTransfer();
+                    dataTransfer.items.add(this.textfile);
+                    dataTransfer.items.add(this.htmlfile);
+                    this.files = dataTransfer.files;
                 });
 
                 it('$text', async function () {
@@ -3590,6 +3955,13 @@ document.addEventListener('DOMContentLoaded', function () {
                     });
                     expect(await put.json()).toEqual({
                         method: 'PUT',
+                        header: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-File-Name': 'textfile',
+                            'X-File-Size': '4',
+                            'X-File-Type': 'text/plain',
+                            'X-File-Path': '',
+                        },
                         get: {},
                         post: {},
                         files: {},
@@ -3600,10 +3972,76 @@ document.addEventListener('DOMContentLoaded', function () {
                     });
                     expect(await post.json()).toEqual({
                         method: 'POST',
+                        header: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
                         get: {},
                         post: {},
                         files: {
-                            textfile: 'text/plain',
+                            tmp: {
+                                name: 'textfile',
+                                type: 'text/plain',
+                                size: 4,
+                            },
+                        },
+                        body: '',
+                    });
+
+                    const puts = await this.files.$upload('./response.php', {
+                        method: 'put',
+                    });
+                    expect(await puts[0].json()).toEqual({
+                        method: 'PUT',
+                        header: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-File-Name': 'textfile',
+                            'X-File-Size': '4',
+                            'X-File-Type': 'text/plain',
+                            'X-File-Path': '',
+                        },
+                        get: {},
+                        post: {},
+                        files: {},
+                        body: 'hoge',
+                    });
+                    expect(await puts[1].json()).toEqual({
+                        method: 'PUT',
+                        header: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-File-Name': 'htmlfile',
+                            'X-File-Size': '38',
+                            'X-File-Type': 'text/html',
+                            'X-File-Path': '',
+                        },
+                        get: {},
+                        post: {},
+                        files: {},
+                        body: '<q id="a"><span id="b">hey!</span></q>',
+                    });
+
+                    const posts = await this.files.$upload('./response.php', {
+                        method: 'post',
+                    });
+                    expect(await posts[0].json()).toEqual({
+                        method: 'POST',
+                        header: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                        get: {},
+                        post: {},
+                        files: {
+                            tmp: [
+                                {
+                                    name: 'textfile',
+                                    type: 'text/plain',
+                                    size: 4,
+                                },
+                                {
+                                    name: 'htmlfile',
+                                    type: 'text/html',
+                                    size: 38,
+                                },
+                            ],
                         },
                         body: '',
                     });
@@ -4007,6 +4445,43 @@ after-text`);
                     this.container.$('.scroll').click();
                     expect(this.output.textContent).toContain('$scrollParent({"width":true,"height":true}): TEXTAREA.scroll-child');
                 });
+                it('$visible', async function () {
+                    document.body.scrollTop = 0;
+                    this.output.textContent = '';
+                    this.container.$$('.visible').click();
+
+                    expect(this.output.textContent).toContain('$visible normal: false');
+                    expect(this.output.textContent).toContain('$visible child: false');
+                    expect(this.output.textContent).toContain('$visible empty: false');
+                    expect(this.output.textContent).toContain('$visible display-none: false');
+                    expect(this.output.textContent).toContain('$visible visibility-hidden: false');
+                    expect(this.output.textContent).toContain('$visible opacity-0: false');
+                    expect(this.output.textContent).toContain('$visible overflow-hidden: false');
+
+                    this.container.$('#visible').scrollIntoView({block: 'center'});
+                    this.output.textContent = '';
+                    this.container.$$('.visible').click();
+
+                    expect(this.output.textContent).toContain('$visible normal: true');
+                    expect(this.output.textContent).toContain('$visible child: true');
+                    expect(this.output.textContent).toContain('$visible empty: false');
+                    expect(this.output.textContent).toContain('$visible display-none: false');
+                    expect(this.output.textContent).toContain('$visible visibility-hidden: false');
+                    expect(this.output.textContent).toContain('$visible opacity-0: false');
+                    expect(this.output.textContent).toContain('$visible overflow-hidden: false');
+
+                    this.container.$('#overflow-hidden').scrollIntoView({block: 'center'});
+                    this.output.textContent = '';
+                    this.container.$$('.visible').click();
+
+                    expect(this.output.textContent).toContain('$visible normal: false');
+                    expect(this.output.textContent).toContain('$visible child: false');
+                    expect(this.output.textContent).toContain('$visible empty: false');
+                    expect(this.output.textContent).toContain('$visible display-none: false');
+                    expect(this.output.textContent).toContain('$visible visibility-hidden: false');
+                    expect(this.output.textContent).toContain('$visible opacity-0: false');
+                    expect(this.output.textContent).toContain('$visible overflow-hidden: true');
+                });
             });
 
             describe('effect', function () {
@@ -4032,6 +4507,8 @@ after-text`);
 
                 it('$load', async function () {
                     this.container.$('.load-gets').click();
+                    this.container.$('.load-error1').click();
+                    this.container.$('.load-error2').click();
                     await sleep(1000);
                     expect(this.output.textContent).toContain('$load: done');
 
@@ -4039,9 +4516,36 @@ after-text`);
                     expect(newhtml).toContain('"index":"1"');
                     expect(newhtml).toContain('"index":"2"');
                     expect(newhtml).toContain('"index":"3"');
+
+                    await sleep(3000 + 2000 + 4000 + 8000);
+                    expect(this.output.textContent).toContain('$load: Error: 503: Service Unavailable');
+                    expect(this.output.textContent).toContain('$load: TypeError: Failed to fetch');
                 });
                 it('$listen', async function () {
+                    this.container.$('.start-sse').click();
+                    await sleep(1000);
                     expect(this.container.$('#sse span').textContent).toContain('pong');
+                });
+                it('$polling', async function () {
+                    this.container.$('#polling').scrollIntoView({block: 'center'});
+                    this.container.$('.start-polling').click();
+
+                    // start polling
+                    await sleep(1000);
+                    const actual1 = this.container.$('#polling').textContent;
+                    const now = new Date();
+                    expect(actual1).toContain(`${now.getFullYear()}-${('' + (now.getMonth() + 1)).padStart(2, '0')}-${('' + now.getDate()).padStart(2, '0')}`);
+
+                    // continue polling
+                    await sleep(1000);
+                    const actual2 = this.container.$('#polling').textContent;
+                    expect(actual2).not.toEqual(actual1);
+                    this.container.$('#polling').hidden = true;
+                    await sleep(1000);
+
+                    // disable polling
+                    const actual3 = this.container.$('#polling').textContent;
+                    expect(actual3).toEqual(actual2);
                 });
             });
 
@@ -4079,9 +4583,9 @@ after-text`);
                 });
                 it('$contents', async function () {
                     this.container.$('.link-contents').click();
-                    await sleep(200);
+                    await sleep(3000 + 2000 + 4000 + 8000);
                     expect(this.output.textContent).toContain('url(never-notfound.dummy)');
-                    expect(this.output.textContent).toContain('url(http://example.jp/example.png)');
+                    expect(this.output.textContent).toContain('url(http://example.invalid/example.png)');
 
                     this.container.$('.script-contents').click();
                     await sleep(200);

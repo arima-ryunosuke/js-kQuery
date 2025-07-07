@@ -1,6 +1,6 @@
 hoge {
     badurl1: url(never-notfound.dummy);
-    badurl2: url(http://example.jp/example.png);
+    badurl2: url(http://example.invalid/example.png);
     background-image: url(example.png);
     border-image: url("./hoge/../example.png");
     mask-image: url('example.png#id');
