@@ -6,7 +6,56 @@ import {$FileList, $NodeList, F, Promise, WeakMap} from '../API.js';
  * @ignore
  */
 export function networks(kQuery) {
-    const eventSources = {};
+    class EventSource extends globalThis.EventSource {
+        static selfSources = {};
+
+        #eventListeners;
+
+        constructor(url, options) {
+            super(url, options);
+
+            kQuery.logger.debug(`SSE open ${this.url}`);
+            this.#eventListeners = {};
+
+            const closeTimer = setInterval(() => {
+                if (!Object.values(this.#eventListeners).find(nodeListeners => nodeListeners.size > 0)) {
+                    delete EventSource.selfSources[this.url];
+                    this.close();
+                    clearInterval(closeTimer);
+                    kQuery.logger.debug(`SSE close ${this.url}`);
+                }
+            }, 10000);
+        }
+
+        $listen(node, name, listener) {
+            const nodeListeners = this.#eventListeners[name] ??= new WeakMap();
+            kQuery.logger.assert((node) => !nodeListeners.get(node)?.length, node)(`Multiple listening on SSE is not recommended.`);
+
+            if (nodeListeners.size === 0) {
+                kQuery.logger.debug(`SSE listen ${this.url}#${name}`);
+                const controller = new AbortController();
+                this.addEventListener(name, e => {
+                    for (const [node, listeners] of nodeListeners.entries()) {
+                        for (const listener of listeners) {
+                            listener.call(node, e);
+                        }
+                    }
+                    if (nodeListeners.size === 0) {
+                        kQuery.logger.debug(`SSE unlisten ${this.url}#${name}`);
+                        controller.abort();
+                    }
+                }, {
+                    signal: controller.signal,
+                });
+            }
+
+            this.#eventListeners[name].getOrSet(node, () => []).push(listener);
+        }
+
+        $unlisten(node, name) {
+            this.#eventListeners[name]?.delete(node);
+        }
+    }
 
     return {
         [[Node.name, $NodeList.name]]: /** @lends Node.prototype */{
@@ -31,39 +80,7 @@ export function networks(kQuery) {
                 const eventName = url.hash.substring(1) || 'message';
                 url.hash = '';
 
-                const eventSource = eventSources[url] ??= new class extends EventSource {
-                    #$nodeListeners;
-
-                    constructor(url, options) {
-                        super(url, options);
-
-                        kQuery.logger.debug(`SSE open ${url}#`);
-                        this.#$nodeListeners = new WeakMap();
-                    }
-
-                    $listen(node, name, listener) {
-                        const names = [...this.#$nodeListeners.entries()].flatMap(([, namedListeners]) => Object.keys(namedListeners));
-                        if (!names.includes(name)) {
-                            kQuery.logger.debug(`SSE listen ${this.url}#${name}`);
-                            this.addEventListener(name, e => {
-                                if (this.#$nodeListeners.size === 0) {
-                                    delete eventSources[this.url];
-                                    this.close();
-                                    kQuery.logger.debug(`SSE close ${this.url}`);
-                                }
-                                for (const [node, namedListeners] of this.#$nodeListeners.entries()) {
-                                    for (const listener of namedListeners[name] ?? []) {
-                                        listener.call(node, e);
-                                    }
-                                }
-                            });
-                        }
-
-                        const namedListeners = this.#$nodeListeners.getOrSet(node, () => ({}));
-                        namedListeners[name] ??= [];
-                        namedListeners[name].push(listener);
-                    }
-                }(url, {
+                const eventSource = EventSource.selfSources[url] ??= new EventSource(url, {
                     withCredentials: options.credentials,
                 });
                 if (eventSource.withCredentials !== !!options.credentials) {
@@ -71,6 +88,21 @@ export function networks(kQuery) {
                 }
 
                 eventSource.$listen(this, eventName, listener);
+
+                return this;
+            },
+            /**
+             * unlisten SSE event
+             *
+             * @param {URL|String} url
+             * @return {this}
+             */
+            $unlisten(url) {
+                url = new URL(url, this.baseURI);
+                const eventName = url.hash.substring(1) || 'message';
+                url.hash = '';
+
+                EventSource.selfSources[url]?.$unlisten(this, eventName);
 
                 return this;
             },
