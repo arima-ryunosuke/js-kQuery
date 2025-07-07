@@ -981,53 +981,43 @@ export class ObjectStorage {
 export class Promise extends GT.Promise {
     static resolvedReasonSymbol = Symbol('resolved');
 
-    static #concurrency(asyncs, throwable, concurrency = null) {
+    static async #concurrency(asyncs, throwable, concurrency = null) {
         Logger.instance.assertElementsInstanceOf(asyncs, Function, AsyncFunction)();
 
         concurrency ??= window.navigator.hardwareConcurrency;
 
         const keys = F.objectToEntries(asyncs).map(([k]) => k);
+        const result = asyncs instanceof Array ? new Array(asyncs.length) : {};
 
         let index = 0;
-        const result = asyncs instanceof Array ? new Array(asyncs.length) : {};
-        const execute = async function (key) {
-            index++;
-            try {
-                result[key] = await asyncs[key](key);
-            }
-            catch (e) {
-                if (throwable) {
-                    throw e;
+        await Promise.all(Array.from({length: concurrency}).map(async () => {
+            while (true) {
+                const key = keys[index++];
+                if (!asyncs[key]) {
+                    return;
                 }
-                else {
-                    result[key] = e;
+                try {
+                    result[key] = await asyncs[key](key);
+                }
+                catch (e) {
+                    if (throwable) {
+                        throw e;
+                    }
+                    else {
+                        result[key] = e;
+                    }
                 }
             }
-
-            const next = keys[index];
-            if (next && asyncs[next] != null) {
-                return execute(next);
-            }
-        };
-
-        const promises = [];
-        for (const key of keys.slice(0, concurrency)) {
-            promises.push(execute(key));
-        }
-
-        return [promises, result];
+        }));
+        return result;
     }
 
     static async concurrencyAll(asyncs, concurrency = null) {
-        const [promises, result] = Promise.#concurrency(asyncs, true, concurrency);
-        await Promise.all(promises);
-        return result;
+        return Promise.#concurrency(asyncs, true, concurrency);
     }
 
     static async concurrencyAllSettled(asyncs, concurrency = null) {
-        const [promises, result] = Promise.#concurrency(asyncs, false, concurrency);
-        await Promise.allSettled(promises);
-        return result;
+        return Promise.#concurrency(asyncs, false, concurrency);
     }
 
     constructor(callback) {
