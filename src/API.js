@@ -651,10 +651,11 @@ export class Logger {
         this.time = level < 7 ? noop : label => console.time.call(this, `${prefix} ${label}`);
         this.timeEnd = level < 7 ? noop : label => console.timeEnd.call(this, `${prefix} ${label}`);
 
-        this.assert = !debug ? noop2 : (actual, ...others) => {
+        this.assert = !debug ? noop2 : (actual, ...args) => {
+            let others = args;
             if (actual instanceof Function) {
-                others.unshift('' + actual);
-                actual = actual();
+                others = ['' + actual];
+                actual = actual(...args);
             }
             return console.assert.bind(this, actual, prefix, ...others);
         };
@@ -1123,7 +1124,7 @@ export class Timer extends EventTarget {
     }
 
     start(millisecond, repeat = 1) {
-        Logger.instance.assert(this.id === null, `Timer is started, please use restart`)();
+        Logger.instance.assert(this.id === null)(`Timer is started, please use restart`);
 
         this.millisecond = millisecond;
 
