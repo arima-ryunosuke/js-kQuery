@@ -18,6 +18,7 @@
     Configuration: () => Configuration,
     CookieObserver: () => CookieObserver,
     CustomEvent: () => CustomEvent,
+    Dictionary: () => Dictionary,
     F: () => F,
     FileReader: () => FileReader,
     GeneratorFunction: () => GeneratorFunction,
@@ -36,14 +37,36 @@
     WeakMap: () => WeakMap
   });
   var GT = globalThis;
-  var Nullable = /* @__PURE__ */ __name(function Nullable2() {
-  }, "Nullable");
   var AsyncFunction = (async () => {
   }).constructor;
   var GeneratorFunction = function* () {
   }.constructor;
   var AsyncGeneratorFunction = async function* () {
   }.constructor;
+  var Nullable = /* @__PURE__ */ __name(function Nullable2(v) {
+    return v == null;
+  }, "Nullable");
+  var Dictionary = /* @__PURE__ */ __name(function Dictionary2(v) {
+    if (typeof v !== "object") {
+      return false;
+    }
+    if (!Object.hasOwn(v, "entries") && typeof v.entries === "function") {
+      return true;
+    }
+    if (!Object.hasOwn(v, "keys") && typeof v.keys === "function") {
+      return true;
+    }
+    if (!Object.hasOwn(v, "values") && typeof v.values === "function") {
+      return true;
+    }
+    if (!Object.hasOwn(v, "length") && "length" in v) {
+      return true;
+    }
+    if (Symbol.iterator in v) {
+      return false;
+    }
+    return true;
+  }, "Dictionary");
   var $NodeList = /* @__PURE__ */ __name(function() {
     return [NodeList.name, HTMLCollection.name];
   }, "$NodeList");
@@ -359,6 +382,59 @@
       }
       return Object.entries(object);
     },
+    objectToArrayEntries(object, parentKey) {
+      let entries = [];
+      for (const [key, value] of F.objectToEntries(object)) {
+        let currentKey = parentKey ? `${parentKey}[${key}]` : key;
+        if (value instanceof Array) {
+          for (const [index, item] of value.entries()) {
+            if (F.objectIsPlain(item)) {
+              entries = entries.concat(F.objectToArrayEntries(item, `${currentKey}[${index}]`));
+            } else {
+              entries.push([`${currentKey}[]`, item]);
+            }
+          }
+        } else if (F.objectIsPlain(value)) {
+          entries = entries.concat(F.objectToArrayEntries(value, currentKey));
+        } else {
+          entries.push([currentKey, value]);
+        }
+      }
+      return entries;
+    },
+    /**
+     * @param {Object} object
+     * @param {Object} properties
+     * @returns {Object}
+     */
+    objectDeleteProperties(object, properties) {
+      const result = /* @__PURE__ */ Object.create(null);
+      for (const [propertyName, defaultValue] of F.objectToEntries(properties)) {
+        let propertyValue = object[propertyName] ?? defaultValue;
+        delete object[propertyName];
+        if (defaultValue != null) {
+          propertyValue = (() => {
+            switch (typeof defaultValue) {
+              case "boolean":
+                return !!propertyValue;
+              case "number":
+                return +propertyValue;
+              case "bigint":
+                return 0n + propertyValue;
+              case "string":
+                return "" + propertyValue;
+              default:
+                if (defaultValue instanceof Array) {
+                  return propertyValue instanceof Array ? propertyValue : [propertyValue];
+                }
+                return propertyValue;
+            }
+          })();
+        }
+        result[propertyName] = propertyValue;
+      }
+      return result;
+    },
     /**
      * @param {Object} object
      * @param {String} separator
@@ -455,7 +531,7 @@
     functionToCallbackable(func, callbackThis, ...callbackArgs) {
       return function(...args) {
         for (const [i, arg] of args.entries()) {
-          const callback = typeof arg === "function" ? arg : null;
+          const callback = typeof arg === "function" && !(arg instanceof Proxy2) ? arg : null;
           if (callback) {
             args[i] = callback.call(callbackThis, ...callbackArgs);
             if (args[i] === void 0) {
@@ -466,30 +542,201 @@
         return func.call(this, ...args);
       };
     },
-    async fetch(url, options = {}) {
-      if (options.timeout) {
-        const ctrl = new AbortController();
-        setTimeout(() => ctrl.abort(), options.timeout);
-        if (options.signal) {
-          options.signal = AbortSignal.any([options.signal, ctrl.signal]);
-        } else {
-          options.signal = ctrl.signal;
+    .../* @__PURE__ */ function() {
+      const handleHeaders = /* @__PURE__ */ __name(function(headers, url) {
+        headers ??= {};
+        if (!(headers instanceof Headers)) {
+          headers = new Headers(headers);
         }
-        delete options.timeout;
-      }
-      options.headers ??= {};
-      if (!(options.headers instanceof Headers)) {
-        options.headers = new Headers(options.headers);
-      }
-      options.headers.append("X-Requested-With", "XMLHttpRequest");
-      const response = await GT.fetch(url, options);
-      if (!(options.ok ?? false) && !response.ok) {
-        throw new Error(`${response.status}: ${response.statusText}`, {
-          cause: response
-        });
-      }
-      return response;
-    }
+        if (window.location.origin === url.origin) {
+          headers.append("X-Requested-With", "XMLHttpRequest");
+        }
+        return headers;
+      }, "handleHeaders");
+      const handleBody = /* @__PURE__ */ __name(function(options, url) {
+        if (!options.body) {
+          return;
+        }
+        if ((options.method ?? "GET").toUpperCase() === "GET") {
+          if (typeof options.body === "string" || options.body instanceof URLSearchParams || F.objectIsPlain(options.body)) {
+            url.searchParams.$assign(new URLSearchParams(options.body));
+          } else {
+            Logger.instance.error(`GET, but a body is specified. fetch silently ignores the body`);
+          }
+          delete options.body;
+        } else {
+          if (F.objectIsPlain(options.body)) {
+            if (options.headers.get("content-type")?.startsWith("application/json")) {
+              options.body = JSON.stringify(options.body);
+            } else {
+              const entries = F.objectToArrayEntries(options.body);
+              if (entries.map(([k, v]) => v).find((v) => v instanceof Blob)) {
+                options.body = new FormData();
+              } else {
+                options.body = new URLSearchParams();
+              }
+              for (const [name, value] of entries) {
+                options.body.append(name, value);
+              }
+            }
+          }
+        }
+        return options.body;
+      }, "handleBody");
+      const handleRetry = /* @__PURE__ */ __name(function(response, retryCount) {
+        const MAX_COUNT = 3;
+        const MAX_BACKOFF = 30;
+        const JITTER = Math.floor(Math.random() * 1e3);
+        if (retryCount < MAX_COUNT) {
+          if (response instanceof Response && response.headers.has("retry-after")) {
+            const retryAfter = response.headers.get("retry-after");
+            if (isNaN(retryAfter)) {
+              return Math.max(1e3, new Date(retryAfter).getTime() - Date.now()) + JITTER;
+            } else {
+              return retryAfter * 1e3 + JITTER;
+            }
+          }
+          if (response instanceof Error || [503, 504].includes(response.status)) {
+            return Math.min(MAX_BACKOFF * 1e3, 2 ** retryCount * 1e3) + JITTER;
+          }
+        }
+        return 0;
+      }, "handleRetry");
+      return {
+        async fetch(url, options = {}) {
+          url = new URL(url, window.location.href);
+          const { ok, timeout, retryer } = F.objectDeleteProperties(options, {
+            ok: false,
+            timeout: void 0,
+            retryer: handleRetry
+          });
+          if (timeout) {
+            const ctrl = new AbortController();
+            setTimeout(() => ctrl.abort(), timeout);
+            if (options.signal) {
+              options.signal = AbortSignal.any([options.signal, ctrl.signal]);
+            } else {
+              options.signal = ctrl.signal;
+            }
+          }
+          options.headers = handleHeaders(options.headers, url);
+          options.body = handleBody(options, url);
+          let retryCount = 0;
+          while (true) {
+            let response;
+            try {
+              response = await GT.fetch(url, options);
+            } catch (e) {
+              response = e;
+            }
+            const retry = retryer(response, retryCount++);
+            if (retry) {
+              const message = response instanceof Error ? response.message : `${response.status}: ${response.statusText}`;
+              Logger.instance.warn(`retry ${url} ${retryCount} ${message}, after ${retry}ms`);
+              await Timer.wait(retry);
+              continue;
+            }
+            if (response instanceof Error) {
+              response.cause ??= {};
+              response.cause.retryCount = retryCount - 1;
+              throw response;
+            }
+            if (!ok && !response.ok) {
+              response.retryCount = retryCount - 1;
+              throw new Error(`${response.status}: ${response.statusText}`, {
+                cause: response
+              });
+            }
+            return response;
+          }
+        },
+        async xhr(url, options) {
+          url = new URL(url, window.location.href);
+          options = Object.assign({
+            method: "GET",
+            headers: {},
+            body: null,
+            credentials: "same-origin",
+            // 'omit' | 'same-origin' | 'include'
+            timeout: 0,
+            ok: false,
+            signal: null,
+            progress: /* @__PURE__ */ __name(() => null, "progress")
+          }, options);
+          options.headers = handleHeaders(options.headers, url);
+          options.body = handleBody(options, url);
+          const xhr = new XMLHttpRequest();
+          xhr.open(options.method.toUpperCase(), url, true);
+          xhr.timeout = options.timeout;
+          xhr.withCredentials = ((credentials) => {
+            switch (credentials) {
+              case "omit":
+                return false;
+              case "same-origin":
+                return window.location.origin === url.origin;
+              case "include":
+                return true;
+            }
+          })(options.credentials);
+          xhr.responseType = "arraybuffer";
+          if (options.signal) {
+            options.signal.addEventListener("abort", () => {
+              xhr.abort();
+            });
+          }
+          for (const [name, value] of F.objectToEntries(options.headers)) {
+            xhr.setRequestHeader(name, value);
+          }
+          xhr.send(options.body);
+          return new Promise2((resolve, reject) => {
+            const newResponse = /* @__PURE__ */ __name(function() {
+              const response = new Response(xhr.response, {
+                status: xhr.status,
+                statusText: xhr.statusText,
+                headers: xhr.getAllResponseHeaders().split(/\r\n?/).reduce(function(headers, line) {
+                  if (line.trim()) {
+                    const [name, value] = line.split(":");
+                    headers.append(name.trim(), value.trim());
+                  }
+                  return headers;
+                }, new Headers())
+              });
+              return Object.defineProperties(response, {
+                url: {
+                  get() {
+                    return xhr.responseURL;
+                  }
+                }
+              });
+            }, "newResponse");
+            xhr.addEventListener("readystatechange", function() {
+              if (xhr.readyState === XMLHttpRequest.HEADERS_RECEIVED) {
+                if (!options.ok && !(200 <= xhr.status && xhr.status < 300)) {
+                  reject(new Error(`${xhr.status}: ${xhr.statusText}`, {
+                    cause: newResponse()
+                  }));
+                }
+              }
+            });
+            xhr.addEventListener("load", () => {
+              resolve(newResponse());
+            });
+            xhr.addEventListener("error", (e) => {
+              reject(e);
+            });
+            xhr.addEventListener("abort", (e) => {
+              reject(e);
+            });
+            xhr.addEventListener("timeout", (e) => {
+              reject(e);
+            });
+            xhr.upload.addEventListener("progress", (e) => {
+              options.progress(e, options.body);
+            });
+          });
+        }
+      };
+    }()
   };
   var Configuration = class _Configuration {
     static {
@@ -532,7 +779,10 @@
       if (value === prototype) {
         return true;
       }
-      if (Nullable === prototype && value == null) {
+      if (Nullable === prototype && prototype(value)) {
+        return true;
+      }
+      if (Dictionary === prototype && prototype(value)) {
         return true;
       }
       if (prototype === Object && F.objectIsPlain(value)) {
@@ -572,10 +822,11 @@
       this.notice = level < 5 ? noop : debug ? console.warn.bind(this, prefix) : console.info.bind(this, prefix);
       this.time = level < 7 ? noop : (label) => console.time.call(this, `${prefix} ${label}`);
       this.timeEnd = level < 7 ? noop : (label) => console.timeEnd.call(this, `${prefix} ${label}`);
-      this.assert = !debug ? noop2 : (actual, ...others) => {
+      this.assert = !debug ? noop2 : (actual, ...args) => {
+        let others = args;
         if (actual instanceof Function) {
-          others.unshift("" + actual);
-          actual = actual();
+          others = ["" + actual];
+          actual = actual(...args);
         }
         return console.assert.bind(this, actual, prefix, ...others);
       };
@@ -844,43 +1095,36 @@
       __name(this, "Promise");
     }
     static resolvedReasonSymbol = Symbol("resolved");
-    static #concurrency(asyncs, throwable, concurrency = null) {
+    static async #concurrency(asyncs, throwable, concurrency = null) {
       Logger.instance.assertElementsInstanceOf(asyncs, Function, AsyncFunction)();
       concurrency ??= window.navigator.hardwareConcurrency;
       const keys = F.objectToEntries(asyncs).map(([k]) => k);
-      let index = 0;
       const result = asyncs instanceof Array ? new Array(asyncs.length) : {};
-      const execute = /* @__PURE__ */ __name(async function(key) {
-        index++;
-        try {
-          result[key] = await asyncs[key](key);
-        } catch (e) {
-          if (throwable) {
-            throw e;
-          } else {
-            result[key] = e;
+      let index = 0;
+      await _Promise.all(Array.from({ length: concurrency }).map(async () => {
+        while (true) {
+          const key = keys[index++];
+          if (!asyncs[key]) {
+            return;
+          }
+          try {
+            result[key] = await asyncs[key](key);
+          } catch (e) {
+            if (throwable) {
+              throw e;
+            } else {
+              result[key] = e;
+            }
           }
         }
-        const next = keys[index];
-        if (next && asyncs[next] != null) {
-          return execute(next);
-        }
-      }, "execute");
-      const promises = [];
-      for (const key of keys.slice(0, concurrency)) {
-        promises.push(execute(key));
-      }
-      return [promises, result];
+      }));
+      return result;
     }
     static async concurrencyAll(asyncs, concurrency = null) {
-      const [promises, result] = _Promise.#concurrency(asyncs, true, concurrency);
-      await _Promise.all(promises);
-      return result;
+      return _Promise.#concurrency(asyncs, true, concurrency);
     }
     static async concurrencyAllSettled(asyncs, concurrency = null) {
-      const [promises, result] = _Promise.#concurrency(asyncs, false, concurrency);
-      await _Promise.allSettled(promises);
-      return result;
+      return _Promise.#concurrency(asyncs, false, concurrency);
     }
     constructor(callback) {
       let resolve, reject;
@@ -959,7 +1203,7 @@
       }).finally(() => timer.stop());
     }
     start(millisecond, repeat = 1) {
-      Logger.instance.assert(this.id === null, `Timer is started, please use restart`)();
+      Logger.instance.assert(this.id === null)(`Timer is started, please use restart`);
       this.millisecond = millisecond;
       const start = /* @__PURE__ */ __name((tick, time) => {
         this.id = setTimeout(() => {
@@ -1811,8 +2055,8 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
            *
            * @param {String} types
            * @param {String|Function} selector
-           * @param {Function|Object} [listener]
-           * @param {Object} [options={}]
+           * @param {Function|ListenerOptions} [listener]
+           * @param {ListenerOptions} [options={}]
            * @return {this}
            */
           $on(types, selector, listener, options) {
@@ -2022,7 +2266,7 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
            * some event are special treated, e.g. click is PointerEvent
            *
            * @param {String} types
-           * @param {Object} options={}
+           * @param {EventOptions} options={}
            * @return {Boolean}
            */
           $trigger(types, options = {}) {

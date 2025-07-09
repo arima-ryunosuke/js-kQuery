@@ -18,6 +18,7 @@
     Configuration: () => Configuration,
     CookieObserver: () => CookieObserver,
     CustomEvent: () => CustomEvent,
+    Dictionary: () => Dictionary,
     F: () => F,
     FileReader: () => FileReader,
     GeneratorFunction: () => GeneratorFunction,
@@ -36,14 +37,36 @@
     WeakMap: () => WeakMap
   });
   var GT = globalThis;
-  var Nullable = /* @__PURE__ */ __name(function Nullable2() {
-  }, "Nullable");
   var AsyncFunction = (async () => {
   }).constructor;
   var GeneratorFunction = function* () {
   }.constructor;
   var AsyncGeneratorFunction = async function* () {
   }.constructor;
+  var Nullable = /* @__PURE__ */ __name(function Nullable2(v) {
+    return v == null;
+  }, "Nullable");
+  var Dictionary = /* @__PURE__ */ __name(function Dictionary2(v) {
+    if (typeof v !== "object") {
+      return false;
+    }
+    if (!Object.hasOwn(v, "entries") && typeof v.entries === "function") {
+      return true;
+    }
+    if (!Object.hasOwn(v, "keys") && typeof v.keys === "function") {
+      return true;
+    }
+    if (!Object.hasOwn(v, "values") && typeof v.values === "function") {
+      return true;
+    }
+    if (!Object.hasOwn(v, "length") && "length" in v) {
+      return true;
+    }
+    if (Symbol.iterator in v) {
+      return false;
+    }
+    return true;
+  }, "Dictionary");
   var $NodeList = /* @__PURE__ */ __name(function() {
     return [NodeList.name, HTMLCollection.name];
   }, "$NodeList");
@@ -359,6 +382,59 @@
       }
       return Object.entries(object);
     },
+    objectToArrayEntries(object, parentKey) {
+      let entries = [];
+      for (const [key, value] of F.objectToEntries(object)) {
+        let currentKey = parentKey ? `${parentKey}[${key}]` : key;
+        if (value instanceof Array) {
+          for (const [index, item] of value.entries()) {
+            if (F.objectIsPlain(item)) {
+              entries = entries.concat(F.objectToArrayEntries(item, `${currentKey}[${index}]`));
+            } else {
+              entries.push([`${currentKey}[]`, item]);
+            }
+          }
+        } else if (F.objectIsPlain(value)) {
+          entries = entries.concat(F.objectToArrayEntries(value, currentKey));
+        } else {
+          entries.push([currentKey, value]);
+        }
+      }
+      return entries;
+    },
+    /**
+     * @param {Object} object
+     * @param {Object} properties
+     * @returns {Object}
+     */
+    objectDeleteProperties(object, properties) {
+      const result = /* @__PURE__ */ Object.create(null);
+      for (const [propertyName, defaultValue] of F.objectToEntries(properties)) {
+        let propertyValue = object[propertyName] ?? defaultValue;
+        delete object[propertyName];
+        if (defaultValue != null) {
+          propertyValue = (() => {
+            switch (typeof defaultValue) {
+              case "boolean":
+                return !!propertyValue;
+              case "number":
+                return +propertyValue;
+              case "bigint":
+                return 0n + propertyValue;
+              case "string":
+                return "" + propertyValue;
+              default:
+                if (defaultValue instanceof Array) {
+                  return propertyValue instanceof Array ? propertyValue : [propertyValue];
+                }
+                return propertyValue;
+            }
+          })();
+        }
+        result[propertyName] = propertyValue;
+      }
+      return result;
+    },
     /**
      * @param {Object} object
      * @param {String} separator
@@ -455,7 +531,7 @@
     functionToCallbackable(func, callbackThis, ...callbackArgs) {
       return function(...args) {
         for (const [i, arg] of args.entries()) {
-          const callback = typeof arg === "function" ? arg : null;
+          const callback = typeof arg === "function" && !(arg instanceof Proxy2) ? arg : null;
           if (callback) {
             args[i] = callback.call(callbackThis, ...callbackArgs);
             if (args[i] === void 0) {
@@ -466,30 +542,201 @@
         return func.call(this, ...args);
       };
     },
-    async fetch(url, options = {}) {
-      if (options.timeout) {
-        const ctrl = new AbortController();
-        setTimeout(() => ctrl.abort(), options.timeout);
-        if (options.signal) {
-          options.signal = AbortSignal.any([options.signal, ctrl.signal]);
-        } else {
-          options.signal = ctrl.signal;
+    .../* @__PURE__ */ function() {
+      const handleHeaders = /* @__PURE__ */ __name(function(headers, url) {
+        headers ??= {};
+        if (!(headers instanceof Headers)) {
+          headers = new Headers(headers);
         }
-        delete options.timeout;
-      }
-      options.headers ??= {};
-      if (!(options.headers instanceof Headers)) {
-        options.headers = new Headers(options.headers);
-      }
-      options.headers.append("X-Requested-With", "XMLHttpRequest");
-      const response = await GT.fetch(url, options);
-      if (!(options.ok ?? false) && !response.ok) {
-        throw new Error(`${response.status}: ${response.statusText}`, {
-          cause: response
-        });
-      }
-      return response;
-    }
+        if (window.location.origin === url.origin) {
+          headers.append("X-Requested-With", "XMLHttpRequest");
+        }
+        return headers;
+      }, "handleHeaders");
+      const handleBody = /* @__PURE__ */ __name(function(options, url) {
+        if (!options.body) {
+          return;
+        }
+        if ((options.method ?? "GET").toUpperCase() === "GET") {
+          if (typeof options.body === "string" || options.body instanceof URLSearchParams || F.objectIsPlain(options.body)) {
+            url.searchParams.$assign(new URLSearchParams(options.body));
+          } else {
+            Logger.instance.error(`GET, but a body is specified. fetch silently ignores the body`);
+          }
+          delete options.body;
+        } else {
+          if (F.objectIsPlain(options.body)) {
+            if (options.headers.get("content-type")?.startsWith("application/json")) {
+              options.body = JSON.stringify(options.body);
+            } else {
+              const entries = F.objectToArrayEntries(options.body);
+              if (entries.map(([k, v]) => v).find((v) => v instanceof Blob)) {
+                options.body = new FormData();
+              } else {
+                options.body = new URLSearchParams();
+              }
+              for (const [name, value] of entries) {
+                options.body.append(name, value);
+              }
+            }
+          }
+        }
+        return options.body;
+      }, "handleBody");
+      const handleRetry = /* @__PURE__ */ __name(function(response, retryCount) {
+        const MAX_COUNT = 3;
+        const MAX_BACKOFF = 30;
+        const JITTER = Math.floor(Math.random() * 1e3);
+        if (retryCount < MAX_COUNT) {
+          if (response instanceof Response && response.headers.has("retry-after")) {
+            const retryAfter = response.headers.get("retry-after");
+            if (isNaN(retryAfter)) {
+              return Math.max(1e3, new Date(retryAfter).getTime() - Date.now()) + JITTER;
+            } else {
+              return retryAfter * 1e3 + JITTER;
+            }
+          }
+          if (response instanceof Error || [503, 504].includes(response.status)) {
+            return Math.min(MAX_BACKOFF * 1e3, 2 ** retryCount * 1e3) + JITTER;
+          }
+        }
+        return 0;
+      }, "handleRetry");
+      return {
+        async fetch(url, options = {}) {
+          url = new URL(url, window.location.href);
+          const { ok, timeout, retryer } = F.objectDeleteProperties(options, {
+            ok: false,
+            timeout: void 0,
+            retryer: handleRetry
+          });
+          if (timeout) {
+            const ctrl = new AbortController();
+            setTimeout(() => ctrl.abort(), timeout);
+            if (options.signal) {
+              options.signal = AbortSignal.any([options.signal, ctrl.signal]);
+            } else {
+              options.signal = ctrl.signal;
+            }
+          }
+          options.headers = handleHeaders(options.headers, url);
+          options.body = handleBody(options, url);
+          let retryCount = 0;
+          while (true) {
+            let response;
+            try {
+              response = await GT.fetch(url, options);
+            } catch (e) {
+              response = e;
+            }
+            const retry = retryer(response, retryCount++);
+            if (retry) {
+              const message = response instanceof Error ? response.message : `${response.status}: ${response.statusText}`;
+              Logger.instance.warn(`retry ${url} ${retryCount} ${message}, after ${retry}ms`);
+              await Timer.wait(retry);
+              continue;
+            }
+            if (response instanceof Error) {
+              response.cause ??= {};
+              response.cause.retryCount = retryCount - 1;
+              throw response;
+            }
+            if (!ok && !response.ok) {
+              response.retryCount = retryCount - 1;
+              throw new Error(`${response.status}: ${response.statusText}`, {
+                cause: response
+              });
+            }
+            return response;
+          }
+        },
+        async xhr(url, options) {
+          url = new URL(url, window.location.href);
+          options = Object.assign({
+            method: "GET",
+            headers: {},
+            body: null,
+            credentials: "same-origin",
+            // 'omit' | 'same-origin' | 'include'
+            timeout: 0,
+            ok: false,
+            signal: null,
+            progress: /* @__PURE__ */ __name(() => null, "progress")
+          }, options);
+          options.headers = handleHeaders(options.headers, url);
+          options.body = handleBody(options, url);
+          const xhr = new XMLHttpRequest();
+          xhr.open(options.method.toUpperCase(), url, true);
+          xhr.timeout = options.timeout;
+          xhr.withCredentials = ((credentials) => {
+            switch (credentials) {
+              case "omit":
+                return false;
+              case "same-origin":
+                return window.location.origin === url.origin;
+              case "include":
+                return true;
+            }
+          })(options.credentials);
+          xhr.responseType = "arraybuffer";
+          if (options.signal) {
+            options.signal.addEventListener("abort", () => {
+              xhr.abort();
+            });
+          }
+          for (const [name, value] of F.objectToEntries(options.headers)) {
+            xhr.setRequestHeader(name, value);
+          }
+          xhr.send(options.body);
+          return new Promise2((resolve, reject) => {
+            const newResponse = /* @__PURE__ */ __name(function() {
+              const response = new Response(xhr.response, {
+                status: xhr.status,
+                statusText: xhr.statusText,
+                headers: xhr.getAllResponseHeaders().split(/\r\n?/).reduce(function(headers, line) {
+                  if (line.trim()) {
+                    const [name, value] = line.split(":");
+                    headers.append(name.trim(), value.trim());
+                  }
+                  return headers;
+                }, new Headers())
+              });
+              return Object.defineProperties(response, {
+                url: {
+                  get() {
+                    return xhr.responseURL;
+                  }
+                }
+              });
+            }, "newResponse");
+            xhr.addEventListener("readystatechange", function() {
+              if (xhr.readyState === XMLHttpRequest.HEADERS_RECEIVED) {
+                if (!options.ok && !(200 <= xhr.status && xhr.status < 300)) {
+                  reject(new Error(`${xhr.status}: ${xhr.statusText}`, {
+                    cause: newResponse()
+                  }));
+                }
+              }
+            });
+            xhr.addEventListener("load", () => {
+              resolve(newResponse());
+            });
+            xhr.addEventListener("error", (e) => {
+              reject(e);
+            });
+            xhr.addEventListener("abort", (e) => {
+              reject(e);
+            });
+            xhr.addEventListener("timeout", (e) => {
+              reject(e);
+            });
+            xhr.upload.addEventListener("progress", (e) => {
+              options.progress(e, options.body);
+            });
+          });
+        }
+      };
+    }()
   };
   var Configuration = class _Configuration {
     static {
@@ -532,7 +779,10 @@
       if (value === prototype) {
         return true;
       }
-      if (Nullable === prototype && value == null) {
+      if (Nullable === prototype && prototype(value)) {
+        return true;
+      }
+      if (Dictionary === prototype && prototype(value)) {
         return true;
       }
       if (prototype === Object && F.objectIsPlain(value)) {
@@ -572,10 +822,11 @@
       this.notice = level < 5 ? noop : debug ? console.warn.bind(this, prefix) : console.info.bind(this, prefix);
       this.time = level < 7 ? noop : (label) => console.time.call(this, `${prefix} ${label}`);
       this.timeEnd = level < 7 ? noop : (label) => console.timeEnd.call(this, `${prefix} ${label}`);
-      this.assert = !debug ? noop2 : (actual, ...others) => {
+      this.assert = !debug ? noop2 : (actual, ...args) => {
+        let others = args;
         if (actual instanceof Function) {
-          others.unshift("" + actual);
-          actual = actual();
+          others = ["" + actual];
+          actual = actual(...args);
         }
         return console.assert.bind(this, actual, prefix, ...others);
       };
@@ -844,43 +1095,36 @@
       __name(this, "Promise");
     }
     static resolvedReasonSymbol = Symbol("resolved");
-    static #concurrency(asyncs, throwable, concurrency = null) {
+    static async #concurrency(asyncs, throwable, concurrency = null) {
       Logger.instance.assertElementsInstanceOf(asyncs, Function, AsyncFunction)();
       concurrency ??= window.navigator.hardwareConcurrency;
       const keys = F.objectToEntries(asyncs).map(([k]) => k);
-      let index = 0;
       const result = asyncs instanceof Array ? new Array(asyncs.length) : {};
-      const execute = /* @__PURE__ */ __name(async function(key) {
-        index++;
-        try {
-          result[key] = await asyncs[key](key);
-        } catch (e) {
-          if (throwable) {
-            throw e;
-          } else {
-            result[key] = e;
+      let index = 0;
+      await _Promise.all(Array.from({ length: concurrency }).map(async () => {
+        while (true) {
+          const key = keys[index++];
+          if (!asyncs[key]) {
+            return;
+          }
+          try {
+            result[key] = await asyncs[key](key);
+          } catch (e) {
+            if (throwable) {
+              throw e;
+            } else {
+              result[key] = e;
+            }
           }
         }
-        const next = keys[index];
-        if (next && asyncs[next] != null) {
-          return execute(next);
-        }
-      }, "execute");
-      const promises = [];
-      for (const key of keys.slice(0, concurrency)) {
-        promises.push(execute(key));
-      }
-      return [promises, result];
+      }));
+      return result;
     }
     static async concurrencyAll(asyncs, concurrency = null) {
-      const [promises, result] = _Promise.#concurrency(asyncs, true, concurrency);
-      await _Promise.all(promises);
-      return result;
+      return _Promise.#concurrency(asyncs, true, concurrency);
     }
     static async concurrencyAllSettled(asyncs, concurrency = null) {
-      const [promises, result] = _Promise.#concurrency(asyncs, false, concurrency);
-      await _Promise.allSettled(promises);
-      return result;
+      return _Promise.#concurrency(asyncs, false, concurrency);
     }
     constructor(callback) {
       let resolve, reject;
@@ -959,7 +1203,7 @@
       }).finally(() => timer.stop());
     }
     start(millisecond, repeat = 1) {
-      Logger.instance.assert(this.id === null, `Timer is started, please use restart`)();
+      Logger.instance.assert(this.id === null)(`Timer is started, please use restart`);
       this.millisecond = millisecond;
       const start = /* @__PURE__ */ __name((tick, time) => {
         this.id = setTimeout(() => {
@@ -2212,8 +2456,8 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
            *
            * @param {String} types
            * @param {String|Function} selector
-           * @param {Function|Object} [listener]
-           * @param {Object} [options={}]
+           * @param {Function|ListenerOptions} [listener]
+           * @param {ListenerOptions} [options={}]
            * @return {this}
            */
           $on(types, selector, listener, options) {
@@ -2423,7 +2667,7 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
            * some event are special treated, e.g. click is PointerEvent
            *
            * @param {String} types
-           * @param {Object} options={}
+           * @param {EventOptions} options={}
            * @return {Boolean}
            */
           $trigger(types, options = {}) {
@@ -2652,14 +2896,14 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
            *
            * @descriptor set
            *
-           * @param {Object} value
+           * @param {Dictionary} value
            *
            * @example
            * $$('input').$attrs = {name: 'value'};                // mass assign(delete other)
            * $$('input').$attrs = (node, i) => ({name: 'value'}); // mass assign by callback(delete other)
            */
           set $attrs(value) {
-            kQuery.logger.assertInstanceOf(value, Nullable, Object)();
+            kQuery.logger.assertInstanceOf(value, Nullable, Dictionary)();
             if (value == null) {
               return;
             }
@@ -2736,14 +2980,14 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
            *
            * @descriptor set
            *
-           * @param {Object} value
+           * @param {Dictionary} value
            *
            * @example
            * $$('input').$data = {name: 'value'};                // mass assign(delete other)
            * $$('input').$data = (node, i) => ({name: 'value'}); // mass assign by callback(delete other)
            */
           set $data(value) {
-            kQuery.logger.assertInstanceOf(value, Nullable, Object)();
+            kQuery.logger.assertInstanceOf(value, Nullable, Dictionary)();
             if (value == null) {
               return;
             }
@@ -2800,14 +3044,14 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
            *
            * @descriptor set
            *
-           * @param {Object|Array} value
+           * @param {Dictionary|Array} value
            *
            * @example
            * $$('input').$class = {name: 'flag'};                // mass assign(delete other)
            * $$('input').$class = (node, i) => ({name: 'flag'}); // mass assign by callback(delete other)
            */
           set $class(value) {
-            kQuery.logger.assertInstanceOf(value, Nullable, String, Object, Array)();
+            kQuery.logger.assertInstanceOf(value, Nullable, String, Dictionary, Array)();
             if (value == null) {
               return;
             }
@@ -2898,14 +3142,14 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
            *
            * @descriptor set
            *
-           * @param {Object} value
+           * @param {Dictionary} value
            *
            * @example
            * $$('input').$style = {color: 'value'};                // mass assign(delete other)
            * $$('input').$style = (node, i) => ({color: 'value'}); // mass assign by callback(delete other)
            */
           set $style(value) {
-            kQuery.logger.assertInstanceOf(value, Nullable, Object)();
+            kQuery.logger.assertInstanceOf(value, Nullable, Dictionary)();
             if (value == null) {
               return;
             }
@@ -2929,11 +3173,11 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
           /**
            * assign URL parts
            *
-           * @param {Object} parts
+           * @param {Dictionary} parts
            * @return {this}
            */
           $assign(parts) {
-            kQuery.logger.assertInstanceOf(parts, Object)();
+            kQuery.logger.assertInstanceOf(parts, Dictionary)();
             for (const [key, value] of F.objectToEntries(parts)) {
               if (key === "searchParams") {
                 this[key].$assign(value);
@@ -2946,21 +3190,21 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
           /**
            * assign URL parts and new URL
            *
-           * @param {Object} parts
+           * @param {Dictionary} parts
            * @return {this}
            */
           $replace(parts) {
-            kQuery.logger.assertInstanceOf(parts, Object)();
+            kQuery.logger.assertInstanceOf(parts, Dictionary)();
             return new URL(this).$assign(parts);
           },
           /**
            * shortcut to this.$assign({searchParams})
            *
-           * @param {Object} params
+           * @param {Dictionary} params
            * @return {this}
            */
           $params(params) {
-            kQuery.logger.assertInstanceOf(params, Object)();
+            kQuery.logger.assertInstanceOf(params, Dictionary)();
             return this.$assign({ searchParams: params });
           }
         }
@@ -2969,17 +3213,29 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
         /** @lends URLSearchParams.prototype */
         {
           /**
+           * from Entries
+           *
+           * @param {Dictionary} values
+           * @return {this}
+           */
+          $appendFromEntries(values) {
+            for (const [name, value] of F.objectToArrayEntries(values)) {
+              this.append(name, value);
+            }
+            return this;
+          },
+          /**
            * assign params
            *
            * - null/undefined: delete parameter
            * - array: append per element
            * - other: simple set
            *
-           * @param {Object} params
+           * @param {Dictionary} params
            * @return {this}
            */
           $assign(params) {
-            kQuery.logger.assertInstanceOf(params, Object)();
+            kQuery.logger.assertInstanceOf(params, Dictionary)();
             for (const [name, value] of F.objectToEntries(params)) {
               if (value == null) {
                 this.delete(name);
@@ -3138,7 +3394,7 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
            *
            * @descriptor set
            *
-           * @param {Object} value
+           * @param {?Dictionary} value
            *
            * @example
            * document.$cookie = { // mass assign(delete other, no attributes use default attributes)
@@ -3150,7 +3406,7 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
            * };
            */
           set $cookie(value) {
-            kQuery.logger.assertInstanceOf(value, Nullable, Object)();
+            kQuery.logger.assertInstanceOf(value, Nullable, Dictionary)();
             if (value == null) {
               return;
             }
@@ -3209,14 +3465,14 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
            *
            * @descriptor set
            *
-           * @param {Object} value
+           * @param {?Dictionary} value
            *
            * @example
            * $('input').$bag = {hoge: 'value'};                // mass assign(delete other)
            * $('input').$bag = (node, i) => ({hoge: 'value'}); // mass assign by callback(delete other)
            */
           set $bag(value) {
-            kQuery.logger.assertInstanceOf(value, Nullable, Object)();
+            kQuery.logger.assertInstanceOf(value, Nullable, Dictionary)();
             if (value == null) {
               return;
             }
@@ -3687,7 +3943,7 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
           /**
            * get left/top absolute/relative node
            *
-           * @param {{relative?: Boolean, margin?: Boolean}} [options={}]
+           * @param {OffsetOptions} [options={}]
            * @return {{left: Number, top: Number}}
            */
           $offset(options = {}) {
@@ -3738,7 +3994,7 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
            * └───────────────────────────────────────┘
            * ```
            *
-           * @param {String|{scroll?: Boolean, margin?: Boolean, border?: Boolean, padding?: Boolean, scrollbar?: Boolean}} [options={}]
+           * @param {String|SizeOptions} [options={}]
            * @return {{width: Number, height: Number}}
            */
           $size(options = {}) {
@@ -3804,7 +4060,7 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
           /**
            * get/set width irrespective of css
            *
-           * @param {Number|String|{scroll?: Boolean, margin?: Boolean, border?: Boolean, padding?: Boolean, scrollbar?: Boolean}} [options={}]
+           * @param {Number|String|SizeOptions} [options={}]
            * @return {Number}
            */
           $width(options = {}) {
@@ -3826,7 +4082,7 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
           /**
            * get/set height irrespective of css
            *
-           * @param {Number|String|{scroll?: Boolean, margin?: Boolean, border?: Boolean, padding?: Boolean, scrollbar?: Boolean}} [options={}]
+           * @param {Number|String|SizeOptions} [options={}]
            * @return {Number}
            */
           $height(options = {}) {
@@ -3860,6 +4116,91 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
               return this;
             }
             return this.parentElement?.$scrollParent(scrollableOptions) ?? null;
+          },
+          /**
+           * get visibilityState
+           *
+           * alias to $checkVisibility(true)
+           *
+           * @descriptor get
+           *
+           * @return {Boolean}
+           */
+          get $visible() {
+            return this.$checkVisibility(true);
+          },
+          /**
+           * get visibilityState
+           *
+           * specification:
+           * - explicit: see display: none|content
+           * - document: see document.hidden
+           * - contentVisibilityProperty: see contentVisibility: hidden
+           * - visibilityProperty: see visibility: hidden
+           * - opacityProperty: see opacity: 0
+           * - size: see width/height: 0
+           * - intersection: see overlap other node or out of viewport
+           *
+           * @param {VisibilityOptions|Boolean} options
+           * @param {Boolean} allOthers
+           * @return {Boolean}
+           */
+          $checkVisibility(options = {}, allOthers = false) {
+            if (typeof options === "boolean") {
+              allOthers = options;
+              options = {};
+            }
+            options = Object.assign({
+              document: allOthers,
+              contentVisibilityAuto: allOthers,
+              contentVisibilityProperty: allOthers,
+              opacityProperty: allOthers,
+              visibilityProperty: allOthers,
+              size: allOthers,
+              intersection: allOthers
+            }, options);
+            if (options.document && this.$document.hidden) {
+              return false;
+            }
+            if (this.checkVisibility && !this.checkVisibility(options)) {
+              return false;
+            }
+            for (let e = this; e; e = e.parentElement) {
+              const cstyle = e.$window.getComputedStyle(e);
+              if (cstyle.display === "none" || cstyle.display === "content") {
+                return false;
+              }
+              if (options.contentVisibilityProperty && cstyle.contentVisibility === "hidden") {
+                return false;
+              }
+              if (options.visibilityProperty && cstyle.visibility === "hidden") {
+                return false;
+              }
+              if (options.opacityProperty && cstyle.opacity === "0") {
+                return false;
+              }
+            }
+            const rect = this.getBoundingClientRect();
+            const size = rect.width * rect.height;
+            if (options.size && !size) {
+              return false;
+            }
+            if (options.intersection && size) {
+              const backup = this.getAttribute("style");
+              try {
+                this.style.setProperty("pointer-event", "auto", "important");
+                if (!this.contains(this.$document.elementFromPoint(rect.left, rect.top)) && !this.contains(this.$document.elementFromPoint(rect.right, rect.top)) && !this.contains(this.$document.elementFromPoint(rect.left, rect.bottom)) && !this.contains(this.$document.elementFromPoint(rect.right, rect.bottom))) {
+                  return false;
+                }
+              } finally {
+                if (backup == null) {
+                  this.removeAttribute("style");
+                } else {
+                  this.setAttribute("style", backup);
+                }
+              }
+            }
+            return true;
           }
         }
       ),
@@ -4023,7 +4364,7 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
            * options.timing: reference transition css
            *
            * @param {Object} properties
-           * @param {Object} [options={}]
+           * @param {TransitionOptions} [options={}]
            * @return {Promise<Boolean>}
            */
           async $transition(properties, options) {
@@ -4093,8 +4434,8 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
            *
            * this does not involve visibility, you have to do it ourselves.
            *
-           * @param {Number|Object} [durationOrOptions=400]
-           * @param {Object} [options={}]
+           * @param {Number|TransitionOptions} [durationOrOptions=400]
+           * @param {TransitionOptions} [options={}]
            * @return {Promise<Boolean>}
            *
            * @example
@@ -4116,8 +4457,8 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
            *
            * this does not involve visibility, you have to do it ourselves.
            *
-           * @param {Number|Object} [durationOrOptions=400]
-           * @param {Object} [options={}]
+           * @param {Number|TransitionOptions} [durationOrOptions=400]
+           * @param {TransitionOptions} [options={}]
            * @return {Promise<Boolean>}
            *
            * @example
@@ -4139,8 +4480,8 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
            *
            * this does not involve visibility, you have to do it ourselves.
            *
-           * @param {Number|Object} [durationOrOptions=400]
-           * @param {Object} [options={}]
+           * @param {Number|TransitionOptions} [durationOrOptions=400]
+           * @param {TransitionOptions} [options={}]
            * @return {Promise<Boolean>}
            */
           async $slideDown(durationOrOptions = 400, options = {}) {
@@ -4167,8 +4508,8 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
            *
            * this does not involve visibility, you have to do it ourselves.
            *
-           * @param {Number|Object} [durationOrOptions=400]
-           * @param {Object} [options={}]
+           * @param {Number|TransitionOptions} [durationOrOptions=400]
+           * @param {TransitionOptions} [options={}]
            * @return {Promise<Boolean>}
            */
           async $slideUp(durationOrOptions = 400, options = {}) {
@@ -4195,8 +4536,8 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
            *
            * this does not involve visibility, you have to do it ourselves.
            *
-           * @param {Number|Object} [durationOrOptions=400]
-           * @param {Object} [options={}]
+           * @param {Number|TransitionOptions} [durationOrOptions=400]
+           * @param {TransitionOptions} [options={}]
            * @return {Promise<Boolean>}
            */
           async $slideRight(durationOrOptions = 400, options = {}) {
@@ -4224,8 +4565,8 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
            *
            * this does not involve visibility, you have to do it ourselves.
            *
-           * @param {Number|Object} [durationOrOptions=400]
-           * @param {Object} [options={}]
+           * @param {Number|TransitionOptions} [durationOrOptions=400]
+           * @param {TransitionOptions} [options={}]
            * @return {Promise<Boolean>}
            */
           async $slideLeft(durationOrOptions = 400, options = {}) {
@@ -4288,10 +4629,10 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
           /**
            * from Entries
            *
-           * @param {Object} values
+           * @param {Dictionary} values
            */
           $appendFromEntries(values) {
-            for (const [name, value] of F.objectToEntries(values)) {
+            for (const [name, value] of F.objectToArrayEntries(values)) {
               this.append(name, value);
             }
             return this;
@@ -4784,7 +5125,7 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
            * - true: fully replace all options, selection state is kept
            * - String: keep selected options and insertion method
            *
-           * @param {HTMLOptionElement[]|HTMLOptGroupElement[]|Object} options
+           * @param {HTMLOptionElement[]|HTMLOptGroupElement[]|Dictionary} options
            * @param {Boolean|String} [preserveValue]
            * @return {this}
            *
@@ -4807,7 +5148,7 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
            * ]);
            */
           $options(options, preserveValue = void 0) {
-            kQuery.logger.assertInstanceOf(options, Object, Array)();
+            kQuery.logger.assertInstanceOf(options, Dictionary, Array)();
             preserveValue ??= this instanceof HTMLSelectElement ? "append" : null;
             kQuery.logger.assertInstanceOf(preserveValue, Nullable, Boolean, String)();
             this.$willChange("scroll-position");
@@ -4891,6 +5232,26 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
             }
             requestAnimationFrame(() => requestAnimationFrame(recover));
             return this;
+          }
+        }
+      ),
+      [[HTMLSelectElement.name, $NodeList.name]]: (
+        /** @lends HTMLSelectElement.prototype */
+        {
+          /**
+           * get selected option
+           *
+           * return plain object that selected option's {value: label}
+           *
+           * @descriptor get
+           *
+           * @return {Object}
+           */
+          get $selectedOptions() {
+            return Array.from(this.selectedOptions).reduce((object, option) => {
+              object[option.value] = option.label;
+              return object;
+            }, /* @__PURE__ */ Object.create(null));
           }
         }
       ),
@@ -5446,7 +5807,7 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
           /**
            * open by objective windowFeature
            *
-           * @param {Object} options
+           * @param {WindowOpenOptions} options
            * @return {WindowProxy}
            *
            * @example
@@ -5607,7 +5968,7 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
           /**
            * asynchronous scrollIntoView
            *
-           * @param {ScrollIntoViewOptions|Object} [options={}]
+           * @param {ScrollIntoViewOptions|{global?:Boolean, timeout?:Number, threshold?:Number, ifNeeded?:Boolean}} [options={}]
            * @return {Promise<Boolean>}
            */
           async $scrollIntoView(options = {}) {
@@ -5676,7 +6037,7 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
            * parent checked -> sync all children checked
            * child checked -> sync parent checked/indeterminate
            *
-           * @param {Object} [selector]
+           * @param {?String} [selector]
            * @return {this}
            */
           $interlock(selector) {
@@ -5716,7 +6077,7 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
            *
            * return returnValue
            *
-           * @param {Object} [options={}]
+           * @param {DialogModelOptions} [options={}]
            * @return {Promise<?String>}
            *
            * @example
@@ -5814,8 +6175,122 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
 
   // src/plugins/networks.js
   function networks(kQuery) {
-    const eventSources = {};
+    class EventSource extends globalThis.EventSource {
+      static {
+        __name(this, "EventSource");
+      }
+      static selfSources = {};
+      #eventListeners;
+      constructor(url, options) {
+        super(url, options);
+        kQuery.logger.debug(`SSE open ${this.url}`);
+        this.#eventListeners = {};
+        const closeTimer = setInterval(() => {
+          if (!Object.values(this.#eventListeners).find((nodeListeners) => nodeListeners.size > 0)) {
+            delete EventSource.selfSources[this.url];
+            this.close();
+            clearInterval(closeTimer);
+            kQuery.logger.debug(`SSE close ${this.url}`);
+          }
+        }, 1e4);
+      }
+      $listen(node, name, listener) {
+        const nodeListeners = this.#eventListeners[name] ??= new WeakMap();
+        kQuery.logger.assert((node2) => !nodeListeners.get(node2)?.length, node)(`Multiple listening on SSE is not recommended.`);
+        if (nodeListeners.size === 0) {
+          kQuery.logger.debug(`SSE listen ${this.url}#${name}`);
+          const controller = new AbortController();
+          this.addEventListener(name, (e) => {
+            for (const [node2, listeners] of nodeListeners.entries()) {
+              for (const listener2 of listeners) {
+                listener2.call(node2, e);
+              }
+            }
+            if (nodeListeners.size === 0) {
+              kQuery.logger.debug(`SSE unlisten ${this.url}#${name}`);
+              controller.abort();
+            }
+          }, {
+            signal: controller.signal
+          });
+        }
+        this.#eventListeners[name].getOrSet(node, () => []).push(listener);
+      }
+      $unlisten(node, name) {
+        this.#eventListeners[name]?.delete(node);
+      }
+    }
+    const ajaxs = new WeakMap();
+    const pollings = new WeakMap();
     return {
+      [[Window.name]]: (
+        /** @lends Window.prototype */
+        {
+          /**
+           * asynchronous JavaScript And XML
+           *
+           * request by fetch || XMLHttpRequest
+           * default is fetch, but options has progress or async:false faillback to XMLHttpRequest
+           *
+           * - setup: $ajax(RequestInitOptions)
+           * - get: $ajax.get(url, RequestInitOptions)
+           * - post: $ajax.post(url, RequestInitOptions)
+           * - {other}: $ajax.{other}(url, RequestInitOptions)
+           *
+           * $ajax(setup) returns new Object
+           * - e.g. one-time: $ajax(setup).get(url, otheropts); // this isn't mean much
+           * - e.g. local-context: const $ajax = $ajax(setup); $ajax.get(url, otheropts);
+           * - e.g. globalize: window.$ajax = $ajax(setup);
+           *
+           * @descriptor get
+           *
+           * @return {((url:String, options:RequestInit) => HttpMethods)|HttpMethods}
+           */
+          get $ajax() {
+            const mergeWithHeaders = /* @__PURE__ */ __name(function(target, ...optionses) {
+              for (const options of optionses) {
+                if (options.headers) {
+                  target.headers ??= {};
+                  for (const [name, value] of F.objectToArrayEntries(options.headers)) {
+                    target.headers[name] = value;
+                  }
+                }
+                const headers = target.headers;
+                Object.assign(target, options);
+                target.headers = headers;
+              }
+              return target;
+            }, "mergeWithHeaders");
+            const $Ajax = /* @__PURE__ */ __name(function(options) {
+              const $Ajax2 = /* @__PURE__ */ __name(function() {
+              }, "$Ajax");
+              $Ajax2.defaultOptions = options;
+              return $Ajax2;
+            }, "$Ajax");
+            return ajaxs.getOrSet(this, () => new Proxy2($Ajax(/* @__PURE__ */ Object.create(null)), {
+              get(target, property) {
+                return function(url, options) {
+                  options = mergeWithHeaders({ method: property }, target.defaultOptions, options);
+                  const isXHR = options.progress || options.async === false;
+                  return isXHR ? F.xhr(url, options) : F.fetch(url, options);
+                };
+              },
+              apply(target, thisArg, argArray) {
+                return new Proxy2($Ajax(mergeWithHeaders({}, target.defaultOptions, ...argArray)), this);
+              }
+            }));
+          },
+          /**
+           * set asynchronous JavaScript And XML
+           *
+           * @see get $ajax
+           *
+           * @descriptor set
+           */
+          set $ajax(ajax) {
+          }
+        }
+      ),
       [[Node.name, $NodeList.name]]: (
         /** @lends Node.prototype */
         {
@@ -5828,7 +6303,7 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
            *
            * @param {URL|String} url
            * @param {Function} listener
-           * @param {Object} [options={}]
+           * @param {ListenOptions} [options={}]
            * @return {this}
            */
           $listen(url, listener, options = {}) {
@@ -5838,41 +6313,98 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
             url = new URL(url, this.baseURI);
             const eventName = url.hash.substring(1) || "message";
             url.hash = "";
-            const eventSource = eventSources[url] ??= new class extends EventSource {
-              #$nodeListeners;
-              constructor(url2, options2) {
-                super(url2, options2);
-                kQuery.logger.debug(`SSE open ${url2}#`);
-                this.#$nodeListeners = new WeakMap();
-              }
-              $listen(node, name, listener2) {
-                const names = [...this.#$nodeListeners.entries()].flatMap(([, namedListeners2]) => Object.keys(namedListeners2));
-                if (!names.includes(name)) {
-                  kQuery.logger.debug(`SSE listen ${this.url}#${name}`);
-                  this.addEventListener(name, (e) => {
-                    if (this.#$nodeListeners.size === 0) {
-                      delete eventSources[this.url];
-                      this.close();
-                      kQuery.logger.debug(`SSE close ${this.url}`);
-                    }
-                    for (const [node2, namedListeners2] of this.#$nodeListeners.entries()) {
-                      for (const listener3 of namedListeners2[name] ?? []) {
-                        listener3.call(node2, e);
-                      }
-                    }
-                  });
-                }
-                const namedListeners = this.#$nodeListeners.getOrSet(node, () => ({}));
-                namedListeners[name] ??= [];
-                namedListeners[name].push(listener2);
-              }
-            }(url, {
+            const eventSource = EventSource.selfSources[url] ??= new EventSource(url, {
               withCredentials: options.credentials
             });
             if (eventSource.withCredentials !== !!options.credentials) {
               kQuery.logger.error(`SSE url(credentials) is difference`);
             }
             eventSource.$listen(this, eventName, listener);
+            return this;
+          },
+          /**
+           * unlisten SSE event
+           *
+           * @param {URL|String} url
+           * @return {this}
+           */
+          $unlisten(url) {
+            url = new URL(url, this.baseURI);
+            const eventName = url.hash.substring(1) || "message";
+            url.hash = "";
+            EventSource.selfSources[url]?.$unlisten(this, eventName);
+            return this;
+          },
+          /**
+           * polling request
+           *
+           * options:
+           * - interval: polling interval ms
+           * - invisible: stop invisible element
+           * - retry: retry on fail
+           *   - always: retry infinity
+           *   - network: retry if network level error
+           *   - response: retry if http level error
+           * - status: http status code to call listener
+           * and other fetch options(RequestInit)
+           *
+           * @param {URL|String} url
+           * @param {Function} listener
+           * @param {RequestInit|PollingOptions} [options={}]
+           * @return {this}
+           */
+          $polling(url, listener, options = {}) {
+            kQuery.logger.assert((node) => !pollings.get(node)?.[url]?.length, this)(`Multiple polling is not recommended.`);
+            const { interval, invisible, status, retry } = F.objectDeleteProperties(options, {
+              interval: 10 * 1e3,
+              invisible: false,
+              retry: ["network", "response"],
+              status: [200]
+            });
+            const noderef = new WeakRef(this);
+            const request = /* @__PURE__ */ __name(async () => {
+              const node = noderef.deref();
+              if (!node) {
+                return;
+              }
+              if (node.isConnected && (invisible || node.$checkVisibility({ size: false }, true))) {
+                try {
+                  const response = await F.fetch(url, options);
+                  if (status.includes(response.status)) {
+                    listener.call(this, response);
+                  }
+                } catch (e) {
+                  if (!(retry.includes("always") || retry.includes("network") && !(e.cause instanceof Response) || retry.includes("response") && e.cause instanceof Response && ![e.cause.status].includes(503, 504))) {
+                    throw e;
+                  }
+                  kQuery.logger.warn(`failed poll request ${url} but will continue polling`);
+                }
+              } else {
+                kQuery.logger.info(`skipped poll request ${url} by invisible`);
+              }
+              const timer = setTimeout(request, interval);
+              const timers = pollings.getOrSet(node, () => ({}));
+              timers[url] ??= [];
+              timers[url].push(timer);
+            }, "request");
+            request().catch((e) => kQuery.logger.error(e));
+            return this;
+          },
+          /**
+           * stop polling
+           *
+           * @param {URL|String} url
+           * @return {this}
+           */
+          $unpolling(url) {
+            const timers = pollings.get(this);
+            if (timers?.[url]) {
+              for (const timer of timers[url] ?? []) {
+                clearTimeout(timer);
+              }
+              delete timers[url];
+              pollings.set(this, timers);
+            }
             return this;
           }
         }
@@ -5886,7 +6418,7 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
            * - specified form: submit that form, this behave submitter
            * - this has download: download response
            *
-           * @param {Object} [options={}]
+           * @param {SubmitOptions} [options={}]
            * @return {this|Promise<Response>}
            */
           $submit(options = {}) {
@@ -5905,7 +6437,7 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
               // Object: additional data
               data: {}
             }, options);
-            kQuery.logger.assertInstanceOf(options.data, Object, FormData)();
+            kQuery.logger.assertInstanceOf(options.data, Dictionary)();
             const url = this.$URL;
             const data2 = new FormData();
             data2.$appendFromEntries(url.searchParams);
@@ -5952,22 +6484,13 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
                 if (this.download && !options.raw) {
                   return response.then((response2) => {
                     if (!response2.ok) {
-                      throw new response2();
+                      throw new Error(`${response2.status}: ${response2.statusText}`, {
+                        cause: response2
+                      });
                     }
                     response2.blob().then((blob) => {
-                      const url2 = URL.createObjectURL(blob);
-                      const newa = this.$document.$createElement("a", {
-                        href: url2,
-                        download: this.download,
-                        hidden: true
-                      });
-                      try {
-                        this.$document.body.appendChild(newa);
-                        newa.click();
-                      } finally {
-                        this.$document.body.removeChild(newa);
-                        setTimeout(() => URL.revokeObjectURL(url2), 1e3);
-                      }
+                      blob.$download(this.download);
+                      return this;
                     });
                   });
                 }
@@ -5994,7 +6517,7 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
           /**
            * request based on form value
            *
-           * @param {RequestInit|{data: Object<String, String>}} [options={}]
+           * @param {RequestInit|RequestOptions} [options={}]
            * @return {Promise<Response>}
            */
           async $request(options = {}) {
@@ -6028,7 +6551,7 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
               options.headers = new Headers(options.headers ?? {});
             }
             kQuery.logger.assertInstanceOf(options.headers, Headers)();
-            kQuery.logger.assertInstanceOf(options.data, Object, FormData)();
+            kQuery.logger.assertInstanceOf(options.data, Dictionary)();
             const novalidate = options.novalidate ?? (options.submitter?.formNoValidate || this.noValidate || false);
             if (!novalidate && !this.reportValidity()) {
               throw new Error(`Invalid form`);
@@ -6070,8 +6593,8 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
           /**
            * load server html
            *
-           * @param {String|RequestInit|{data:Object<String, String>}} urlOrOptions
-           * @param {RequestInit|{data:Object<String, any>}} [options={}]
+           * @param {String|RequestInit|{data:Dictionary}} urlOrOptions
+           * @param {RequestInit|{data:Dictionary}} [options={}]
            * @return {Promise<NodeList>}
            */
           async $load(urlOrOptions, options = {}) {
@@ -6127,7 +6650,7 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
           }
         }
       ),
-      [[Blob.name, $FileList.name]]: (
+      [[Blob.name]]: (
         /** @lends Blob.prototype */
         {
           /**
@@ -6147,74 +6670,62 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
             kQuery.logger.assertInstanceOf(options, Object)();
             options = Object.assign({
               method: "PUT",
+              headers: {}
+            }, options);
+            if (!(options.headers instanceof Headers)) {
+              options.headers = new Headers(options.headers);
+            }
+            if (options.method.toUpperCase() === "POST") {
+              const formData = new FormData();
+              formData.append(options.name ?? "tmp", this);
+              options.body = formData;
+            } else {
+              options.headers.set("x-file-path", encodeURIComponent(this.webkitRelativePath));
+              options.headers.set("x-file-name", encodeURIComponent(this.name));
+              options.headers.set("x-file-size", this.size);
+              options.headers.set("x-file-type", this.type);
+              options.body = this;
+            }
+            return F.xhr(url, options);
+          }
+        }
+      ),
+      [[FileList.name]]: (
+        /** @lends FileList.prototype */
+        {
+          /**
+           * upload files
+           *
+           * @param {URL|String|RequestInit} urlOrOptions
+           * @param {RequestInit} [options={}]
+           * @return {Promise<Response[]>}
+           */
+          async $upload(urlOrOptions, options = {}) {
+            let url;
+            if (F.anyIsStringable(urlOrOptions)) {
+              url = urlOrOptions;
+            } else {
+              url = options.url;
+            }
+            kQuery.logger.assertInstanceOf(options, Object)();
+            options = Object.assign({
+              method: "POST",
               timeout: 0,
               ok: false,
               headers: {},
               credentials: "same-origin",
-              progress: /* @__PURE__ */ __name(() => null, "progress")
+              progress: /* @__PURE__ */ __name(() => null, "progress"),
+              concurrency: 6
             }, options);
-            const xhr = new XMLHttpRequest();
-            xhr.open(options.method.toUpperCase(), url, true);
-            xhr.timeout = options.timeout;
-            xhr.withCredentials = options.credentials !== "omit";
-            xhr.responseType = "arraybuffer";
-            for (const [name, value] of F.objectToEntries(options.headers)) {
-              xhr.setRequestHeader(name, value);
-            }
-            const promise = new Promise2((resolve, reject) => {
-              const newResponse = /* @__PURE__ */ __name(function() {
-                const response = new Response(xhr.response, {
-                  status: xhr.status,
-                  statusText: xhr.statusText,
-                  headers: xhr.getAllResponseHeaders().split(/\r\n?/).reduce(function(headers, line) {
-                    if (line.trim()) {
-                      const [name, value] = line.split(":");
-                      headers.append(name.trim(), value.trim());
-                    }
-                    return headers;
-                  }, new Headers())
-                });
-                return Object.defineProperties(response, {
-                  url: {
-                    get() {
-                      return xhr.responseURL;
-                    }
-                  }
-                });
-              }, "newResponse");
-              xhr.addEventListener("readystatechange", function() {
-                if (xhr.readyState === XMLHttpRequest.HEADERS_RECEIVED) {
-                  if (!options.ok && !(200 <= xhr.status && xhr.status < 300)) {
-                    reject(new Error(`${xhr.status}: ${xhr.statusText}`, {
-                      cause: newResponse()
-                    }));
-                  }
-                }
-              });
-              xhr.addEventListener("load", function() {
-                resolve(newResponse());
-              });
-              xhr.addEventListener("error", function(e) {
-                reject(e);
-              });
-              xhr.addEventListener("abort", function(e) {
-                reject(e);
-              });
-              xhr.addEventListener("timeout", function(e) {
-                reject(e);
-              });
-              xhr.upload.addEventListener("progress", function(e) {
-                options.progress(e);
-              });
-            });
             if (options.method.toUpperCase() === "POST") {
               const formData = new FormData();
-              formData.append(options.name ?? "tmp", this);
-              xhr.send(formData);
-            } else {
-              xhr.send(this);
+              for (const file of this) {
+                formData.append((options.name ?? "tmp") + "[]", file);
+              }
+              options.body = formData;
+              return [await F.xhr(url, options)];
             }
-            return promise;
+            return Promise2.concurrencyAll(Array.from(this).map((file) => () => file.$upload(url, options)), options.concurrency);
           }
         }
       )
@@ -6703,5 +7214,160 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
  * @license MIT
  * @copyright ryunosuke
  * @ignore
+ */
+/**
+ * @typedef {{
+ *     url?: String,
+ *     target?: String,
+ *     window?: Boolean,
+ *     left?: String|Number,
+ *     top?: String|Number,
+ *     width?: String|Number,
+ *     height?: String|Number,
+ *     noopener?: String,
+ *     noreferrer?: String,
+ * }} WindowOpenOptions
+ * @ignore
+ * @preserve
+ */
+/**
+ * @typedef {(url:String, options?:RequestInit) => Promise<Response>} HttpRequest
+ * @ignore
+ * @preserve
+ */
+/**
+ * @typedef {{
+ *     head: HttpRequest,
+ *     get: HttpRequest,
+ *     post: HttpRequest,
+ *     put: HttpRequest,
+ *     patch: HttpRequest,
+ *     delete: HttpRequest,
+ * }} HttpMethods
+ * @ignore
+ * @preserve
+ */
+/**
+ * @typedef {{
+ *     credentials?: Boolean,
+ * }} ListenOptions
+ * @ignore
+ * @preserve
+ */
+/**
+ * @typedef {{
+ *     interval?: Number,
+ *     invisible?: Boolean,
+ *     retry?: String[],
+ *     status?: Number[],
+ * }} PollingOptions
+ * @ignore
+ * @preserve
+ */
+/**
+ * @typedef {{
+ *     async?: Boolean,
+ *     form?: HTMLFormElement,
+ *     method?: String,
+ *     enctype?: String,
+ *     novalidate?: Boolean,
+ *     data?: Dictionary,
+ * }} SubmitOptions
+ * @ignore
+ * @preserve
+ */
+/**
+ * @typedef {{
+ *     url?: String,
+ *     method?: String,
+ *     enctype?: String,
+ *     novalidate?: Boolean,
+ *     submitter?: HTMLElement,
+ *     data?: Dictionary,
+ *     fileConverter?: String|Function,
+ *     timeout?: Number,
+ * }} RequestOptions
+ * @ignore
+ * @preserve
+ */
+/**
+ * @typedef {{
+ *     once?: Boolean,
+ *     capture?: Boolean,
+ *     passive?: Boolean,
+ *     signal?: AbortSignal,
+ *     ownself: Boolean,
+ *     interval: Number,
+ *     throttle: Number,
+ *     debounce: Number,
+ *     leading: Boolean,
+ *     trailing: Boolean,
+ * }} ListenerOptions
+ * @ignore
+ * @preserve
+ */
+/**
+ * @typedef {{
+ *     bubbles?: Boolean,
+ *     cancelable?: Boolean,
+ *     composed?: Boolean,
+ * }} EventOptions
+ * @ignore
+ * @preserve
+ */
+/**
+ * @typedef {{
+ *     initial?: Object,
+ *     reset?: Boolean,
+ *     duration?: Number,
+ *     timing?: String,
+ * }} TransitionOptions
+ * @ignore
+ * @preserve
+ */
+/**
+ * @typedef {{
+ *   relative?: Boolean,
+ *   margin?: Boolean,
+ * }} OffsetOptions
+ * @ignore
+ * @preserve
+ */
+/**
+ * @typedef {{
+ *     scroll?: Boolean,
+ *     margin?: Boolean,
+ *     border?: Boolean,
+ *     padding?: Boolean,
+ *     scrollbar?: Boolean,
+ * }} SizeOptions
+ * @ignore
+ * @preserve
+ */
+/**
+ * @typedef {{
+ *     document?: Boolean,
+ *     contentVisibilityAuto?: Boolean,
+ *     contentVisibilityProperty?: Boolean,
+ *     opacityProperty?: Boolean,
+ *     visibilityProperty?: Boolean,
+ *     size?: Boolean,
+ *     intersection?: Boolean,
+ * }} VisibilityOptions
+ * @ignore
+ * @preserve
+ */
+/**
+ * @typedef {{
+ *     outside?: Boolean,
+ *     escape?: Boolean,
+ * }} DialogModelOptions
+ * @ignore
+ * @preserve
+ */
+/**
+ * @typedef {Object|Dictionary} Dictionary
+ * @ignore
+ * @preserve
  */
 //# sourceMappingURL=kQuery-full.js.map

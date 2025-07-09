@@ -241,6 +241,9 @@ import {traversing} from './src/plugins/traversing.js';
  * @typedef {HTMLSelectElement|HTMLDataListElement} HTMLOptionableElement
  */
 /**
+ * @typedef {HTMLSelectElement} HTMLSelectElement
+ */
+/**
  * @typedef {RadioNodeList} RadioNodeList
  */
 /**
@@ -260,6 +263,9 @@ import {traversing} from './src/plugins/traversing.js';
  */
 /**
  * @typedef {DOMRectReadOnly} DOMRectReadOnly
+ */
+/**
+ * @typedef {FileList} FileList
  */
 /**
  * @typedef {NodeList} NodeList
