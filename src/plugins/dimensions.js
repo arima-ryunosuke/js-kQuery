@@ -340,6 +340,110 @@ export function dimensions(kQuery) {
                 }
                 return this.parentElement?.$scrollParent(scrollableOptions) ?? null;
             },
+            /**
+             * get visibilityState
+             *
+             * alias to $checkVisibility(true)
+             *
+             * @descriptor get
+             *
+             * @return {Boolean}
+             */
+            get $visible() {
+                return this.$checkVisibility(true);
+            },
+            /**
+             * get visibilityState
+             *
+             * specification:
+             * - explicit: see display: none|content
+             * - document: see document.hidden
+             * - contentVisibilityProperty: see contentVisibility: hidden
+             * - visibilityProperty: see visibility: hidden
+             * - opacityProperty: see opacity: 0
+             * - size: see width/height: 0
+             * - intersection: see overlap other node or out of viewport
+             *
+             * @param {Object|Boolean} options
+             * @param {Boolean} allOthers
+             * @return {Boolean}
+             */
+            $checkVisibility(options = {}, allOthers = false) {
+                if (typeof (options) === 'boolean') {
+                    allOthers = options;
+                    options = {};
+                }
+                options = Object.assign({
+                    document: allOthers,
+                    contentVisibilityAuto: allOthers,
+                    contentVisibilityProperty: allOthers,
+                    opacityProperty: allOthers,
+                    visibilityProperty: allOthers,
+                    size: allOthers,
+                    intersection: allOthers,
+                }, options);
+
+                // document
+                if (options.document && this.$document.hidden) {
+                    return false;
+                }
+
+                // fallback
+                if (this.checkVisibility && !this.checkVisibility(options)) {
+                    return false;
+                }
+
+                // precondition
+                for (let e = this; e; e = e.parentElement) {
+                    const cstyle = e.$window.getComputedStyle(e);
+                    if (cstyle.display === 'none' || cstyle.display === 'content') {
+                        return false;
+                    }
+                    if (options.contentVisibilityProperty && cstyle.contentVisibility === 'hidden') {
+                        return false;
+                    }
+                    if (options.visibilityProperty && cstyle.visibility === 'hidden') {
+                        return false;
+                    }
+                    if (options.opacityProperty && cstyle.opacity === '0') {
+                        return false;
+                    }
+                }
+
+                const rect = this.getBoundingClientRect();
+                const size = rect.width * rect.height;
+
+                if (options.size && !size) {
+                    return false;
+                }
+
+                // intersection
+                if (options.intersection && size) {
+                    const backup = this.getAttribute('style');
+                    try {
+                        // elementFromPoint ignores pointer-event:none
+                        this.style.setProperty('pointer-event', 'auto', 'important');
+                        if (
+                            !this.contains(this.$document.elementFromPoint(rect.left, rect.top)) &&
+                            !this.contains(this.$document.elementFromPoint(rect.right, rect.top)) &&
+                            !this.contains(this.$document.elementFromPoint(rect.left, rect.bottom)) &&
+                            !this.contains(this.$document.elementFromPoint(rect.right, rect.bottom))
+                        ) {
+                            return false;
+                        }
+                    }
+                    finally {
+                        if (backup == null) {
+                            this.removeAttribute('style');
+                        }
+                        else {
+                            this.setAttribute('style', backup);
+                        }
+                    }
+                }
+
+                return true;
+            },
         },
         [[DOMRectReadOnly.name]]: /** @lends DOMRectReadOnly.prototype */{
             /**
