@@ -379,6 +379,42 @@ export const F = {
     },
     /**
      * @param {Object} object
+     * @param {Object} properties
+     * @returns {Object}
+     */
+    objectDeleteProperties(object, properties) {
+        const result = Object.create(null);
+
+        for (const [propertyName, defaultValue] of F.objectToEntries(properties)) {
+            let propertyValue = object[propertyName] ?? defaultValue;
+            delete object[propertyName];
+
+            if (defaultValue != null) {
+                propertyValue = (() => {
+                    switch (typeof (defaultValue)) {
+                        case 'boolean':
+                            return !!propertyValue;
+                        case 'number':
+                            return +propertyValue;
+                        case 'bigint':
+                            return 0n + propertyValue;
+                        case 'string':
+                            return '' + propertyValue;
+                        default:
+                            if (defaultValue instanceof Array) {
+                                return propertyValue instanceof Array ? propertyValue : [propertyValue];
+                            }
+                            return propertyValue;
+                    }
+                })();
+            }
+            result[propertyName] = propertyValue;
+        }
+
+        return result;
+    },
+    /**
+     * @param {Object} object
      * @param {String} separator
      * @param {Function|String} [delimiter='=']
      * @returns {String}
@@ -508,9 +544,37 @@ export const F = {
         };
     },
     async fetch(url, options = {}) {
-        if (options.timeout) {
+        const {ok, timeout, retryer} = F.objectDeleteProperties(options, {
+            ok: false,
+            timeout: undefined,
+            retryer: function (response, retryCount) {
+                const MAX_COUNT = 3;
+                const MAX_BACKOFF = 30;
+                const JITTER = Math.floor(Math.random() * 1000);
+
+                if (retryCount < MAX_COUNT) {
+                    if (response instanceof Response && response.headers.has('retry-after')) {
+                        const retryAfter = response.headers.get('retry-after');
+                        if (isNaN(retryAfter)) {
+                            return Math.max(1000, new Date(retryAfter).getTime() - Date.now()) + JITTER;
+                        }
+                        else {
+                            return retryAfter * 1000 + JITTER;
+                        }
+                    }
+
+                    if (response instanceof Error || [503, 504].includes(response.status)) {
+                        return Math.min(MAX_BACKOFF * 1000, (2 ** retryCount) * 1000) + JITTER;
+                    }
+                }
+
+                return 0;
+            },
+        });
+
+        if (timeout) {
             const ctrl = new AbortController();
-            setTimeout(() => ctrl.abort(), options.timeout);
+            setTimeout(() => ctrl.abort(), timeout);
 
             if (options.signal) {
                 options.signal = AbortSignal.any([options.signal, ctrl.signal]);
@@ -518,8 +582,6 @@ export const F = {
             else {
                 options.signal = ctrl.signal;
             }
-
-            delete options.timeout;
         }
 
         options.headers ??= {};
@@ -530,13 +592,37 @@ export const F = {
             options.headers.append('X-Requested-With', 'XMLHttpRequest');
         }
 
-        const response = await GT.fetch(url, options);
-        if (!(options.ok ?? false) && !response.ok) {
-            throw new Error(`${response.status}: ${response.statusText}`, {
-                cause: response,
-            });
+        let retryCount = 0;
+        while (true) {
+            let response;
+            try {
+                response = await GT.fetch(url, options);
+            }
+            catch (e) {
+                response = e;
+            }
+
+            const retry = retryer(response, retryCount++);
+            if (retry) {
+                const message = response instanceof Error ? response.message : `${response.status}: ${response.statusText}`;
+                Logger.instance.warn(`retry ${url} ${retryCount} ${message}, after ${retry}ms`);
+                await Timer.wait(retry);
+                continue;
+            }
+
+            if (response instanceof Error) {
+                response.cause ??= {};
+                response.cause.retryCount = retryCount - 1;
+                throw response;
+            }
+            if (!ok && !response.ok) {
+                response.retryCount = retryCount - 1;
+                throw new Error(`${response.status}: ${response.statusText}`, {
+                    cause: response,
+                });
+            }
+            return response;
         }
-        return response;
     },
 };
 
