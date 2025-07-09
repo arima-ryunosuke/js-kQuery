@@ -57,6 +57,8 @@ export function networks(kQuery) {
         }
     }
 
+    const pollings = new WeakMap();
+
     return {
         [[Node.name, $NodeList.name]]: /** @lends Node.prototype */{
             /**
@@ -103,6 +105,89 @@ export function networks(kQuery) {
                 url.hash = '';
 
                 EventSource.selfSources[url]?.$unlisten(this, eventName);
+
+                return this;
+            },
+            /**
+             * polling request
+             *
+             * options:
+             * - interval: polling interval ms
+             * - invisible: stop invisible element
+             * - retry: retry on fail
+             *   - always: retry infinity
+             *   - network: retry if network level error
+             *   - response: retry if http level error
+             * - status: http status code to call listener
+             * and other fetch options(RequestInit)
+             *
+             * @param {URL|String} url
+             * @param {Function} listener
+             * @param {RequestInit|Object} [options={}]
+             * @return {this}
+             */
+            $polling(url, listener, options = {}) {
+                kQuery.logger.assert((node) => !pollings.get(node)?.[url]?.length, this)(`Multiple polling is not recommended.`);
+
+                const {interval, invisible, status, retry} = F.objectDeleteProperties(options, {
+                    interval: 10 * 1000,
+                    invisible: false,
+                    retry: ['network', 'response'],
+                    status: [200],
+                });
+
+                const noderef = new WeakRef(this);
+                const request = async () => {
+                    const node = noderef.deref();
+                    if (!node) {
+                        return;
+                    }
+                    if (node.isConnected && (invisible || node.$checkVisibility({size: false}, true))) {
+                        try {
+                            const response = await F.fetch(url, options);
+                            if (status.includes(response.status)) {
+                                listener.call(this, response);
+                            }
+                        }
+                        catch (e) {
+                            if (!(
+                                retry.includes('always') ||
+                                (retry.includes('network') && !(e.cause instanceof Response)) ||
+                                (retry.includes('response') && e.cause instanceof Response && ![e.cause.status].includes(503, 504))
+                            )) {
+                                throw e;
+                            }
+                            kQuery.logger.warn(`failed poll request ${url} but will continue polling`);
+                        }
+                    }
+                    else {
+                        kQuery.logger.info(`skipped poll request ${url} by invisible`);
+                    }
+
+                    const timer = setTimeout(request, interval);
+                    const timers = pollings.getOrSet(node, () => ({}));
+                    timers[url] ??= [];
+                    timers[url].push(timer);
+                };
+                request().catch((e) => kQuery.logger.error(e));
+
+                return this;
+            },
+            /**
+             * stop polling
+             *
+             * @param {URL|String} url
+             * @return {this}
+             */
+            $unpolling(url) {
+                const timers = pollings.get(this);
+                if (timers?.[url]) {
+                    for (const timer of timers[url] ?? []) {
+                        clearTimeout(timer);
+                    }
+                    delete timers[url];
+                    pollings.set(this, timers);
+                }
 
                 return this;
             },
