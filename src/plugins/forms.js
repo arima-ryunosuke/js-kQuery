@@ -721,6 +721,23 @@ export function forms(kQuery) {
                 return this;
             },
         },
+        [[HTMLSelectElement.name, $NodeList.name]]: /** @lends HTMLSelectElement.prototype */{
+            /**
+             * get selected option
+             *
+             * return plain object that selected option's {value: label}
+             *
+             * @descriptor get
+             *
+             * @return {Object}
+             */
+            get $selectedOptions() {
+                return Array.from(this.selectedOptions).reduce((object, option) => {
+                    object[option.value] = option.label;
+                    return object;
+                }, Object.create(null));
+            },
+        },
         [[HTMLFormElement.name, $NodeList.name]]: /** @lends HTMLFormElement.prototype */{
             /**
              * writeback value to attribute
