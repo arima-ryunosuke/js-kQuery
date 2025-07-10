@@ -572,6 +572,23 @@ MIT
 - マイナー: 小規模な互換性破壊の際にアップします（引数の変更、小規模破壊を伴う修正など）
 - パッチ: 互換性破壊はありません（デフォルト引数の追加や、新たなクラスの追加、コードフォーマットなど）
 
+### 0.4.0
+
+- [refactor] 型の強化
+- [feature] Window に $ajax を追加
+- [feature] FormData/URLSearchParams の階層追加
+- [feature] fetch/xhr の PlainObject のハンドリング
+- [*change] File と FileList の $upload は完全別実装とする
+- [feature] 選択中の PlainObject を返す $selectedOptions を追加
+- [feature] $polling を追加
+- [feature] $listen を止める $unlisten を追加
+- [feature] 内部 fetch のリトライ処理
+- [feature] 可視状態を返す $checkVisibility/$visible を追加
+- [fixbug] $submit の return/throw が API に準拠していない
+- [fixbug] 無条件で X-Requested-With を付けるとプリフライトが飛んでしまうので origin を見る
+- [fixbug] assert 自体が参照を握ってしまい GC を阻害する
+- [refactor] Promise#concurrency の実装がイケていないのを修正
+
 ### 0.3.2
 
 - [feature] URL/URLSearchParams を拡張
