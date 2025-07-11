@@ -557,7 +557,7 @@ export const F = {
     functionToCallbackable(func, callbackThis, ...callbackArgs) {
         return function (...args) {
             for (const [i, arg] of args.entries()) {
-                const callback = typeof (arg) === 'function' ? arg : null;
+                const callback = typeof (arg) === 'function' && !(arg instanceof Proxy) ? arg : null;
                 if (callback) {
                     args[i] = callback.call(callbackThis, ...callbackArgs);
                     if (args[i] === undefined) {

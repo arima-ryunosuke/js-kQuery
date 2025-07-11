@@ -1,4 +1,4 @@
-import {$NodeList, F, Promise, WeakMap} from '../API.js';
+import {$NodeList, F, Promise, Proxy, WeakMap} from '../API.js';
 
 /**
  * @param {KQuery} kQuery
@@ -57,9 +57,78 @@ export function networks(kQuery) {
         }
     }
 
+    const ajaxs = new WeakMap();
     const pollings = new WeakMap();
 
     return {
+        [[Window.name]]: /** @lends Window.prototype */{
+            /**
+             * @typedef {(url:String, options?:RequestInit) => Promise<Response>} HttpRequest
+             * @typedef {{head:HttpRequest, get:HttpRequest, post:HttpRequest, put:HttpRequest, patch:HttpRequest, delete:HttpRequest}} HttpMethods
+             */
+            /**
+             * asynchronous JavaScript And XML
+             *
+             * request by fetch || XMLHttpRequest
+             * default is fetch, but options has progress or async:false faillback to XMLHttpRequest
+             *
+             * - setup: $ajax(RequestInitOptions)
+             * - get: $ajax.get(url, RequestInitOptions)
+             * - post: $ajax.post(url, RequestInitOptions)
+             * - {other}: $ajax.{other}(url, RequestInitOptions)
+             *
+             * $ajax(setup) returns new Object
+             * - e.g. one-time: $ajax(setup).get(url, otheropts); // this isn't mean much
+             * - e.g. local-context: const $ajax = $ajax(setup); $ajax.get(url, otheropts);
+             * - e.g. globalize: window.$ajax = $ajax(setup);
+             *
+             * @descriptor get
+             *
+             * @return {((url:String, options:RequestInit) => HttpMethods)|HttpMethods}
+             */
+            get $ajax() {
+                const mergeWithHeaders = function (target, ...optionses) {
+                    for (const options of optionses) {
+                        if (options.headers) {
+                            target.headers ??= {};
+                            for (const [name, value] of F.objectToArrayEntries(options.headers)) {
+                                target.headers[name] = value;
+                            }
+                        }
+                        const headers = target.headers;
+                        Object.assign(target, options);
+                        target.headers = headers;
+                    }
+                    return target;
+                };
+                const $Ajax = function (options) {
+                    const $Ajax = function () {};
+                    $Ajax.defaultOptions = options;
+                    return $Ajax;
+                };
+                return ajaxs.getOrSet(this, () => new Proxy($Ajax(Object.create(null)), {
+                    get(target, property) {
+                        return function (url, options) {
+                            options = mergeWithHeaders({method: property}, target.defaultOptions, options);
+                            const isXHR = options.progress || options.async === false;
+                            return isXHR ? F.xhr(url, options) : F.fetch(url, options);
+                        };
+                    },
+                    apply(target, thisArg, argArray) {
+                        return new Proxy($Ajax(mergeWithHeaders({}, target.defaultOptions, ...argArray)), this);
+                    },
+                }));
+            },
+            /**
+             * set asynchronous JavaScript And XML
+             *
+             * @see get $ajax
+             *
+             * @descriptor set
+             */
+            set $ajax(ajax) {
+            },
+        },
         [[Node.name, $NodeList.name]]: /** @lends Node.prototype */{
             /**
              * listen SSE event
