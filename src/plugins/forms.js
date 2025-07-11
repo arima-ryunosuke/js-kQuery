@@ -45,7 +45,7 @@ export function forms(kQuery) {
              * @param {Object} values
              */
             $appendFromEntries(values) {
-                for (const [name, value] of F.objectToEntries(values)) {
+                for (const [name, value] of F.objectToArrayEntries(values)) {
                     this.append(name, value);
                 }
                 return this;

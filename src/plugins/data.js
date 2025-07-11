@@ -55,6 +55,18 @@ export function data(kQuery) {
         },
         [[URLSearchParams.name]]: /** @lends URLSearchParams.prototype */{
             /**
+             * from Entries
+             *
+             * @param {Object} values
+             * @return {this}
+             */
+            $appendFromEntries(values) {
+                for (const [name, value] of F.objectToArrayEntries(values)) {
+                    this.append(name, value);
+                }
+                return this;
+            },
+            /**
              * assign params
              *
              * - null/undefined: delete parameter
