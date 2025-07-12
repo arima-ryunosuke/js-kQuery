@@ -1,4 +1,4 @@
-import {$NodeList, F, Nullable} from '../API.js';
+import {$NodeList, F, Nullable, Dictionary} from '../API.js';
 
 /**
  * @param {KQuery} kQuery
@@ -42,7 +42,7 @@ export function forms(kQuery) {
             /**
              * from Entries
              *
-             * @param {Object} values
+             * @param {Dictionary} values
              */
             $appendFromEntries(values) {
                 for (const [name, value] of F.objectToArrayEntries(values)) {
@@ -587,7 +587,7 @@ export function forms(kQuery) {
              * - true: fully replace all options, selection state is kept
              * - String: keep selected options and insertion method
              *
-             * @param {HTMLOptionElement[]|HTMLOptGroupElement[]|Object} options
+             * @param {HTMLOptionElement[]|HTMLOptGroupElement[]|Dictionary} options
              * @param {Boolean|String} [preserveValue]
              * @return {this}
              *
@@ -610,7 +610,7 @@ export function forms(kQuery) {
              * ]);
              */
             $options(options, preserveValue = undefined) {
-                kQuery.logger.assertInstanceOf(options, Object, Array)();
+                kQuery.logger.assertInstanceOf(options, Dictionary, Array)();
                 preserveValue ??= this instanceof HTMLSelectElement ? 'append' : null;
                 kQuery.logger.assertInstanceOf(preserveValue, Nullable, Boolean, String)();
 

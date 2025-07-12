@@ -1,4 +1,4 @@
-import {$FileList, $NodeList, F, FileReader, Nullable, Promise, Proxy, WeakMap} from '../API.js';
+import {$FileList, $NodeList, F, FileReader, Nullable, Dictionary, Promise, Proxy, WeakMap} from '../API.js';
 
 /**
  * @param {KQuery} kQuery
@@ -14,11 +14,11 @@ export function data(kQuery) {
             /**
              * assign URL parts
              *
-             * @param {Object} parts
+             * @param {Dictionary} parts
              * @return {this}
              */
             $assign(parts) {
-                kQuery.logger.assertInstanceOf(parts, Object)();
+                kQuery.logger.assertInstanceOf(parts, Dictionary)();
 
                 for (const [key, value] of F.objectToEntries(parts)) {
                     if (key === 'searchParams') {
@@ -33,22 +33,22 @@ export function data(kQuery) {
             /**
              * assign URL parts and new URL
              *
-             * @param {Object} parts
+             * @param {Dictionary} parts
              * @return {this}
              */
             $replace(parts) {
-                kQuery.logger.assertInstanceOf(parts, Object)();
+                kQuery.logger.assertInstanceOf(parts, Dictionary)();
 
                 return new URL(this).$assign(parts);
             },
             /**
              * shortcut to this.$assign({searchParams})
              *
-             * @param {Object} params
+             * @param {Dictionary} params
              * @return {this}
              */
             $params(params) {
-                kQuery.logger.assertInstanceOf(params, Object)();
+                kQuery.logger.assertInstanceOf(params, Dictionary)();
 
                 return this.$assign({searchParams: params});
             },
@@ -57,7 +57,7 @@ export function data(kQuery) {
             /**
              * from Entries
              *
-             * @param {Object} values
+             * @param {Dictionary} values
              * @return {this}
              */
             $appendFromEntries(values) {
@@ -73,11 +73,11 @@ export function data(kQuery) {
              * - array: append per element
              * - other: simple set
              *
-             * @param {Object} params
+             * @param {Dictionary} params
              * @return {this}
              */
             $assign(params) {
-                kQuery.logger.assertInstanceOf(params, Object)();
+                kQuery.logger.assertInstanceOf(params, Dictionary)();
 
                 for (const [name, value] of F.objectToEntries(params)) {
                     if (value == null) {
@@ -249,7 +249,7 @@ export function data(kQuery) {
              *
              * @descriptor set
              *
-             * @param {Object} value
+             * @param {?Dictionary} value
              *
              * @example
              * document.$cookie = { // mass assign(delete other, no attributes use default attributes)
@@ -261,7 +261,7 @@ export function data(kQuery) {
              * };
              */
             set $cookie(value) {
-                kQuery.logger.assertInstanceOf(value, Nullable, Object)();
+                kQuery.logger.assertInstanceOf(value, Nullable, Dictionary)();
 
                 // null guard for function return (void). keep current values
                 if (value == null) {
@@ -320,14 +320,14 @@ export function data(kQuery) {
              *
              * @descriptor set
              *
-             * @param {Object} value
+             * @param {?Dictionary} value
              *
              * @example
              * $('input').$bag = {hoge: 'value'};                // mass assign(delete other)
              * $('input').$bag = (node, i) => ({hoge: 'value'}); // mass assign by callback(delete other)
              */
             set $bag(value) {
-                kQuery.logger.assertInstanceOf(value, Nullable, Object)();
+                kQuery.logger.assertInstanceOf(value, Nullable, Dictionary)();
 
                 // null guard for function return (void). keep current values
                 if (value == null) {

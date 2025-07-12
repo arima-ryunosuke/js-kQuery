@@ -1,10 +1,37 @@
 const GT = globalThis;
 
 /// shortcut
-export const Nullable = function Nullable() {};
 export const AsyncFunction = (async () => {}).constructor;
 export const GeneratorFunction = (function* () {}).constructor;
 export const AsyncGeneratorFunction = (async function* () {}).constructor;
+export const Nullable = function Nullable(v) { return v == null; };
+export const Dictionary = function Dictionary(v) {
+    if (typeof (v) !== 'object') {
+        return false;
+    }
+
+    if (!Object.hasOwn(v, 'entries') && typeof (v.entries) === 'function') {
+        return true;
+    }
+
+    if (!Object.hasOwn(v, 'keys') && typeof (v.keys) === 'function') {
+        return true;
+    }
+
+    if (!Object.hasOwn(v, 'values') && typeof (v.values) === 'function') {
+        return true;
+    }
+
+    if (!Object.hasOwn(v, 'length') && 'length' in v) {
+        return true;
+    }
+
+    if (Symbol.iterator in v) {
+        return false;
+    }
+
+    return true;
+};
 
 /// listtype
 export const $NodeList = function () {
@@ -850,7 +877,11 @@ export class Logger {
             return true;
         }
         // nullable
-        if (Nullable === prototype && value == null) {
+        if (Nullable === prototype && prototype(value)) {
+            return true;
+        }
+        // Dictionary
+        if (Dictionary === prototype && prototype(value)) {
             return true;
         }
         // Object means PlainObject

@@ -22,7 +22,7 @@ export function miscellaneous(kQuery) {
             /**
              * open by objective windowFeature
              *
-             * @param {Object} options
+             * @param {WindowOpenOptions} options
              * @return {WindowProxy}
              *
              * @example
@@ -190,7 +190,7 @@ export function miscellaneous(kQuery) {
             /**
              * asynchronous scrollIntoView
              *
-             * @param {ScrollIntoViewOptions|Object} [options={}]
+             * @param {ScrollIntoViewOptions|{global?:Boolean, timeout?:Number, threshold?:Number, ifNeeded?:Boolean}} [options={}]
              * @return {Promise<Boolean>}
              */
             async $scrollIntoView(options = {}) {
@@ -260,7 +260,7 @@ export function miscellaneous(kQuery) {
              * parent checked -> sync all children checked
              * child checked -> sync parent checked/indeterminate
              *
-             * @param {Object} [selector]
+             * @param {?String} [selector]
              * @return {this}
              */
             $interlock(selector) {
@@ -304,7 +304,7 @@ export function miscellaneous(kQuery) {
              *
              * return returnValue
              *
-             * @param {Object} [options={}]
+             * @param {DialogModelOptions} [options={}]
              * @return {Promise<?String>}
              *
              * @example

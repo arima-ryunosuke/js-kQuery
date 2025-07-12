@@ -1,4 +1,4 @@
-import {$CSSRuleList, $NodeList, F, Nullable, ObjectStorage, Proxy} from '../API.js';
+import {$CSSRuleList, $NodeList, F, Nullable, Dictionary, ObjectStorage, Proxy} from '../API.js';
 
 /**
  * @param {KQuery} kQuery
@@ -178,14 +178,14 @@ export function attributes(kQuery) {
              *
              * @descriptor set
              *
-             * @param {Object} value
+             * @param {Dictionary} value
              *
              * @example
              * $$('input').$attrs = {name: 'value'};                // mass assign(delete other)
              * $$('input').$attrs = (node, i) => ({name: 'value'}); // mass assign by callback(delete other)
              */
             set $attrs(value) {
-                kQuery.logger.assertInstanceOf(value, Nullable, Object)();
+                kQuery.logger.assertInstanceOf(value, Nullable, Dictionary)();
 
                 // null guard for function return (void). keep current values
                 if (value == null) {
@@ -277,14 +277,14 @@ export function attributes(kQuery) {
              *
              * @descriptor set
              *
-             * @param {Object} value
+             * @param {Dictionary} value
              *
              * @example
              * $$('input').$data = {name: 'value'};                // mass assign(delete other)
              * $$('input').$data = (node, i) => ({name: 'value'}); // mass assign by callback(delete other)
              */
             set $data(value) {
-                kQuery.logger.assertInstanceOf(value, Nullable, Object)();
+                kQuery.logger.assertInstanceOf(value, Nullable, Dictionary)();
 
                 // null guard for function return (void). keep current values
                 if (value == null) {
@@ -350,14 +350,14 @@ export function attributes(kQuery) {
              *
              * @descriptor set
              *
-             * @param {Object|Array} value
+             * @param {Dictionary|Array} value
              *
              * @example
              * $$('input').$class = {name: 'flag'};                // mass assign(delete other)
              * $$('input').$class = (node, i) => ({name: 'flag'}); // mass assign by callback(delete other)
              */
             set $class(value) {
-                kQuery.logger.assertInstanceOf(value, Nullable, String, Object, Array)();
+                kQuery.logger.assertInstanceOf(value, Nullable, String, Dictionary, Array)();
 
                 // null guard for function return (void). keep current values
                 if (value == null) {
@@ -457,14 +457,14 @@ export function attributes(kQuery) {
              *
              * @descriptor set
              *
-             * @param {Object} value
+             * @param {Dictionary} value
              *
              * @example
              * $$('input').$style = {color: 'value'};                // mass assign(delete other)
              * $$('input').$style = (node, i) => ({color: 'value'}); // mass assign by callback(delete other)
              */
             set $style(value) {
-                kQuery.logger.assertInstanceOf(value, Nullable, Object)();
+                kQuery.logger.assertInstanceOf(value, Nullable, Dictionary)();
 
                 // null guard for function return (void). keep current values
                 if (value == null) {

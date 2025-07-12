@@ -68,7 +68,7 @@ export function effects(kQuery) {
              * options.timing: reference transition css
              *
              * @param {Object} properties
-             * @param {Object} [options={}]
+             * @param {TransitionOptions} [options={}]
              * @return {Promise<Boolean>}
              */
             async $transition(properties, options) {
@@ -147,8 +147,8 @@ export function effects(kQuery) {
              *
              * this does not involve visibility, you have to do it ourselves.
              *
-             * @param {Number|Object} [durationOrOptions=400]
-             * @param {Object} [options={}]
+             * @param {Number|TransitionOptions} [durationOrOptions=400]
+             * @param {TransitionOptions} [options={}]
              * @return {Promise<Boolean>}
              *
              * @example
@@ -171,8 +171,8 @@ export function effects(kQuery) {
              *
              * this does not involve visibility, you have to do it ourselves.
              *
-             * @param {Number|Object} [durationOrOptions=400]
-             * @param {Object} [options={}]
+             * @param {Number|TransitionOptions} [durationOrOptions=400]
+             * @param {TransitionOptions} [options={}]
              * @return {Promise<Boolean>}
              *
              * @example
@@ -195,8 +195,8 @@ export function effects(kQuery) {
              *
              * this does not involve visibility, you have to do it ourselves.
              *
-             * @param {Number|Object} [durationOrOptions=400]
-             * @param {Object} [options={}]
+             * @param {Number|TransitionOptions} [durationOrOptions=400]
+             * @param {TransitionOptions} [options={}]
              * @return {Promise<Boolean>}
              */
             async $slideDown(durationOrOptions = 400, options = {}) {
@@ -224,8 +224,8 @@ export function effects(kQuery) {
              *
              * this does not involve visibility, you have to do it ourselves.
              *
-             * @param {Number|Object} [durationOrOptions=400]
-             * @param {Object} [options={}]
+             * @param {Number|TransitionOptions} [durationOrOptions=400]
+             * @param {TransitionOptions} [options={}]
              * @return {Promise<Boolean>}
              */
             async $slideUp(durationOrOptions = 400, options = {}) {
@@ -253,8 +253,8 @@ export function effects(kQuery) {
              *
              * this does not involve visibility, you have to do it ourselves.
              *
-             * @param {Number|Object} [durationOrOptions=400]
-             * @param {Object} [options={}]
+             * @param {Number|TransitionOptions} [durationOrOptions=400]
+             * @param {TransitionOptions} [options={}]
              * @return {Promise<Boolean>}
              */
             async $slideRight(durationOrOptions = 400, options = {}) {
@@ -283,8 +283,8 @@ export function effects(kQuery) {
              *
              * this does not involve visibility, you have to do it ourselves.
              *
-             * @param {Number|Object} [durationOrOptions=400]
-             * @param {Object} [options={}]
+             * @param {Number|TransitionOptions} [durationOrOptions=400]
+             * @param {TransitionOptions} [options={}]
              * @return {Promise<Boolean>}
              */
             async $slideLeft(durationOrOptions = 400, options = {}) {

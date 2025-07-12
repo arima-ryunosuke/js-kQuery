@@ -163,8 +163,8 @@ export function events(kQuery) {
              *
              * @param {String} types
              * @param {String|Function} selector
-             * @param {Function|Object} [listener]
-             * @param {Object} [options={}]
+             * @param {Function|ListenerOptions} [listener]
+             * @param {ListenerOptions} [options={}]
              * @return {this}
              */
             $on(types, selector, listener, options) {
@@ -401,7 +401,7 @@ export function events(kQuery) {
              * some event are special treated, e.g. click is PointerEvent
              *
              * @param {String} types
-             * @param {Object} options={}
+             * @param {EventOptions} options={}
              * @return {Boolean}
              */
             $trigger(types, options = {}) {

@@ -1,4 +1,4 @@
-import {$NodeList, F, Promise, Proxy, WeakMap} from '../API.js';
+import {$NodeList, Dictionary, F, Promise, Proxy, WeakMap} from '../API.js';
 
 /**
  * @param {KQuery} kQuery
@@ -62,10 +62,6 @@ export function networks(kQuery) {
 
     return {
         [[Window.name]]: /** @lends Window.prototype */{
-            /**
-             * @typedef {(url:String, options?:RequestInit) => Promise<Response>} HttpRequest
-             * @typedef {{head:HttpRequest, get:HttpRequest, post:HttpRequest, put:HttpRequest, patch:HttpRequest, delete:HttpRequest}} HttpMethods
-             */
             /**
              * asynchronous JavaScript And XML
              *
@@ -139,7 +135,7 @@ export function networks(kQuery) {
              *
              * @param {URL|String} url
              * @param {Function} listener
-             * @param {Object} [options={}]
+             * @param {ListenOptions} [options={}]
              * @return {this}
              */
             $listen(url, listener, options = {}) {
@@ -192,7 +188,7 @@ export function networks(kQuery) {
              *
              * @param {URL|String} url
              * @param {Function} listener
-             * @param {RequestInit|Object} [options={}]
+             * @param {RequestInit|PollingOptions} [options={}]
              * @return {this}
              */
             $polling(url, listener, options = {}) {
@@ -268,7 +264,7 @@ export function networks(kQuery) {
              * - specified form: submit that form, this behave submitter
              * - this has download: download response
              *
-             * @param {Object} [options={}]
+             * @param {SubmitOptions} [options={}]
              * @return {this|Promise<Response>}
              */
             $submit(options = {}) {
@@ -287,7 +283,7 @@ export function networks(kQuery) {
                     // Object: additional data
                     data: {},
                 }, options);
-                kQuery.logger.assertInstanceOf(options.data, Object, FormData)();
+                kQuery.logger.assertInstanceOf(options.data, Dictionary)();
 
                 // url & parameters
                 const url = this.$URL;
@@ -375,7 +371,7 @@ export function networks(kQuery) {
             /**
              * request based on form value
              *
-             * @param {RequestInit|{data: Object<String, String>}} [options={}]
+             * @param {RequestInit|RequestOptions} [options={}]
              * @return {Promise<Response>}
              */
             async $request(options = {}) {
@@ -409,7 +405,7 @@ export function networks(kQuery) {
                     options.headers = new Headers(options.headers ?? {});
                 }
                 kQuery.logger.assertInstanceOf(options.headers, Headers)();
-                kQuery.logger.assertInstanceOf(options.data, Object, FormData)();
+                kQuery.logger.assertInstanceOf(options.data, Dictionary)();
 
                 const novalidate = options.novalidate ?? (options.submitter?.formNoValidate || this.noValidate || false);
                 if (!novalidate && !this.reportValidity()) {
@@ -465,8 +461,8 @@ export function networks(kQuery) {
             /**
              * load server html
              *
-             * @param {String|RequestInit|{data:Object<String, String>}} urlOrOptions
-             * @param {RequestInit|{data:Object<String, any>}} [options={}]
+             * @param {String|RequestInit|{data:Dictionary}} urlOrOptions
+             * @param {RequestInit|{data:Dictionary}} [options={}]
              * @return {Promise<NodeList>}
              */
             async $load(urlOrOptions, options = {}) {

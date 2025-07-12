@@ -28,6 +28,163 @@ import {miscellaneous} from './src/plugins/miscellaneous.js';
 import {networks} from './src/plugins/networks.js';
 import {traversing} from './src/plugins/traversing.js';
 
+// code completion
+/**
+ * @typedef {{
+ *     url?: String,
+ *     target?: String,
+ *     window?: Boolean,
+ *     left?: String|Number,
+ *     top?: String|Number,
+ *     width?: String|Number,
+ *     height?: String|Number,
+ *     noopener?: String,
+ *     noreferrer?: String,
+ * }} WindowOpenOptions
+ * @ignore
+ * @preserve
+ */
+/**
+ * @typedef {(url:String, options?:RequestInit) => Promise<Response>} HttpRequest
+ * @ignore
+ * @preserve
+ */
+/**
+ * @typedef {{
+ *     head: HttpRequest,
+ *     get: HttpRequest,
+ *     post: HttpRequest,
+ *     put: HttpRequest,
+ *     patch: HttpRequest,
+ *     delete: HttpRequest,
+ * }} HttpMethods
+ * @ignore
+ * @preserve
+ */
+/**
+ * @typedef {{
+ *     credentials?: Boolean,
+ * }} ListenOptions
+ * @ignore
+ * @preserve
+ */
+/**
+ * @typedef {{
+ *     interval?: Number,
+ *     invisible?: Boolean,
+ *     retry?: String[],
+ *     status?: Number[],
+ * }} PollingOptions
+ * @ignore
+ * @preserve
+ */
+/**
+ * @typedef {{
+ *     async?: Boolean,
+ *     form?: HTMLFormElement,
+ *     method?: String,
+ *     enctype?: String,
+ *     novalidate?: Boolean,
+ *     data?: Dictionary,
+ * }} SubmitOptions
+ * @ignore
+ * @preserve
+ */
+/**
+ * @typedef {{
+ *     url?: String,
+ *     method?: String,
+ *     enctype?: String,
+ *     novalidate?: Boolean,
+ *     submitter?: HTMLElement,
+ *     data?: Dictionary,
+ *     fileConverter?: String|Function,
+ *     timeout?: Number,
+ * }} RequestOptions
+ * @ignore
+ * @preserve
+ */
+/**
+ * @typedef {{
+ *     once?: Boolean,
+ *     capture?: Boolean,
+ *     passive?: Boolean,
+ *     signal?: AbortSignal,
+ *     ownself: Boolean,
+ *     interval: Number,
+ *     throttle: Number,
+ *     debounce: Number,
+ *     leading: Boolean,
+ *     trailing: Boolean,
+ * }} ListenerOptions
+ * @ignore
+ * @preserve
+ */
+/**
+ * @typedef {{
+ *     bubbles?: Boolean,
+ *     cancelable?: Boolean,
+ *     composed?: Boolean,
+ * }} EventOptions
+ * @ignore
+ * @preserve
+ */
+/**
+ * @typedef {{
+ *     initial?: Object,
+ *     reset?: Boolean,
+ *     duration?: Number,
+ *     timing?: String,
+ * }} TransitionOptions
+ * @ignore
+ * @preserve
+ */
+/**
+ * @typedef {{
+ *   relative?: Boolean,
+ *   margin?: Boolean,
+ * }} OffsetOptions
+ * @ignore
+ * @preserve
+ */
+/**
+ * @typedef {{
+ *     scroll?: Boolean,
+ *     margin?: Boolean,
+ *     border?: Boolean,
+ *     padding?: Boolean,
+ *     scrollbar?: Boolean,
+ * }} SizeOptions
+ * @ignore
+ * @preserve
+ */
+/**
+ * @typedef {{
+ *     document?: Boolean,
+ *     contentVisibilityAuto?: Boolean,
+ *     contentVisibilityProperty?: Boolean,
+ *     opacityProperty?: Boolean,
+ *     visibilityProperty?: Boolean,
+ *     size?: Boolean,
+ *     intersection?: Boolean,
+ * }} VisibilityOptions
+ * @ignore
+ * @preserve
+ */
+/**
+ * @typedef {{
+ *     outside?: Boolean,
+ *     escape?: Boolean,
+ * }} DialogModelOptions
+ * @ignore
+ * @preserve
+ */
+/**
+ * @typedef {Object|Dictionary} Dictionary
+ * @ignore
+ * @preserve
+ */
+
 // documentation.js
 /**
  * @typedef {EventTarget} EventTarget

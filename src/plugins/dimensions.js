@@ -156,7 +156,7 @@ export function dimensions(kQuery) {
             /**
              * get left/top absolute/relative node
              *
-             * @param {{relative?: Boolean, margin?: Boolean}} [options={}]
+             * @param {OffsetOptions} [options={}]
              * @return {{left: Number, top: Number}}
              */
             $offset(options = {}) {
@@ -210,7 +210,7 @@ export function dimensions(kQuery) {
              * └───────────────────────────────────────┘
              * ```
              *
-             * @param {String|{scroll?: Boolean, margin?: Boolean, border?: Boolean, padding?: Boolean, scrollbar?: Boolean}} [options={}]
+             * @param {String|SizeOptions} [options={}]
              * @return {{width: Number, height: Number}}
              */
             $size(options = {}) {
@@ -280,7 +280,7 @@ export function dimensions(kQuery) {
             /**
              * get/set width irrespective of css
              *
-             * @param {Number|String|{scroll?: Boolean, margin?: Boolean, border?: Boolean, padding?: Boolean, scrollbar?: Boolean}} [options={}]
+             * @param {Number|String|SizeOptions} [options={}]
              * @return {Number}
              */
             $width(options = {}) {
@@ -303,7 +303,7 @@ export function dimensions(kQuery) {
             /**
              * get/set height irrespective of css
              *
-             * @param {Number|String|{scroll?: Boolean, margin?: Boolean, border?: Boolean, padding?: Boolean, scrollbar?: Boolean}} [options={}]
+             * @param {Number|String|SizeOptions} [options={}]
              * @return {Number}
              */
             $height(options = {}) {
@@ -364,7 +364,7 @@ export function dimensions(kQuery) {
              * - size: see width/height: 0
              * - intersection: see overlap other node or out of viewport
              *
-             * @param {Object|Boolean} options
+             * @param {VisibilityOptions|Boolean} options
              * @param {Boolean} allOthers
              * @return {Boolean}
              */
