@@ -624,6 +624,100 @@ export const F = {
             return response;
         }
     },
+    async xhr(url, options) {
+        const sameorigin = window.location.origin === new URL(url, window.location.href).origin;
+        options = Object.assign({
+            method: 'GET',
+            headers: {},
+            body: null,
+            credentials: 'same-origin', // 'omit' | 'same-origin' | 'include'
+            timeout: 0,
+            ok: false,
+            signal: null,
+            progress: () => null,
+        }, options);
+
+        const xhr = new XMLHttpRequest();
+        xhr.open(options.method.toUpperCase(), url, true);
+        xhr.timeout = options.timeout;
+        xhr.withCredentials = (credentials => {
+            switch (credentials) {
+                case 'omit':
+                    return false;
+                case 'same-origin':
+                    return sameorigin;
+                case 'include':
+                    return true;
+            }
+        })(options.credentials);
+        xhr.responseType = 'arraybuffer';
+
+        if (!(options.headers instanceof Headers)) {
+            options.headers = new Headers(options.headers);
+        }
+        if (sameorigin) {
+            options.headers.append('X-Requested-With', 'XMLHttpRequest');
+        }
+
+        if (options.signal) {
+            options.signal.addEventListener('abort', () => {
+                xhr.abort();
+            });
+        }
+
+        for (const [name, value] of F.objectToEntries(options.headers)) {
+            xhr.setRequestHeader(name, value);
+        }
+
+        xhr.send(options.body);
+
+        return new Promise((resolve, reject) => {
+            const newResponse = function () {
+                const response = new Response(xhr.response, {
+                    status: xhr.status,
+                    statusText: xhr.statusText,
+                    headers: xhr.getAllResponseHeaders().split(/\r\n?/).reduce(function (headers, line) {
+                        if (line.trim()) {
+                            const [name, value] = line.split(':');
+                            headers.append(name.trim(), value.trim());
+                        }
+                        return headers;
+                    }, new Headers()),
+                });
+                return Object.defineProperties(response, {
+                    url: {
+                        get() {return xhr.responseURL;},
+                    },
+                });
+            };
+            xhr.addEventListener('readystatechange', function () {
+                if (xhr.readyState === XMLHttpRequest.HEADERS_RECEIVED) {
+                    if (!options.ok && !(200 <= xhr.status && xhr.status < 300)) {
+                        reject(new Error(`${xhr.status}: ${xhr.statusText}`, {
+                            cause: newResponse(),
+                        }));
+                    }
+                    // if emulate fetch, should return Response at this timing
+                    // but ReadableByteStream is limited availability yet
+                }
+            });
+            xhr.addEventListener('load', () => {
+                resolve(newResponse());
+            });
+            xhr.addEventListener('error', (e) => {
+                reject(e);
+            });
+            xhr.addEventListener('abort', (e) => {
+                reject(e);
+            });
+            xhr.addEventListener('timeout', (e) => {
+                reject(e);
+            });
+            xhr.upload.addEventListener('progress', (e) => {
+                options.progress(e, options.body);
+            });
+        });
+    },
 };
 
 /**
