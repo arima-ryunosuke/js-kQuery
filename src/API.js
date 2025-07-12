@@ -377,6 +377,31 @@ export const F = {
 
         return Object.entries(object);
     },
+    objectToArrayEntries(object, parentKey) {
+        let entries = [];
+
+        for (const [key, value] of F.objectToEntries(object)) {
+            let currentKey = parentKey ? `${parentKey}[${key}]` : key;
+
+            if (value instanceof Array) {
+                for (const [index, item] of value.entries()) {
+                    if (F.objectIsPlain(item)) {
+                        entries = entries.concat(F.objectToArrayEntries(item, `${currentKey}[${index}]`));
+                    }
+                    else {
+                        entries.push([`${currentKey}[]`, item]);
+                    }
+                }
+            }
+            else if (F.objectIsPlain(value)) {
+                entries = entries.concat(F.objectToArrayEntries(value, currentKey));
+            }
+            else {
+                entries.push([currentKey, value]);
+            }
+        }
+        return entries;
+    },
     /**
      * @param {Object} object
      * @param {Object} properties
@@ -543,181 +568,227 @@ export const F = {
             return func.call(this, ...args);
         };
     },
-    async fetch(url, options = {}) {
-        const {ok, timeout, retryer} = F.objectDeleteProperties(options, {
-            ok: false,
-            timeout: undefined,
-            retryer: function (response, retryCount) {
-                const MAX_COUNT = 3;
-                const MAX_BACKOFF = 30;
-                const JITTER = Math.floor(Math.random() * 1000);
+    ...function () {
+        const handleHeaders = function (headers, url) {
+            headers ??= {};
+            if (!(headers instanceof Headers)) {
+                headers = new Headers(headers);
+            }
+            if (window.location.origin === url.origin) {
+                headers.append('X-Requested-With', 'XMLHttpRequest');
+            }
+            return headers;
+        };
+        const handleBody = function (options, url) {
+            if (!options.body) {
+                return;
+            }
 
-                if (retryCount < MAX_COUNT) {
-                    if (response instanceof Response && response.headers.has('retry-after')) {
-                        const retryAfter = response.headers.get('retry-after');
-                        if (isNaN(retryAfter)) {
-                            return Math.max(1000, new Date(retryAfter).getTime() - Date.now()) + JITTER;
-                        }
-                        else {
-                            return retryAfter * 1000 + JITTER;
-                        }
-                    }
-
-                    if (response instanceof Error || [503, 504].includes(response.status)) {
-                        return Math.min(MAX_BACKOFF * 1000, (2 ** retryCount) * 1000) + JITTER;
-                    }
+            if ((options.method ?? 'GET').toUpperCase() === 'GET') {
+                if (typeof (options.body) === 'string' || options.body instanceof URLSearchParams || F.objectIsPlain(options.body)) {
+                    url.searchParams.$assign(new URLSearchParams(options.body));
                 }
-
-                return 0;
-            },
-        });
-
-        if (timeout) {
-            const ctrl = new AbortController();
-            setTimeout(() => ctrl.abort(), timeout);
-
-            if (options.signal) {
-                options.signal = AbortSignal.any([options.signal, ctrl.signal]);
+                else {
+                    // https://developer.mozilla.org/docs/Web/API/RequestInit
+                    Logger.instance.error(`GET, but a body is specified. fetch silently ignores the body`);
+                }
+                delete options.body;
             }
             else {
-                options.signal = ctrl.signal;
-            }
-        }
-
-        options.headers ??= {};
-        if (!(options.headers instanceof Headers)) {
-            options.headers = new Headers(options.headers);
-        }
-        if (window.location.origin === new URL(url, window.location.href).origin) {
-            options.headers.append('X-Requested-With', 'XMLHttpRequest');
-        }
-
-        let retryCount = 0;
-        while (true) {
-            let response;
-            try {
-                response = await GT.fetch(url, options);
-            }
-            catch (e) {
-                response = e;
-            }
-
-            const retry = retryer(response, retryCount++);
-            if (retry) {
-                const message = response instanceof Error ? response.message : `${response.status}: ${response.statusText}`;
-                Logger.instance.warn(`retry ${url} ${retryCount} ${message}, after ${retry}ms`);
-                await Timer.wait(retry);
-                continue;
-            }
-
-            if (response instanceof Error) {
-                response.cause ??= {};
-                response.cause.retryCount = retryCount - 1;
-                throw response;
-            }
-            if (!ok && !response.ok) {
-                response.retryCount = retryCount - 1;
-                throw new Error(`${response.status}: ${response.statusText}`, {
-                    cause: response,
-                });
-            }
-            return response;
-        }
-    },
-    async xhr(url, options) {
-        const sameorigin = window.location.origin === new URL(url, window.location.href).origin;
-        options = Object.assign({
-            method: 'GET',
-            headers: {},
-            body: null,
-            credentials: 'same-origin', // 'omit' | 'same-origin' | 'include'
-            timeout: 0,
-            ok: false,
-            signal: null,
-            progress: () => null,
-        }, options);
-
-        const xhr = new XMLHttpRequest();
-        xhr.open(options.method.toUpperCase(), url, true);
-        xhr.timeout = options.timeout;
-        xhr.withCredentials = (credentials => {
-            switch (credentials) {
-                case 'omit':
-                    return false;
-                case 'same-origin':
-                    return sameorigin;
-                case 'include':
-                    return true;
-            }
-        })(options.credentials);
-        xhr.responseType = 'arraybuffer';
-
-        if (!(options.headers instanceof Headers)) {
-            options.headers = new Headers(options.headers);
-        }
-        if (sameorigin) {
-            options.headers.append('X-Requested-With', 'XMLHttpRequest');
-        }
-
-        if (options.signal) {
-            options.signal.addEventListener('abort', () => {
-                xhr.abort();
-            });
-        }
-
-        for (const [name, value] of F.objectToEntries(options.headers)) {
-            xhr.setRequestHeader(name, value);
-        }
-
-        xhr.send(options.body);
-
-        return new Promise((resolve, reject) => {
-            const newResponse = function () {
-                const response = new Response(xhr.response, {
-                    status: xhr.status,
-                    statusText: xhr.statusText,
-                    headers: xhr.getAllResponseHeaders().split(/\r\n?/).reduce(function (headers, line) {
-                        if (line.trim()) {
-                            const [name, value] = line.split(':');
-                            headers.append(name.trim(), value.trim());
-                        }
-                        return headers;
-                    }, new Headers()),
-                });
-                return Object.defineProperties(response, {
-                    url: {
-                        get() {return xhr.responseURL;},
-                    },
-                });
-            };
-            xhr.addEventListener('readystatechange', function () {
-                if (xhr.readyState === XMLHttpRequest.HEADERS_RECEIVED) {
-                    if (!options.ok && !(200 <= xhr.status && xhr.status < 300)) {
-                        reject(new Error(`${xhr.status}: ${xhr.statusText}`, {
-                            cause: newResponse(),
-                        }));
+                if (F.objectIsPlain(options.body)) {
+                    if (options.headers.get('content-type')?.startsWith('application/json')) {
+                        options.body = JSON.stringify(options.body);
                     }
-                    // if emulate fetch, should return Response at this timing
-                    // but ReadableByteStream is limited availability yet
+                    else {
+                        const entries = F.objectToArrayEntries(options.body);
+                        if (entries.map(([k, v]) => v).find((v) => v instanceof Blob)) {
+                            options.body = new FormData();
+                        }
+                        else {
+                            options.body = new URLSearchParams();
+                        }
+
+                        for (const [name, value] of entries) {
+                            options.body.append(name, value);
+                        }
+                    }
                 }
-            });
-            xhr.addEventListener('load', () => {
-                resolve(newResponse());
-            });
-            xhr.addEventListener('error', (e) => {
-                reject(e);
-            });
-            xhr.addEventListener('abort', (e) => {
-                reject(e);
-            });
-            xhr.addEventListener('timeout', (e) => {
-                reject(e);
-            });
-            xhr.upload.addEventListener('progress', (e) => {
-                options.progress(e, options.body);
-            });
-        });
-    },
+            }
+            return options.body;
+        };
+        const handleRetry = function (response, retryCount) {
+            const MAX_COUNT = 3;
+            const MAX_BACKOFF = 30;
+            const JITTER = Math.floor(Math.random() * 1000);
+
+            if (retryCount < MAX_COUNT) {
+                if (response instanceof Response && response.headers.has('retry-after')) {
+                    const retryAfter = response.headers.get('retry-after');
+                    if (isNaN(retryAfter)) {
+                        return Math.max(1000, new Date(retryAfter).getTime() - Date.now()) + JITTER;
+                    }
+                    else {
+                        return retryAfter * 1000 + JITTER;
+                    }
+                }
+
+                if (response instanceof Error || [503, 504].includes(response.status)) {
+                    return Math.min(MAX_BACKOFF * 1000, (2 ** retryCount) * 1000) + JITTER;
+                }
+            }
+
+            return 0;
+        };
+
+        return {
+            async fetch(url, options = {}) {
+                url = new URL(url, window.location.href);
+
+                const {ok, timeout, retryer} = F.objectDeleteProperties(options, {
+                    ok: false,
+                    timeout: undefined,
+                    retryer: handleRetry,
+                });
+
+                if (timeout) {
+                    const ctrl = new AbortController();
+                    setTimeout(() => ctrl.abort(), timeout);
+
+                    if (options.signal) {
+                        options.signal = AbortSignal.any([options.signal, ctrl.signal]);
+                    }
+                    else {
+                        options.signal = ctrl.signal;
+                    }
+                }
+
+                options.headers = handleHeaders(options.headers, url);
+                options.body = handleBody(options, url);
+
+                let retryCount = 0;
+                while (true) {
+                    let response;
+                    try {
+                        response = await GT.fetch(url, options);
+                    }
+                    catch (e) {
+                        response = e;
+                    }
+
+                    const retry = retryer(response, retryCount++);
+                    if (retry) {
+                        const message = response instanceof Error ? response.message : `${response.status}: ${response.statusText}`;
+                        Logger.instance.warn(`retry ${url} ${retryCount} ${message}, after ${retry}ms`);
+                        await Timer.wait(retry);
+                        continue;
+                    }
+
+                    if (response instanceof Error) {
+                        response.cause ??= {};
+                        response.cause.retryCount = retryCount - 1;
+                        throw response;
+                    }
+                    if (!ok && !response.ok) {
+                        response.retryCount = retryCount - 1;
+                        throw new Error(`${response.status}: ${response.statusText}`, {
+                            cause: response,
+                        });
+                    }
+                    return response;
+                }
+            },
+            async xhr(url, options) {
+                url = new URL(url, window.location.href);
+                options = Object.assign({
+                    method: 'GET',
+                    headers: {},
+                    body: null,
+                    credentials: 'same-origin', // 'omit' | 'same-origin' | 'include'
+                    timeout: 0,
+                    ok: false,
+                    signal: null,
+                    progress: () => null,
+                }, options);
+
+                options.headers = handleHeaders(options.headers, url);
+                options.body = handleBody(options, url);
+
+                const xhr = new XMLHttpRequest();
+                xhr.open(options.method.toUpperCase(), url, true);
+                xhr.timeout = options.timeout;
+                xhr.withCredentials = (credentials => {
+                    switch (credentials) {
+                        case 'omit':
+                            return false;
+                        case 'same-origin':
+                            return window.location.origin === url.origin;
+                        case 'include':
+                            return true;
+                    }
+                })(options.credentials);
+                xhr.responseType = 'arraybuffer';
+
+                if (options.signal) {
+                    options.signal.addEventListener('abort', () => {
+                        xhr.abort();
+                    });
+                }
+
+                for (const [name, value] of F.objectToEntries(options.headers)) {
+                    xhr.setRequestHeader(name, value);
+                }
+
+                xhr.send(options.body);
+
+                return new Promise((resolve, reject) => {
+                    const newResponse = function () {
+                        const response = new Response(xhr.response, {
+                            status: xhr.status,
+                            statusText: xhr.statusText,
+                            headers: xhr.getAllResponseHeaders().split(/\r\n?/).reduce(function (headers, line) {
+                                if (line.trim()) {
+                                    const [name, value] = line.split(':');
+                                    headers.append(name.trim(), value.trim());
+                                }
+                                return headers;
+                            }, new Headers()),
+                        });
+                        return Object.defineProperties(response, {
+                            url: {
+                                get() {return xhr.responseURL;},
+                            },
+                        });
+                    };
+                    xhr.addEventListener('readystatechange', function () {
+                        if (xhr.readyState === XMLHttpRequest.HEADERS_RECEIVED) {
+                            if (!options.ok && !(200 <= xhr.status && xhr.status < 300)) {
+                                reject(new Error(`${xhr.status}: ${xhr.statusText}`, {
+                                    cause: newResponse(),
+                                }));
+                            }
+                            // if emulate fetch, should return Response at this timing
+                            // but ReadableByteStream is limited availability yet
+                        }
+                    });
+                    xhr.addEventListener('load', () => {
+                        resolve(newResponse());
+                    });
+                    xhr.addEventListener('error', (e) => {
+                        reject(e);
+                    });
+                    xhr.addEventListener('abort', (e) => {
+                        reject(e);
+                    });
+                    xhr.addEventListener('timeout', (e) => {
+                        reject(e);
+                    });
+                    xhr.upload.addEventListener('progress', (e) => {
+                        options.progress(e, options.body);
+                    });
+                });
+            },
+        };
+    }(),
 };
 
 /**
