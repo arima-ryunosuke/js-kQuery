@@ -155,23 +155,13 @@ export function networks(kQuery) {
                         if (this.download && !options.raw) {
                             return response.then((response) => {
                                 if (!response.ok) {
-                                    throw new response;
+                                    throw new Error(`${response.status}: ${response.statusText}`, {
+                                        cause: response,
+                                    });
                                 }
                                 response.blob().then((blob) => {
-                                    const url = URL.createObjectURL(blob);
-                                    const newa = this.$document.$createElement('a', {
-                                        href: url,
-                                        download: this.download,
-                                        hidden: true,
-                                    });
-                                    try {
-                                        this.$document.body.appendChild(newa);
-                                        newa.click();
-                                    }
-                                    finally {
-                                        this.$document.body.removeChild(newa);
-                                        setTimeout(() => URL.revokeObjectURL(url), 1000);
-                                    }
+                                    blob.$download(this.download);
+                                    return this;
                                 });
                             });
                         }
