@@ -1,4 +1,4 @@
-import {$FileList, $NodeList, F, FileReader, Nullable, Dictionary, Promise, Proxy, WeakMap} from '../API.js';
+import {$FileList, $NodeList, Dictionary, F, FileReader, Nullable, Promise, Proxy, WeakMap} from '../API.js';
 
 /**
  * @param {KQuery} kQuery

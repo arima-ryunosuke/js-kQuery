@@ -1,4 +1,4 @@
-import {$CSSRuleList, $NodeList, F, Nullable, Dictionary, ObjectStorage, Proxy} from '../API.js';
+import {$CSSRuleList, $NodeList, Dictionary, F, Nullable, ObjectStorage, Proxy} from '../API.js';
 
 /**
  * @param {KQuery} kQuery

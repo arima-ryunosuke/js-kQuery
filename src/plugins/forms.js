@@ -1,4 +1,4 @@
-import {$NodeList, F, Nullable, Dictionary} from '../API.js';
+import {$NodeList, Dictionary, F, Nullable} from '../API.js';
 
 /**
  * @param {KQuery} kQuery
