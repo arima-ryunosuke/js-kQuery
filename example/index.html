@@ -724,6 +724,9 @@
             <button type="button" class="file-files">file to files</button>
             <button type="button" class="resetAttribute">reset attribute</button>
             <br>
+            <button type="button" class="get-selectedText">get selectedText</button>
+            <button type="button" class="set-selectedText">set selectedText</button>
+            <br>
             <button type="button" class="set-options" data-preserve="">reset select/datalist options</button>
             <button type="button" class="set-options" data-preserve="prepend">prepend select/datalist options</button>
             <br>
@@ -837,6 +840,12 @@
                 container.$on('click', '.resetAttribute', async function () {
                     input.$$('input, textarea, select').$resetAttribute();
                     output.textContent = input.innerHTML;
+                });
+                container.$on('click', '.get-selectedText', async function () {
+                    output.textContent = input.$$('input, textarea, select').$selectedText;
+                });
+                container.$on('click', '.set-selectedText', async function () {
+                    input.$$('input, textarea, select').$selectedText = 'B';
                 });
                 container.$on('click', '.set-options', async function (e) {
                     const randomA = 10 + Math.round(Math.random() * 10);
@@ -1308,6 +1317,7 @@
             <button type="button" class="image-download">image download</button>
             <br>
             <button type="button" class="file-text">file text</button>
+            <button type="button" class="file-hash">hash</button>
             <button type="button" class="file-dataurl">file dataURL</button>
             <button type="button" class="file-upload" data-method="put">file upload(PUT)</button>
             <button type="button" class="file-upload" data-method="post">file upload(POST)</button>
@@ -1402,6 +1412,13 @@
                     const file = document.$createElement('input', {type: 'file', multiple: true});
                     file.$on('change', async function () {
                         output.textContent += `text: ${await this.files.$text()}\n`;
+                    });
+                    file.dispatchEvent(new MouseEvent('click'));
+                });
+                container.$on('click', '.file-hash', function () {
+                    const file = document.$createElement('input', {type: 'file', multiple: true});
+                    file.$on('change', async function () {
+                        output.textContent += `sha-1: ${await this.files.$hash('sha-1')}\n`;
                     });
                     file.dispatchEvent(new MouseEvent('click'));
                 });

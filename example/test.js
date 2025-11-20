@@ -3442,6 +3442,32 @@ document.addEventListener('DOMContentLoaded', function () {
                         [],
                     ]);
                 });
+                it('$selectedText', async function () {
+                    const textarea = this.form.$('textarea');
+                    const selectSingle = this.form.$('select:not([multiple])');
+                    const selectMultiple = this.form.$('select[multiple]');
+
+                    textarea.$value = "0123456789abcdef";
+                    textarea.selectionStart = 4;
+                    textarea.selectionEnd = 6;
+
+                    expect(textarea.$selectedText).toEqual('45');
+
+                    textarea.$selectedText = 'XYZ';
+                    expect(textarea.$value).toEqual('0123XYZ6789abcdef');
+
+                    selectSingle.$value = 'sa';
+                    selectMultiple.$value = ['sa'];
+
+                    expect(selectSingle.$selectedText).toEqual('A');
+                    expect(selectMultiple.$selectedText).toEqual(['A']);
+
+                    selectSingle.$selectedText = 'B';
+                    selectMultiple.$selectedText = ['B'];
+
+                    expect(selectSingle.$value).toEqual('sb');
+                    expect(selectMultiple.$value).toEqual(['sb']);
+                });
                 it('$resetAttribute', async function () {
                     const inputs = this.form.$$('input, textarea, select');
 
@@ -3941,6 +3967,10 @@ document.addEventListener('DOMContentLoaded', function () {
                     expect(await this.textfile.$text()).toEqual('hoge');
                     expect(await this.htmlfile.$text()).toEqual('<q id="a"><span id="b">hey!</span></q>');
                 });
+                it('$hash', async function () {
+                    expect(await this.textfile.$hash('sha-1')).toEqual('31f30ddbcb1bf8446576f0e64aa4c88a9f055e3c');
+                    expect(await this.htmlfile.$hash('sha-256')).toEqual('5ec4b4ac8b03211a83643ae3749d19ad0be4f61f7786b1972ad5fd3172813261');
+                });
                 it('$base64', async function () {
                     expect(await this.textfile.$base64()).toEqual(btoa('hoge'));
                     expect(await this.htmlfile.$base64()).toEqual(btoa('<q id="a"><span id="b">hey!</span></q>'));
@@ -4373,6 +4403,31 @@ after-text`);
                         'invalid value',
                         'invalid value',
                     ]);
+
+                    this.container.$('.set-selectedText').click();
+                    expect(this.container.$$('[name]:where(input,textarea,select)').$value).toEqual([
+                        'invalid valueB',
+                        'invalid valueB',
+                        null,
+                        null,
+                        null,
+                        null,
+                        'b',
+                        ['b'],
+                        null,
+                        new DataTransfer().files,
+                        'invalid valueB',
+                        'invalid valueB',
+                        'invalid valueB',
+                        'invalid valueB',
+                        'invalid valueB',
+                        'invalid valueB',
+                        'invalid valueB',
+                        'invalid valueB',
+                    ]);
+
+                    this.container.$('.get-selectedText').click();
+                    expect(this.output.textContent).toEqual('B,B,,,,,,B,B,,,B,B,B,B,B,B,B,B');
 
                     this.container.$('.clear-value').click();
                     expect(this.container.$$('[name]:where(input,textarea,select)').$value).toEqual([
