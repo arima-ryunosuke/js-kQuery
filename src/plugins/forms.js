@@ -577,6 +577,57 @@ export function forms(kQuery) {
 
                 return this;
             },
+            /**
+             * get selected text
+             *
+             * - select-one: first selected option text
+             * - select-multiple: selected options texts
+             * - textable input/textarea: selected range text
+             * - other: undefined
+             *
+             * @descriptor get
+             *
+             * @return {Nullable|String|String[]}
+             */
+            get $selectedText() {
+                if ('select-one' === this.type) {
+                    return this.selectedOptions[0]?.label ?? null;
+                }
+                else if ('select-multiple' === this.type) {
+                    return Array.from(this.selectedOptions).map(option => option.label);
+                }
+                else if (this.selectionDirection) {
+                    return this.value.substring(this.selectionStart, this.selectionEnd);
+                }
+
+                return undefined;
+            },
+            /**
+             * set selected text
+             *
+             * - select: set value by matched option text
+             * - textable input/textarea: set range text
+             * - other: undefined
+             *
+             * @descriptor set
+             */
+            set $selectedText(value) {
+                if ('select-one' === this.type) {
+                    this.$value = Array.prototype.find.call(this.options, option => option.label === value)?.value ?? null;
+                }
+                else if ('select-multiple' === this.type) {
+                    const values = (value instanceof Array ? value : [value]).filter(v => v !== null).map(v => '' + v);
+                    this.$value = Array.prototype.filter.call(this.options, option => values.includes(option.label)).map(option => option.value);
+                }
+                else if (this.selectionDirection) {
+                    if (value !== this.$selectedText) {
+                        this.setRangeText(value, this.selectionStart, this.selectionEnd, 'select');
+                        this.dispatchEvent(new Event('$change', {
+                            bubbles: true,
+                        }));
+                    }
+                }
+            },
         },
         [[HTMLSelectElement.name, HTMLDataListElement.name, $NodeList.name]]: /** @lends HTMLOptionableElement.prototype */{
             /**
