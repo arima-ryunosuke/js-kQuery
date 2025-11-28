@@ -2034,7 +2034,7 @@
       HTMLDListElement: ["compact"],
       HTMLDirectoryElement: ["*"],
       HTMLDivElement: ["align"],
-      HTMLElement: ["attributeStyleMap", "editContext", "onabort", "onanimationend", "onanimationiteration", "onanimationstart", "onauxclick", "onbeforeinput", "onbeforematch", "onbeforetoggle", "onbeforexrselect", "onblur", "oncancel", "oncanplay", "oncanplaythrough", "onchange", "onclick", "onclose", "oncontentvisibilityautostatechange", "oncontextlost", "oncontextmenu", "oncontextrestored", "oncopy", "oncuechange", "oncut", "ondblclick", "ondrag", "ondragend", "ondragenter", "ondragleave", "ondragover", "ondragstart", "ondrop", "ondurationchange", "onemptied", "onended", "onerror", "onfocus", "onformdata", "ongotpointercapture", "oninput", "oninvalid", "onkeydown", "onkeypress", "onkeyup", "onload", "onloadeddata", "onloadedmetadata", "onloadstart", "onlostpointercapture", "onmousedown", "onmouseenter", "onmouseleave", "onmousemove", "onmouseout", "onmouseover", "onmouseup", "onmousewheel", "onpaste", "onpause", "onplay", "onplaying", "onpointercancel", "onpointerdown", "onpointerenter", "onpointerleave", "onpointermove", "onpointerout", "onpointerover", "onpointerrawupdate", "onpointerup", "onprogress", "onratechange", "onreset", "onresize", "onscroll", "onscrollend", "onscrollsnapchange", "onscrollsnapchanging", "onsecuritypolicyviolation", "onseeked", "onseeking", "onselect", "onselectionchange", "onselectstart", "onslotchange", "onstalled", "onsubmit", "onsuspend", "ontimeupdate", "ontoggle", "ontransitioncancel", "ontransitionend", "ontransitionrun", "ontransitionstart", "onvolumechange", "onwaiting", "onwheel", "virtualKeyboardPolicy", "writingSuggestions"],
+      HTMLElement: ["attributeStyleMap", "editContext", "onabort", "onanimationend", "onanimationiteration", "onanimationstart", "onauxclick", "onbeforeinput", "onbeforematch", "onbeforetoggle", "onbeforexrselect", "onblur", "oncancel", "oncanplay", "oncanplaythrough", "onchange", "onclick", "onclose", "oncommand", "oncontentvisibilityautostatechange", "oncontextlost", "oncontextmenu", "oncontextrestored", "oncopy", "oncuechange", "oncut", "ondblclick", "ondrag", "ondragend", "ondragenter", "ondragleave", "ondragover", "ondragstart", "ondrop", "ondurationchange", "onemptied", "onended", "onerror", "onfocus", "onformdata", "ongotpointercapture", "oninput", "oninvalid", "onkeydown", "onkeypress", "onkeyup", "onload", "onloadeddata", "onloadedmetadata", "onloadstart", "onlostpointercapture", "onmousedown", "onmouseenter", "onmouseleave", "onmousemove", "onmouseout", "onmouseover", "onmouseup", "onmousewheel", "onpaste", "onpause", "onplay", "onplaying", "onpointercancel", "onpointerdown", "onpointerenter", "onpointerleave", "onpointermove", "onpointerout", "onpointerover", "onpointerrawupdate", "onpointerup", "onprogress", "onratechange", "onreset", "onresize", "onscroll", "onscrollend", "onscrollsnapchange", "onscrollsnapchanging", "onsecuritypolicyviolation", "onseeked", "onseeking", "onselect", "onselectionchange", "onselectstart", "onslotchange", "onstalled", "onsubmit", "onsuspend", "ontimeupdate", "ontoggle", "ontransitioncancel", "ontransitionend", "ontransitionrun", "ontransitionstart", "onvolumechange", "onwaiting", "onwheel", "virtualKeyboardPolicy", "writingSuggestions"],
       HTMLEmbedElement: ["align", "name"],
       HTMLFencedFrameElement: ["*"],
       HTMLFontElement: ["color", "face", "size"],
@@ -2074,9 +2074,9 @@
       // https://developer.mozilla.org/docs/Web/API/Blob
       Blob: ["arrayBuffer", "size", "slice", "stream", "text", "type"],
       // https://developer.mozilla.org/docs/Web/API/Element
-      Element: ["after", "animate", "append", "ariaAtomic", "ariaAutoComplete", "ariaBrailleLabel", "ariaBrailleRoleDescription", "ariaBusy", "ariaChecked", "ariaColCount", "ariaColIndex", "ariaColIndexText", "ariaColSpan", "ariaCurrent", "ariaDescription", "ariaDisabled", "ariaExpanded", "ariaHasPopup", "ariaHidden", "ariaInvalid", "ariaKeyShortcuts", "ariaLabel", "ariaLevel", "ariaLive", "ariaModal", "ariaMultiLine", "ariaMultiSelectable", "ariaOrientation", "ariaPlaceholder", "ariaPosInSet", "ariaPressed", "ariaReadOnly", "ariaRelevant", "ariaRequired", "ariaRoleDescription", "ariaRowCount", "ariaRowIndex", "ariaRowIndexText", "ariaRowSpan", "ariaSelected", "ariaSetSize", "ariaSort", "ariaValueMax", "ariaValueMin", "ariaValueNow", "ariaValueText", "assignedSlot", "attachShadow", "attributes", "before", "checkVisibility", "childElementCount", "children", "classList", "className", "clientHeight", "clientLeft", "clientTop", "clientWidth", "closest", "currentCSSZoom", "firstElementChild", "getAnimations", "getAttribute", "getAttributeNS", "getAttributeNames", "getAttributeNode", "getAttributeNodeNS", "getBoundingClientRect", "getClientRects", "getElementsByClassName", "getElementsByTagName", "getElementsByTagNameNS", "getHTML", "hasAttribute", "hasAttributeNS", "hasAttributes", "hasPointerCapture", "id", "innerHTML", "insertAdjacentElement", "insertAdjacentHTML", "insertAdjacentText", "lastElementChild", "localName", "matches", "moveBefore", "namespaceURI", "nextElementSibling", "outerHTML", "part", "prefix", "prepend", "previousElementSibling", "querySelector", "querySelectorAll", "releasePointerCapture", "remove", "removeAttribute", "removeAttributeNS", "removeAttributeNode", "replaceChildren", "replaceWith", "requestFullscreen", "requestPointerLock", "role", "scroll", "scrollBy", "scrollHeight", "scrollIntoView", "scrollLeft", "scrollTo", "scrollTop", "scrollWidth", "setAttribute", "setAttributeNS", "setAttributeNode", "setAttributeNodeNS", "setHTMLUnsafe", "setPointerCapture", "shadowRoot", "slot", "tagName", "toggleAttribute"],
+      Element: ["after", "animate", "append", "ariaActiveDescendantElement", "ariaAtomic", "ariaAutoComplete", "ariaBrailleLabel", "ariaBrailleRoleDescription", "ariaBusy", "ariaChecked", "ariaColCount", "ariaColIndex", "ariaColIndexText", "ariaColSpan", "ariaControlsElements", "ariaCurrent", "ariaDescribedByElements", "ariaDescription", "ariaDetailsElements", "ariaDisabled", "ariaErrorMessageElements", "ariaExpanded", "ariaFlowToElements", "ariaHasPopup", "ariaHidden", "ariaInvalid", "ariaKeyShortcuts", "ariaLabel", "ariaLabelledByElements", "ariaLevel", "ariaLive", "ariaModal", "ariaMultiLine", "ariaMultiSelectable", "ariaOrientation", "ariaPlaceholder", "ariaPosInSet", "ariaPressed", "ariaReadOnly", "ariaRelevant", "ariaRequired", "ariaRoleDescription", "ariaRowCount", "ariaRowIndex", "ariaRowIndexText", "ariaRowSpan", "ariaSelected", "ariaSetSize", "ariaSort", "ariaValueMax", "ariaValueMin", "ariaValueNow", "ariaValueText", "assignedSlot", "attachShadow", "attributes", "before", "checkVisibility", "childElementCount", "children", "classList", "className", "clientHeight", "clientLeft", "clientTop", "clientWidth", "closest", "currentCSSZoom", "firstElementChild", "getAnimations", "getAttribute", "getAttributeNS", "getAttributeNames", "getAttributeNode", "getAttributeNodeNS", "getBoundingClientRect", "getClientRects", "getElementsByClassName", "getElementsByTagName", "getElementsByTagNameNS", "getHTML", "hasAttribute", "hasAttributeNS", "hasAttributes", "hasPointerCapture", "id", "innerHTML", "insertAdjacentElement", "insertAdjacentHTML", "insertAdjacentText", "lastElementChild", "localName", "matches", "moveBefore", "namespaceURI", "nextElementSibling", "outerHTML", "part", "prefix", "prepend", "previousElementSibling", "querySelector", "querySelectorAll", "releasePointerCapture", "remove", "removeAttribute", "removeAttributeNS", "removeAttributeNode", "replaceChildren", "replaceWith", "requestFullscreen", "requestPointerLock", "role", "scroll", "scrollBy", "scrollHeight", "scrollIntoView", "scrollLeft", "scrollTo", "scrollTop", "scrollWidth", "setAttribute", "setAttributeNS", "setAttributeNode", "setAttributeNodeNS", "setHTMLUnsafe", "setPointerCapture", "shadowRoot", "slot", "tagName", "toggleAttribute"],
       // https://developer.mozilla.org/docs/Web/API/EventTarget
-      EventTarget: ["addEventListener", "removeEventListener"],
+      EventTarget: ["addEventListener", "removeEventListener", "when"],
       // https://developer.mozilla.org/docs/Web/API/File
       File: ["lastModified", "lastModifiedDate", "name"],
       // https://developer.mozilla.org/docs/Web/API/HTMLAnchorElement
@@ -2086,7 +2086,7 @@
       // https://developer.mozilla.org/docs/Web/API/HTMLBaseElement
       HTMLBaseElement: ["href", "target"],
       // https://developer.mozilla.org/docs/Web/API/HTMLButtonElement
-      HTMLButtonElement: ["checkValidity", "disabled", "form", "formAction", "formEnctype", "formMethod", "formNoValidate", "formTarget", "labels", "name", "popoverTargetAction", "popoverTargetElement", "reportValidity", "setCustomValidity", "type", "validationMessage", "validity", "value", "willValidate"],
+      HTMLButtonElement: ["checkValidity", "command", "commandForElement", "disabled", "form", "formAction", "formEnctype", "formMethod", "formNoValidate", "formTarget", "labels", "name", "popoverTargetAction", "popoverTargetElement", "reportValidity", "setCustomValidity", "type", "validationMessage", "validity", "value", "willValidate"],
       // https://developer.mozilla.org/docs/Web/API/HTMLCanvasElement
       HTMLCanvasElement: ["captureStream", "getContext", "height", "toBlob", "toDataURL", "transferControlToOffscreen", "width"],
       // https://developer.mozilla.org/docs/Web/API/HTMLDataElement
@@ -3739,6 +3739,19 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
             return textDecoder.decode(await this.arrayBuffer());
           },
           /**
+           * get hash string
+           *
+           * @return {Promise<String>}
+           */
+          async $hash(algorithm) {
+            kQuery.logger.assertInstanceOf(algorithm, String)();
+            const arrayBuffer = await this.arrayBuffer();
+            const hashBuffer = await crypto.subtle.digest(algorithm, arrayBuffer);
+            const uint8Array = new Uint8Array(hashBuffer);
+            const hexArray = Array.from(uint8Array).map((b) => b.toString(16).padStart(2, "0"));
+            return hexArray.join("");
+          },
+          /**
            * read as base64
            *
            * @return {Promise<String>}
@@ -5111,6 +5124,52 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
               this.setAttribute("value", this.value);
             }
             return this;
+          },
+          /**
+           * get selected text
+           *
+           * - select-one: first selected option text
+           * - select-multiple: selected options texts
+           * - textable input/textarea: selected range text
+           * - other: undefined
+           *
+           * @descriptor get
+           *
+           * @return {Nullable|String|String[]}
+           */
+          get $selectedText() {
+            if ("select-one" === this.type) {
+              return this.selectedOptions[0]?.label ?? null;
+            } else if ("select-multiple" === this.type) {
+              return Array.from(this.selectedOptions).map((option) => option.label);
+            } else if (this.selectionDirection) {
+              return this.value.substring(this.selectionStart, this.selectionEnd);
+            }
+            return void 0;
+          },
+          /**
+           * set selected text
+           *
+           * - select: set value by matched option text
+           * - textable input/textarea: set range text
+           * - other: undefined
+           *
+           * @descriptor set
+           */
+          set $selectedText(value) {
+            if ("select-one" === this.type) {
+              this.$value = Array.prototype.find.call(this.options, (option) => option.label === value)?.value ?? null;
+            } else if ("select-multiple" === this.type) {
+              const values = (value instanceof Array ? value : [value]).filter((v) => v !== null).map((v) => "" + v);
+              this.$value = Array.prototype.filter.call(this.options, (option) => values.includes(option.label)).map((option) => option.value);
+            } else if (this.selectionDirection) {
+              if (value !== this.$selectedText) {
+                this.setRangeText(value, this.selectionStart, this.selectionEnd, "select");
+                this.dispatchEvent(new Event("$change", {
+                  bubbles: true
+                }));
+              }
+            }
           }
         }
       ),
