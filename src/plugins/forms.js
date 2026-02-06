@@ -1,4 +1,4 @@
-import {$NodeList, Dictionary, F, Nullable} from '../API.js';
+import {$NodeList, CheckBoxNodeList, Dictionary, F, Nullable} from '../API.js';
 
 /**
  * @param {KQuery} kQuery
@@ -281,11 +281,18 @@ export function forms(kQuery) {
                 }
             },
         },
-        [[HTMLInputElement.name, RadioNodeList.name, $NodeList.name]]: /** @lends HTMLInputCheckableElement.prototype */{
+        [[HTMLInputElement.name, RadioNodeList.name, CheckBoxNodeList.name, $NodeList.name]]: /** @lends HTMLInputCheckableElement.prototype */{
             /**
              * get input indeterminate
              *
-             * returns undefined if not checkbox and supports RadioNodeList.
+             * returns undefined if not checkbox and supports RadioNodeList/CheckBoxNodeList.
+             *
+             * - RadioNodeList
+             *   - all unchecked: true
+             *   - some checked: false
+             * - CheckBoxNodeList
+             *   - difference checked: true
+             *   - all checked/unchecked: false
              *
              * @descriptor get
              *
@@ -294,6 +301,18 @@ export function forms(kQuery) {
             get $indeterminate() {
                 if (this instanceof RadioNodeList) {
                     return this.value === '';
+                }
+                if (this instanceof CheckBoxNodeList) {
+                    if (this.length <= 1) {
+                        return false;
+                    }
+                    const first = this[0].checked;
+                    for (let i = 1; i < this.length; i++) {
+                        if (first !== this[i].checked) {
+                            return true;
+                        }
+                    }
+                    return false;
                 }
                 if (this.type !== 'checkbox') {
                     return undefined;
@@ -329,6 +348,10 @@ export function forms(kQuery) {
                         kQuery.logger.error(`RadioNodeList's $indeterminate is readonly`);
                     }
                     this.forEach(e => e.checked = false);
+                    return;
+                }
+                if (this instanceof CheckBoxNodeList) {
+                    kQuery.logger.error(`CheckBoxNodeList's $indeterminate is readonly`);
                     return;
                 }
 
@@ -790,6 +813,51 @@ export function forms(kQuery) {
             },
         },
         [[HTMLFormElement.name, $NodeList.name]]: /** @lends HTMLFormElement.prototype */{
+            /**
+             * get all input/select/textarea elements
+             *
+             * - radio is RadioNodeList
+             * - checkbox is CheckBoxNodeList
+             *
+             * @return {NodeList}
+             */
+            get $inputs() {
+                // necessary keep dom order
+
+                const checkboxNodes = {};
+                this.querySelectorAll('input[type="checkbox"][multiple]').forEach(e => {
+                    checkboxNodes[e.name] ??= [];
+                    checkboxNodes[e.name].push(e);
+                });
+
+                const appended = {};
+                const inputs = Array.from(this.querySelectorAll('input,select,textarea')).flatMap(input => {
+                    // no contain noname
+                    if (input.name.length === 0) {
+                        return [];
+                    }
+
+                    if (input.type === 'radio') {
+                        if (appended[input.name]) {
+                            return [];
+                        }
+                        appended[input.name] = true;
+                        return [this.elements[input.name]];
+                    }
+
+                    if (input.type === 'checkbox' && checkboxNodes[input.name]) {
+                        if (appended[input.name]) {
+                            return [];
+                        }
+                        appended[input.name] = true;
+                        return [F.iterableToNodeList(checkboxNodes[input.name], CheckBoxNodeList)];
+                    }
+
+                    return [input];
+                });
+
+                return F.iterableToNodeList(inputs);
+            },
             /**
              * writeback value to attribute
              *

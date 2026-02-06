@@ -515,7 +515,7 @@ export const F = {
         }
         return object;
     },
-    iterableToNodeList(iterable) {
+    iterableToNodeList(iterable, nodeListType) {
         // https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object/setPrototypeOf
         // > Changing the Prototype of an object is, by the nature of how modern JavaScript engines optimize property accesses, currently a very slow operation in every browser and JavaScript engine.
         // > In addition, the effects of altering inheritance are subtle and far-flung, and are not limited to the time spent in the Object.setPrototypeOf(...) statement, but may extend to any code that has access to any object whose Prototype has been altered.
@@ -528,7 +528,9 @@ export const F = {
         // > Although Object.create() is believed to have better performance than mutating the prototype with Object.setPrototypeOf(), the difference is in fact negligible if no instances have been created and property accesses haven't been optimized yet.
         // return Object.setPrototypeOf([...iterable], NodeList.prototype);
 
-        if (iterable instanceof NodeList) {
+        nodeListType ??= NodeList;
+
+        if (iterable instanceof nodeListType) {
             Logger.instance.notice(`meaningless call to iterableToNodeList`);
         }
 
@@ -548,7 +550,7 @@ export const F = {
             writable: false,
             enumerable: false,
         };
-        return Object.create(NodeList.prototype, properties);
+        return Object.create(nodeListType.prototype, properties);
     },
     arrayLikeToArrayRecursive(object, requireLength = true) {
         for (const [key, value] of F.objectToEntries(object)) {
@@ -1775,6 +1777,56 @@ export class IntersectionObserver extends GT.IntersectionObserver {
 
     entries() {
         return this.observedNodes.entries();
+    }
+}
+
+/**
+ * CheckBoxNodeList
+ *
+ * @private
+ */
+export class CheckBoxNodeList extends GT.NodeList {
+    /**
+     * get name of CheckBoxNodeList
+     *
+     * @descriptor get
+     *
+     * @return {?String}
+     */
+    get name() {
+        return this[0]?.name;
+    }
+    /**
+     * set name of CheckBoxNodeList
+     *
+     * @descriptor set
+     *
+     * @param {String} name
+     */
+    set name(name) {
+        [...this].forEach(function (e) {
+            e.name = name;
+        });
+    }
+    /**
+     * get name of CheckBoxNodeList
+     *
+     * @descriptor get
+     *
+     * @return {Array}
+     */
+    get value() {
+        return this.$value;
+    }
+    /**
+     * set name of CheckBoxNodeList
+     *
+     * @descriptor set
+     *
+     * @param {Array} value
+     */
+    set value(value) {
+        this.$value = value;
     }
 }
 
