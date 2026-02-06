@@ -384,7 +384,7 @@ export function forms(kQuery) {
                 }
             },
         },
-        [[HTMLInputElement.name, HTMLTextAreaElement.name, HTMLSelectElement.name, $NodeList.name]]: /** @lends HTMLInputLikeElement.prototype */{
+        [[HTMLInputElement.name, HTMLTextAreaElement.name, HTMLSelectElement.name, RadioNodeList.name, CheckBoxNodeList.name, $NodeList.name]]: /** @lends HTMLInputLikeElement.prototype */{
             /**
              * get input default value
              *
@@ -400,6 +400,12 @@ export function forms(kQuery) {
              * @return {null|String|Array}
              */
             get $defaultValue() {
+                if (this instanceof RadioNodeList) {
+                    return Array.prototype.find.call(this, radio => radio.defaultChecked)?.$defaultValue ?? null;
+                }
+                if (this instanceof CheckBoxNodeList) {
+                    return [...this].filter(checkbox => checkbox.defaultChecked).map(checkbox => checkbox.$defaultValue);
+                }
                 if (['select-one'].includes(this.type)) {
                     return Array.prototype.find.call(this.options, option => option.defaultSelected)?.value ?? null;
                 }
@@ -428,7 +434,18 @@ export function forms(kQuery) {
              * @descriptor set
              */
             set $defaultValue(value) {
-                if (['select-one'].includes(this.type)) {
+                if (this instanceof RadioNodeList) {
+                    for (const radio of this) {
+                        radio.$defaultValue = value
+                    }
+                }
+                else if (this instanceof CheckBoxNodeList) {
+                    const values = (value instanceof Array ? value : [value]).map(v => '' + v);
+                    for (const checkbox of this) {
+                        checkbox.defaultChecked = values.includes(checkbox.value);
+                    }
+                }
+                else if (['select-one'].includes(this.type)) {
                     value = '' + value;
                     for (const option of this.options) {
                         option.defaultSelected = option.value === value;
@@ -466,6 +483,13 @@ export function forms(kQuery) {
              * @return {null|String|Array|File|FileList}
              */
             get $value() {
+                if (this instanceof RadioNodeList) {
+                    return this.value ? this.value : null;
+                }
+                if (this instanceof CheckBoxNodeList) {
+                    return [...this].filter(checkbox => checkbox.checked).map(checkbox => checkbox.value);
+                }
+
                 if (['select-one'].includes(this.type)) {
                     // https://developer.mozilla.org/docs/Web/API/HTMLSelectElement/value
                     // A string containing the value of the first selected <option> element in this <select> element,
@@ -501,6 +525,21 @@ export function forms(kQuery) {
              * @descriptor set
              */
             set $value(value) {
+                if (this instanceof RadioNodeList) {
+                    for (const radio of this) {
+                        radio.$value = value;
+                    }
+                    return;
+                }
+                if (this instanceof CheckBoxNodeList) {
+                    const values = (value instanceof Array ? value : [value]).filter(v => v !== null).map(v => '' + v);
+                    for (const checkbox of this) {
+                        const index = values.indexOf(checkbox.value);
+                        checkbox.$value = index === -1 ? null : values[index];
+                    }
+                    return;
+                }
+
                 let changed = false;
 
                 if (['select-one'].includes(this.type)) {
@@ -564,7 +603,13 @@ export function forms(kQuery) {
              * @return {this}
              */
             $clear() {
-                if (['select-one', 'select-multiple'].includes(this.type)) {
+                if (this instanceof RadioNodeList) {
+                    this.$value = null;
+                }
+                else if (this instanceof CheckBoxNodeList) {
+                    this.$value = null;
+                }
+                else if (['select-one', 'select-multiple'].includes(this.type)) {
                     this.$value = null;
                 }
                 else if (['radio', 'checkbox'].includes(this.type)) {

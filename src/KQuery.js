@@ -77,7 +77,7 @@ export class KQuery {
                             if (name === 'length') {
                                 continue;
                             }
-                            Object.defineProperty(globalThis[listtype].prototype, name, {
+                            Object.defineProperty((globalThis[listtype] ?? API[listtype]).prototype, name, {
                                 get() {
                                     const mapped = API.F.objectToEntries(this).map(([i, e]) => e?.[name]);
                                     if (mapped.length && mapped.every(e => API.F.anyIsPrimitive(e, Object, Array, FileList))) {
@@ -100,7 +100,7 @@ export class KQuery {
                 }
                 // define self type
                 else {
-                    Object.defineProperties(globalThis[type].prototype, descriptors);
+                    Object.defineProperties((globalThis[type] ?? API[type]).prototype, descriptors);
                 }
             }
         }
