@@ -596,6 +596,32 @@ export function forms(kQuery) {
                 }
             },
             /**
+             * get change state
+             *
+             * @descriptor get
+             *
+             * @return {Boolean}
+             */
+            get $changed() {
+                const $value = this.$value;
+                const $defaultValue = this.$defaultValue;
+
+                if (!F.objectIsArrayLike($value, true)) {
+                    return $value !== $defaultValue;
+                }
+
+                if ($value.length !== $defaultValue.length) {
+                    return true;
+                }
+                for (let i = 0; i < $value.length; i++) {
+                    // File(List) is always true
+                    if ($value[i] !== $defaultValue[i]) {
+                        return true;
+                    }
+                }
+                return false;
+            },
+            /**
              * clear input value
              *
              * clear doesn't mean reset. all input set blank, uncheck, unselect, empty file
