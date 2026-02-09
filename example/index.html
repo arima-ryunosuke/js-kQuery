@@ -5,11 +5,11 @@
     <link id="example-css" rel="stylesheet" href="./example.css"/>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sakura.css/css/sakura.css" type="text/css">
 
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jasmine/5.4.0/jasmine.css"/>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jasmine/5.4.0/jasmine.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jasmine/5.4.0/jasmine-html.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jasmine/5.4.0/boot0.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jasmine/5.4.0/boot1.js"></script>
+    <link rel="stylesheet" href="./assets/jasmine/jasmine.css"/>
+    <script src="./assets/jasmine/jasmine.js"></script>
+    <script src="./assets/jasmine/jasmine-html.js"></script>
+    <script src="./assets/jasmine/boot0.js"></script>
+    <script src="./assets/jasmine/boot1.js"></script>
 
     <title>kQuery</title>
 
@@ -32,45 +32,6 @@
 
         label {
             display: inline;
-        }
-
-        select {
-            vertical-align: top;
-
-            &[multiple] {
-                field-sizing: content;
-                max-width: 350px;
-                max-height: 200px;
-                overflow: auto;
-
-                optgroup {
-                    white-space: normal;
-                }
-
-                option {
-                    display: inline-block;
-                    width: 80px;
-                    padding-left: 10px;
-                    margin: 3px;
-                    cursor: pointer;
-
-                    &:hover {
-                        background: skyblue;
-                    }
-
-                    &:before {
-                        content: '☐ ';
-                    }
-
-                    &:checked {
-                        background: lightskyblue;
-
-                        &:before {
-                            content: '☑ ';
-                        }
-                    }
-                }
-            }
         }
 
         :disabled {
@@ -112,39 +73,6 @@
         window.$ = window.$query;
         window.d$ = document.$.bind(document);
         window.d$$ = document.$$.bind(document);
-
-        // select without ctrl
-        (function () {
-            const contexts = new WeakMap();
-            document.$on('pointerdown', 'select[multiple] option', function (e) {
-                const select = e.target.closest('select');
-                if (e.button === 0 && select.$attrs.$disabled == null) {
-                    contexts.set(select, {
-                        scroll: select.scrollTop,
-                        target: e.target,
-                    });
-                    e.preventDefault();
-                }
-            });
-            document.$on('pointerleave', 'select[multiple] option', function (e) {
-                const select = e.target.closest('select');
-                const context = contexts.get(select);
-                if (e.button === 0 && select.$attrs.$disabled == null && e.target === context.target) {
-                    contexts.delete(select);
-                    e.preventDefault();
-                }
-            });
-            document.$on('pointerup', 'select[multiple] option', function (e) {
-                const select = e.target.closest('select');
-                const context = contexts.get(select);
-                if (e.button === 0 && select.$attrs.$disabled == null && e.target === context.target) {
-                    contexts.delete(select);
-                    e.target.selected = !e.target.selected;
-                    e.preventDefault();
-                    setTimeout(() => select.scrollTop = context.scroll, 0);
-                }
-            });
-        })();
     </script>
     <script type="module" src="./test.js"></script>
 </head>
@@ -724,6 +652,8 @@
             <button type="button" class="file-files">file to files</button>
             <button type="button" class="resetAttribute">reset attribute</button>
             <br>
+            <button type="button" class="get-changed">get changed</button>
+            <br>
             <button type="button" class="get-selectedText">get selectedText</button>
             <button type="button" class="set-selectedText">set selectedText</button>
             <br>
@@ -769,8 +699,8 @@
             <textarea name="textarea">textarea</textarea>
             <br>
             <input type="checkbox" id="checkboxAll"><label for="checkboxAll">all</label>
-            <input name="checkbox[]" type="checkbox" value="a" id="checkboxA" checked><label for="checkboxA">checkboxA</label>
-            <input name="checkbox[]" type="checkbox" value="b" id="checkboxB"><label for="checkboxB">checkboxB</label>
+            <input name="checkbox[]" type="checkbox" value="a" id="checkboxA" multiple checked><label for="checkboxA">checkboxA</label>
+            <input name="checkbox[]" type="checkbox" value="b" id="checkboxB" multiple><label for="checkboxB">checkboxB</label>
             <br>
             <input name="radio" type="radio" value="a" id="radioA" checked><label for="radioA">radioA</label>
             <input name="radio" type="radio" value="b" id="radioB"><label for="radioB">radioB</label>
@@ -779,7 +709,7 @@
                 <option value="a" selected>A</option>
                 <option value="b">B</option>
             </select>
-            <select name="selects[]" multiple>
+            <select name="selects[]" multiple size="1">
                 <option value="a" selected>A</option>
                 <option value="b">B</option>
             </select>
@@ -840,6 +770,10 @@
                 container.$on('click', '.resetAttribute', async function () {
                     input.$$('input, textarea, select').$resetAttribute();
                     output.textContent = input.innerHTML;
+                });
+                container.$on('click', '.get-changed', async function () {
+                    const changes = Array.from(input.$inputs).flatMap((input) => [[input.name, input.$changed]]);
+                    output.textContent = JSON.stringify(Object.fromEntries(changes), null, 4);
                 });
                 container.$on('click', '.get-selectedText', async function () {
                     output.textContent = input.$$('input, textarea, select').$selectedText;

@@ -3141,8 +3141,8 @@ document.addEventListener('DOMContentLoaded', function () {
                     this.form = $(`<form>
                         <span>dummy</span>
                         <input type="checkbox">
-                        <input name="checkbox" type="checkbox" value="ca">
-                        <input name="checkbox" type="checkbox" value="cb">
+                        <input name="checkbox" type="checkbox" value="ca" multiple>
+                        <input name="checkbox" type="checkbox" value="cb" multiple>
                         <input name="radio" type="radio" value="ra">
                         <input name="radio" type="radio" value="rb">
                         
@@ -3286,6 +3286,19 @@ document.addEventListener('DOMContentLoaded', function () {
                     expect(allCheckbox.$indeterminate).toEqual(true);
                     expect(allCheckbox.checked).toEqual(true);
                 });
+                it('$indeterminate/checkboxes', async function () {
+                    const checkboxlist = this.form.$inputs[0];
+
+                    checkboxlist.checked = true;
+                    expect(checkboxlist.$indeterminate).toEqual(false);
+
+                    checkboxlist.checked = false;
+                    expect(checkboxlist.$indeterminate).toEqual(false);
+
+                    checkboxlist[0].checked = false;
+                    checkboxlist[1].checked = true;
+                    expect(checkboxlist.$indeterminate).toEqual(true);
+                });
                 it('$indeterminate/radio', async function () {
                     const radiolist = this.form.radio;
                     const radio = this.form.$$('[name="radio"], span');
@@ -3315,6 +3328,13 @@ document.addEventListener('DOMContentLoaded', function () {
                             <option value="sa" selected>A</option>
                             <option value="sb">B</option>
                         </select>
+                    <form>`);
+
+                    this.lists = $(`<form>
+                        <input name="checkbox[]" type="checkbox" value="ca" multiple checked>
+                        <input name="checkbox[]" type="checkbox" value="cb" multiple>
+                        <input name="radio" type="radio" value="ra" checked>
+                        <input name="radio" type="radio" value="rb">
                     <form>`);
                 });
 
@@ -3391,6 +3411,21 @@ document.addEventListener('DOMContentLoaded', function () {
                         'sb',
                         ['sb'],
                     ]);
+
+                    const [checkboxList, radioList] = this.lists.$inputs;
+
+                    expect(checkboxList.$defaultValue).toEqual(['ca']);
+                    expect(radioList.$defaultValue).toEqual('ra');
+
+                    checkboxList.$defaultValue = ['cb'];
+                    radioList.$defaultValue = 'rb';
+                    expect(checkboxList.$defaultValue).toEqual(['cb']);
+                    expect(radioList.$defaultValue).toEqual('rb');
+
+                    checkboxList.$defaultValue = [];
+                    radioList.$defaultValue = null;
+                    expect(checkboxList.$defaultValue).toEqual([]);
+                    expect(radioList.$defaultValue).toEqual(null);
                 });
                 it('$value/$clear', async function () {
                     const inputs = this.form.$$('input, textarea, select');
@@ -3440,6 +3475,71 @@ document.addEventListener('DOMContentLoaded', function () {
                         null,
                         null,
                         [],
+                    ]);
+
+                    const [checkboxList, radioList] = this.lists.$inputs;
+
+                    expect(checkboxList.$value).toEqual(['ca']);
+                    expect(radioList.$value).toEqual('ra');
+
+                    checkboxList.$value = ['cb'];
+                    radioList.$value = 'rb';
+                    expect(checkboxList.$value).toEqual(['cb']);
+                    expect(radioList.$value).toEqual('rb');
+
+                    checkboxList.$clear();
+                    radioList.$clear();
+                    expect(checkboxList.$value).toEqual([]);
+                    expect(radioList.$value).toEqual(null);
+                });
+                it('$changed', async function () {
+                    const inputs = this.form.$$('input, textarea, select');
+
+                    expect(inputs.$changed).toEqual([
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                    ]);
+
+                    inputs.$filter('[name=text],[name=textarea]').$value = 'changed';
+                    expect(inputs.$changed).toEqual([
+                        true,
+                        true,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                    ]);
+
+                    inputs.$filter('[name="checkbox[]"],[name=radio]').$value = 'changed';
+                    expect(inputs.$changed).toEqual([
+                        true,
+                        true,
+                        true,
+                        false,
+                        true,
+                        false,
+                        false,
+                        false,
+                    ]);
+
+                    inputs.$filter('[name=select],[name="selects[]"]').$value = 'changed';
+                    expect(inputs.$changed).toEqual([
+                        true,
+                        true,
+                        true,
+                        false,
+                        true,
+                        false,
+                        true,
+                        true,
                     ]);
                 });
                 it('$selectedText', async function () {
@@ -3660,13 +3760,34 @@ document.addEventListener('DOMContentLoaded', function () {
 
             describe('HTMLFormElement', function () {
                 beforeEach(function () {
+                    this.inputForm = $(`<form>
+                        <input name="text" type="text" value="text">
+                        <input name="checkbox" type="checkbox" value="c">
+                        <input name="checkboxes" type="checkbox" value="ca" multiple>
+                        <input name="checkboxes" type="checkbox" value="cb" multiple>
+                        <input name="radio" type="radio" value="ra">
+                        <input name="radio" type="radio" value="rb">
+                        <textarea name="textarea">textarea</textarea>
+                    <form>`);
+                    document.body.append(this.inputForm);
+
                     this.form = $('<form action="response.php"><input name="test" value="test"><output></output></form>');
                     document.body.append(this.form);
                 });
                 afterEach(function () {
+                    this.inputForm.remove();
                     this.form.remove();
                 });
 
+                it('$inputs', async function () {
+                    const inputs = this.inputForm.$inputs;
+                    expect(inputs.length).toEqual(5);
+                    expect(inputs[0]).toBeInstanceOf(HTMLInputElement);
+                    expect(inputs[1]).toBeInstanceOf(HTMLInputElement);
+                    expect(inputs[2]).toBeInstanceOf(API.CheckBoxNodeList);
+                    expect(inputs[3]).toBeInstanceOf(RadioNodeList);
+                    expect(inputs[4]).toBeInstanceOf(HTMLTextAreaElement);
+                });
                 it('$URL', async function () {
                     const url = this.form.$URL;
                     url.searchParams.set('a', 'a2');
@@ -4451,12 +4572,25 @@ after-text`);
                         '',
                     ]);
                 });
+                it('$changed', async function () {
+                    this.container.$('.get-changed').click();
+                    expect(this.output.textContent).not.toContain('true');
+
+                    this.container.$$('input:not([type=file]),select,textarea').$value = 'changed';
+                    this.container.$$('input[type=file]').$value = new File(['hoge'], 'textfile', {type: 'text/plain'});
+                    this.container.$('.get-changed').click();
+                    expect(this.output.textContent).not.toContain('false');
+
+                    this.container.$('#form').reset();
+                    this.container.$('.get-changed').click();
+                    expect(this.output.textContent).not.toContain('true');
+                });
                 it('$resetAttribute', async function () {
                     this.container.$('.set-value').click();
                     this.container.$('.resetAttribute').click();
                     expect(this.output.textContent).toContain('<input name="text" type="text" value="b" list="datalist">');
                     expect(this.output.textContent).toContain('<textarea name="textarea">b</textarea>');
-                    expect(this.output.textContent).toContain('<input name="checkbox[]" type="checkbox" value="b" id="checkboxB" checked="">');
+                    expect(this.output.textContent).toContain('<input name="checkbox[]" type="checkbox" value="b" id="checkboxB" multiple="" checked="">');
                     expect(this.output.textContent).toContain('<input name="radio" type="radio" value="b" id="radioB" checked="">');
                     expect(this.output.textContent).toContain('<option value="b" selected="">B</option>');
                 });
