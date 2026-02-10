@@ -912,6 +912,12 @@
                         <small>set action by URL</small></li>
                       
                       <li><a
+                        href='#htmlformelementinputs'
+                        class='regular pre-open'>
+                        $inputs</a>
+                        <small>get all input/select/textarea elements</small></li>
+                      
+                      <li><a
                         href='#htmlformelementresetattribute'
                         class='regular pre-open'>
                         $resetAttribute</a>
@@ -967,6 +973,12 @@
                         class='regular pre-open'>
                         set $value</a>
                         <small>set input value</small></li>
+                      
+                      <li><a
+                        href='#htmlinputlikeelementget__changed'
+                        class='regular pre-open'>
+                        get $changed</a>
+                        <small>get change state</small></li>
                       
                       <li><a
                         href='#htmlinputlikeelementclear'
@@ -9594,6 +9606,66 @@ if specified insert:null, no inserted</p>
       </div>
     </div>
   
+    <div class='border-bottom' id='htmlformelementinputs'>
+      <div class="clearfix small pointer toggle-sibling">
+        <div class="py1 contain">
+            <a class='icon pin-right py1 dark-link caret-right'>▸</a>
+            <span class='code strong strong truncate'>$inputs</span>
+        </div>
+      </div>
+      <div class="clearfix display-none toggle-target">
+        <section class='p2 mb2 clearfix bg-white minishadow'>
+
+  
+
+  <p>get all input/select/textarea elements</p>
+<ul>
+<li>radio is RadioNodeList</li>
+<li>checkbox is CheckBoxNodeList</li>
+</ul>
+
+    <div class='pre p1 fill-light mt0'>$inputs</div>
+  
+  
+
+  
+  
+  
+  
+  
+  
+
+  
+
+  
+
+  
+    
+      <div class='py1 quiet mt1 prose-big'>Returns</div>
+      <code><a href="#nodelist">NodeList</a></code>:
+        
+      
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+</section>
+
+      </div>
+    </div>
+  
     <div class='border-bottom' id='htmlformelementresetattribute'>
       <div class="clearfix small pointer toggle-sibling">
         <div class="py1 contain">
@@ -10048,6 +10120,62 @@ if specified insert:null, no inserted</p>
       </div>
     </div>
   
+    <div class='border-bottom' id='htmlinputlikeelementget__changed'>
+      <div class="clearfix small pointer toggle-sibling">
+        <div class="py1 contain">
+            <a class='icon pin-right py1 dark-link caret-right'>▸</a>
+            <span class='code strong strong truncate'>get $changed</span>
+        </div>
+      </div>
+      <div class="clearfix display-none toggle-target">
+        <section class='p2 mb2 clearfix bg-white minishadow'>
+
+  
+
+  <p>get change state</p>
+
+    <div class='pre p1 fill-light mt0'>get $changed</div>
+  
+  
+
+  
+  
+  
+  
+  
+  
+
+  
+
+  
+
+  
+    
+      <div class='py1 quiet mt1 prose-big'>Returns</div>
+      <code><a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean">Boolean</a></code>:
+        
+      
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+</section>
+
+      </div>
+    </div>
+  
     <div class='border-bottom' id='htmlinputlikeelementclear'>
       <div class="clearfix small pointer toggle-sibling">
         <div class="py1 contain">
@@ -10363,7 +10491,21 @@ if specified insert:null, no inserted</p>
   
 
   <p>get input indeterminate</p>
-<p>returns undefined if not checkbox and supports RadioNodeList.</p>
+<p>returns undefined if not checkbox and supports RadioNodeList/CheckBoxNodeList.</p>
+<ul>
+<li>RadioNodeList
+<ul>
+<li>all unchecked: true</li>
+<li>some checked: false</li>
+</ul>
+</li>
+<li>CheckBoxNodeList
+<ul>
+<li>difference checked: true</li>
+<li>all checked/unchecked: false</li>
+</ul>
+</li>
+</ul>
 
     <div class='pre p1 fill-light mt0'>get $indeterminate</div>
   

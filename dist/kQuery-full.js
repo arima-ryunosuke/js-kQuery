@@ -14,6 +14,7 @@
     $NodeList: () => $NodeList,
     AsyncFunction: () => AsyncFunction,
     AsyncGeneratorFunction: () => AsyncGeneratorFunction,
+    CheckBoxNodeList: () => CheckBoxNodeList,
     Collection: () => Collection,
     Configuration: () => Configuration,
     CookieObserver: () => CookieObserver,
@@ -478,8 +479,9 @@
       }
       return object;
     },
-    iterableToNodeList(iterable) {
-      if (iterable instanceof NodeList) {
+    iterableToNodeList(iterable, nodeListType) {
+      nodeListType ??= NodeList;
+      if (iterable instanceof nodeListType) {
         Logger.instance.notice(`meaningless call to iterableToNodeList`);
       }
       let i = 0;
@@ -498,7 +500,7 @@
         writable: false,
         enumerable: false
       };
-      return Object.create(NodeList.prototype, properties);
+      return Object.create(nodeListType.prototype, properties);
     },
     arrayLikeToArrayRecursive(object, requireLength = true) {
       for (const [key, value] of F.objectToEntries(object)) {
@@ -1490,6 +1492,53 @@
       return this.observedNodes.entries();
     }
   };
+  var CheckBoxNodeList = class extends GT.NodeList {
+    static {
+      __name(this, "CheckBoxNodeList");
+    }
+    /**
+     * get name of CheckBoxNodeList
+     *
+     * @descriptor get
+     *
+     * @return {?String}
+     */
+    get name() {
+      return this[0]?.name;
+    }
+    /**
+     * set name of CheckBoxNodeList
+     *
+     * @descriptor set
+     *
+     * @param {String} name
+     */
+    set name(name) {
+      [...this].forEach(function(e) {
+        e.name = name;
+      });
+    }
+    /**
+     * get name of CheckBoxNodeList
+     *
+     * @descriptor get
+     *
+     * @return {Array}
+     */
+    get value() {
+      return this.$value;
+    }
+    /**
+     * set name of CheckBoxNodeList
+     *
+     * @descriptor set
+     *
+     * @param {Array} value
+     */
+    set value(value) {
+      this.$value = value;
+    }
+  };
   var CustomEvent = class extends GT.CustomEvent {
     static {
       __name(this, "CustomEvent");
@@ -1993,7 +2042,7 @@
                 if (name === "length") {
                   continue;
                 }
-                Object.defineProperty(globalThis[listtype].prototype, name, {
+                Object.defineProperty((globalThis[listtype] ?? API_exports[listtype]).prototype, name, {
                   get() {
                     const mapped = F.objectToEntries(this).map(([i, e]) => e?.[name]);
                     if (mapped.length && mapped.every((e) => F.anyIsPrimitive(e, Object, Array, FileList))) {
@@ -2014,7 +2063,7 @@
               }
             }
           } else {
-            Object.defineProperties(globalThis[type].prototype, descriptors);
+            Object.defineProperties((globalThis[type] ?? API_exports[type]).prototype, descriptors);
           }
         }
       }
@@ -2030,7 +2079,7 @@
       HTMLAnchorElement: ["attributionSrc", "charset", "coords", "name", "rev", "shape"],
       HTMLAreaElement: ["noHref"],
       HTMLBRElement: ["clear"],
-      HTMLBodyElement: ["aLink", "background", "bgColor", "link", "onafterprint", "onbeforeprint", "onbeforeunload", "onblur", "onerror", "onfocus", "onhashchange", "onlanguagechange", "onload", "onmessage", "onmessageerror", "onoffline", "ononline", "onpagehide", "onpageshow", "onpopstate", "onrejectionhandled", "onresize", "onscroll", "onstorage", "onunhandledrejection", "onunload", "text", "vLink"],
+      HTMLBodyElement: ["aLink", "background", "bgColor", "link", "onafterprint", "onbeforeprint", "onbeforeunload", "onblur", "onerror", "onfocus", "ongamepadconnected", "ongamepaddisconnected", "onhashchange", "onlanguagechange", "onload", "onmessage", "onmessageerror", "onoffline", "ononline", "onpagehide", "onpageshow", "onpopstate", "onrejectionhandled", "onresize", "onscroll", "onstorage", "onunhandledrejection", "onunload", "text", "vLink"],
       HTMLDListElement: ["compact"],
       HTMLDirectoryElement: ["*"],
       HTMLDivElement: ["align"],
@@ -2040,7 +2089,7 @@
       HTMLFontElement: ["color", "face", "size"],
       HTMLFormElement: ["requestAutocomplete"],
       HTMLFrameElement: ["*"],
-      HTMLFrameSetElement: ["cols", "onafterprint", "onbeforeprint", "onbeforeunload", "onblur", "onerror", "onfocus", "onhashchange", "onlanguagechange", "onload", "onmessage", "onmessageerror", "onoffline", "ononline", "onpagehide", "onpageshow", "onpopstate", "onrejectionhandled", "onresize", "onscroll", "onstorage", "onunhandledrejection", "onunload", "rows"],
+      HTMLFrameSetElement: ["cols", "onafterprint", "onbeforeprint", "onbeforeunload", "onblur", "onerror", "onfocus", "ongamepadconnected", "ongamepaddisconnected", "onhashchange", "onlanguagechange", "onload", "onmessage", "onmessageerror", "onoffline", "ononline", "onpagehide", "onpageshow", "onpopstate", "onrejectionhandled", "onresize", "onscroll", "onstorage", "onunhandledrejection", "onunload", "rows"],
       HTMLHRElement: ["align", "color", "noShade", "size", "width"],
       HTMLHeadingElement: ["align"],
       HTMLHtmlElement: ["version"],
@@ -2072,21 +2121,21 @@
     };
     const targetProperties = {
       // https://developer.mozilla.org/docs/Web/API/Blob
-      Blob: ["arrayBuffer", "size", "slice", "stream", "text", "type"],
+      Blob: ["arrayBuffer", "bytes", "size", "slice", "stream", "text", "type"],
       // https://developer.mozilla.org/docs/Web/API/Element
-      Element: ["after", "animate", "append", "ariaActiveDescendantElement", "ariaAtomic", "ariaAutoComplete", "ariaBrailleLabel", "ariaBrailleRoleDescription", "ariaBusy", "ariaChecked", "ariaColCount", "ariaColIndex", "ariaColIndexText", "ariaColSpan", "ariaControlsElements", "ariaCurrent", "ariaDescribedByElements", "ariaDescription", "ariaDetailsElements", "ariaDisabled", "ariaErrorMessageElements", "ariaExpanded", "ariaFlowToElements", "ariaHasPopup", "ariaHidden", "ariaInvalid", "ariaKeyShortcuts", "ariaLabel", "ariaLabelledByElements", "ariaLevel", "ariaLive", "ariaModal", "ariaMultiLine", "ariaMultiSelectable", "ariaOrientation", "ariaPlaceholder", "ariaPosInSet", "ariaPressed", "ariaReadOnly", "ariaRelevant", "ariaRequired", "ariaRoleDescription", "ariaRowCount", "ariaRowIndex", "ariaRowIndexText", "ariaRowSpan", "ariaSelected", "ariaSetSize", "ariaSort", "ariaValueMax", "ariaValueMin", "ariaValueNow", "ariaValueText", "assignedSlot", "attachShadow", "attributes", "before", "checkVisibility", "childElementCount", "children", "classList", "className", "clientHeight", "clientLeft", "clientTop", "clientWidth", "closest", "currentCSSZoom", "firstElementChild", "getAnimations", "getAttribute", "getAttributeNS", "getAttributeNames", "getAttributeNode", "getAttributeNodeNS", "getBoundingClientRect", "getClientRects", "getElementsByClassName", "getElementsByTagName", "getElementsByTagNameNS", "getHTML", "hasAttribute", "hasAttributeNS", "hasAttributes", "hasPointerCapture", "id", "innerHTML", "insertAdjacentElement", "insertAdjacentHTML", "insertAdjacentText", "lastElementChild", "localName", "matches", "moveBefore", "namespaceURI", "nextElementSibling", "outerHTML", "part", "prefix", "prepend", "previousElementSibling", "querySelector", "querySelectorAll", "releasePointerCapture", "remove", "removeAttribute", "removeAttributeNS", "removeAttributeNode", "replaceChildren", "replaceWith", "requestFullscreen", "requestPointerLock", "role", "scroll", "scrollBy", "scrollHeight", "scrollIntoView", "scrollLeft", "scrollTo", "scrollTop", "scrollWidth", "setAttribute", "setAttributeNS", "setAttributeNode", "setAttributeNodeNS", "setHTMLUnsafe", "setPointerCapture", "shadowRoot", "slot", "tagName", "toggleAttribute"],
+      Element: ["after", "animate", "append", "ariaActiveDescendantElement", "ariaAtomic", "ariaAutoComplete", "ariaBrailleLabel", "ariaBrailleRoleDescription", "ariaBusy", "ariaChecked", "ariaColCount", "ariaColIndex", "ariaColIndexText", "ariaColSpan", "ariaControlsElements", "ariaCurrent", "ariaDescribedByElements", "ariaDescription", "ariaDetailsElements", "ariaDisabled", "ariaErrorMessageElements", "ariaExpanded", "ariaFlowToElements", "ariaHasPopup", "ariaHidden", "ariaInvalid", "ariaKeyShortcuts", "ariaLabel", "ariaLabelledByElements", "ariaLevel", "ariaLive", "ariaModal", "ariaMultiLine", "ariaMultiSelectable", "ariaNotify", "ariaOrientation", "ariaPlaceholder", "ariaPosInSet", "ariaPressed", "ariaReadOnly", "ariaRelevant", "ariaRequired", "ariaRoleDescription", "ariaRowCount", "ariaRowIndex", "ariaRowIndexText", "ariaRowSpan", "ariaSelected", "ariaSetSize", "ariaSort", "ariaValueMax", "ariaValueMin", "ariaValueNow", "ariaValueText", "assignedSlot", "attachShadow", "attributes", "before", "checkVisibility", "childElementCount", "children", "classList", "className", "clientHeight", "clientLeft", "clientTop", "clientWidth", "closest", "currentCSSZoom", "firstElementChild", "getAnimations", "getAttribute", "getAttributeNS", "getAttributeNames", "getAttributeNode", "getAttributeNodeNS", "getBoundingClientRect", "getClientRects", "getElementsByClassName", "getElementsByTagName", "getElementsByTagNameNS", "getHTML", "hasAttribute", "hasAttributeNS", "hasAttributes", "hasPointerCapture", "id", "innerHTML", "insertAdjacentElement", "insertAdjacentHTML", "insertAdjacentText", "lastElementChild", "localName", "matches", "moveBefore", "namespaceURI", "nextElementSibling", "outerHTML", "part", "prefix", "prepend", "previousElementSibling", "querySelector", "querySelectorAll", "releasePointerCapture", "remove", "removeAttribute", "removeAttributeNS", "removeAttributeNode", "replaceChildren", "replaceWith", "requestFullscreen", "requestPointerLock", "role", "scroll", "scrollBy", "scrollHeight", "scrollIntoView", "scrollLeft", "scrollTo", "scrollTop", "scrollWidth", "setAttribute", "setAttributeNS", "setAttributeNode", "setAttributeNodeNS", "setHTMLUnsafe", "setPointerCapture", "shadowRoot", "slot", "tagName", "toggleAttribute"],
       // https://developer.mozilla.org/docs/Web/API/EventTarget
       EventTarget: ["addEventListener", "removeEventListener", "when"],
       // https://developer.mozilla.org/docs/Web/API/File
       File: ["lastModified", "lastModifiedDate", "name"],
       // https://developer.mozilla.org/docs/Web/API/HTMLAnchorElement
-      HTMLAnchorElement: ["download", "hash", "host", "hostname", "href", "hreflang", "origin", "password", "pathname", "ping", "port", "protocol", "referrerPolicy", "rel", "relList", "search", "target", "text", "toString", "type", "username"],
+      HTMLAnchorElement: ["download", "hash", "host", "hostname", "href", "hrefTranslate", "hreflang", "interestForElement", "origin", "password", "pathname", "ping", "port", "protocol", "referrerPolicy", "rel", "relList", "search", "target", "text", "toString", "type", "username"],
       // https://developer.mozilla.org/docs/Web/API/HTMLAreaElement
-      HTMLAreaElement: ["alt", "coords", "download", "hash", "host", "hostname", "href", "origin", "password", "pathname", "ping", "port", "protocol", "referrerPolicy", "rel", "relList", "search", "shape", "target", "toString", "username"],
+      HTMLAreaElement: ["alt", "attributionSrc", "coords", "download", "hash", "host", "hostname", "href", "interestForElement", "origin", "password", "pathname", "ping", "port", "protocol", "referrerPolicy", "rel", "relList", "search", "shape", "target", "toString", "username"],
       // https://developer.mozilla.org/docs/Web/API/HTMLBaseElement
       HTMLBaseElement: ["href", "target"],
       // https://developer.mozilla.org/docs/Web/API/HTMLButtonElement
-      HTMLButtonElement: ["checkValidity", "command", "commandForElement", "disabled", "form", "formAction", "formEnctype", "formMethod", "formNoValidate", "formTarget", "labels", "name", "popoverTargetAction", "popoverTargetElement", "reportValidity", "setCustomValidity", "type", "validationMessage", "validity", "value", "willValidate"],
+      HTMLButtonElement: ["checkValidity", "command", "commandForElement", "disabled", "form", "formAction", "formEnctype", "formMethod", "formNoValidate", "formTarget", "interestForElement", "labels", "name", "popoverTargetAction", "popoverTargetElement", "reportValidity", "setCustomValidity", "type", "validationMessage", "validity", "value", "willValidate"],
       // https://developer.mozilla.org/docs/Web/API/HTMLCanvasElement
       HTMLCanvasElement: ["captureStream", "getContext", "height", "toBlob", "toDataURL", "transferControlToOffscreen", "width"],
       // https://developer.mozilla.org/docs/Web/API/HTMLDataElement
@@ -2105,6 +2154,8 @@
       HTMLFieldSetElement: ["checkValidity", "disabled", "elements", "form", "name", "reportValidity", "setCustomValidity", "type", "validationMessage", "validity", "willValidate"],
       // https://developer.mozilla.org/docs/Web/API/HTMLFormElement
       HTMLFormElement: ["acceptCharset", "action", "autocomplete", "checkValidity", "elements", "encoding", "enctype", "length", "method", "name", "noValidate", "rel", "relList", "reportValidity", "requestSubmit", "reset", "submit", "target"],
+      // https://developer.mozilla.org/docs/Web/API/HTMLGeolocationElement
+      HTMLGeolocationElement: ["accuracymode", "autolocate", "error", "initialPermissionStatus", "invalidReason", "isValid", "onlocation", "onpromptaction", "onpromptdismiss", "onvalidationstatuschange", "permissionStatus", "position", "watch"],
       // https://developer.mozilla.org/docs/Web/API/HTMLIFrameElement
       HTMLIFrameElement: ["allow", "allowFullscreen", "contentDocument", "contentWindow", "getSVGDocument", "height", "loading", "name", "referrerPolicy", "sandbox", "src", "srcdoc", "width"],
       // https://developer.mozilla.org/docs/Web/API/HTMLImageElement
@@ -2122,7 +2173,7 @@
       // https://developer.mozilla.org/docs/Web/API/HTMLMapElement
       HTMLMapElement: ["areas", "name"],
       // https://developer.mozilla.org/docs/Web/API/HTMLMediaElement
-      HTMLMediaElement: ["addTextTrack", "autoplay", "buffered", "canPlayType", "controls", "crossOrigin", "currentSrc", "currentTime", "defaultMuted", "defaultPlaybackRate", "duration", "ended", "error", "load", "loop", "muted", "networkState", "pause", "paused", "play", "playbackRate", "played", "preload", "preservesPitch", "readyState", "seekable", "seeking", "src", "srcObject", "textTracks", "volume"],
+      HTMLMediaElement: ["addTextTrack", "autoplay", "buffered", "canPlayType", "controls", "crossOrigin", "currentSrc", "currentTime", "defaultMuted", "defaultPlaybackRate", "duration", "ended", "error", "load", "loop", "mediaKeys", "muted", "networkState", "pause", "paused", "play", "playbackRate", "played", "preload", "preservesPitch", "readyState", "seekable", "seeking", "setMediaKeys", "src", "srcObject", "textTracks", "volume"],
       // https://developer.mozilla.org/docs/Web/API/HTMLMetaElement
       HTMLMetaElement: ["content", "httpEquiv", "media", "name"],
       // https://developer.mozilla.org/docs/Web/API/HTMLMeterElement
@@ -4858,13 +4909,20 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
           }
         }
       ),
-      [[HTMLInputElement.name, RadioNodeList.name, $NodeList.name]]: (
+      [[HTMLInputElement.name, RadioNodeList.name, CheckBoxNodeList.name, $NodeList.name]]: (
         /** @lends HTMLInputCheckableElement.prototype */
         {
           /**
            * get input indeterminate
            *
-           * returns undefined if not checkbox and supports RadioNodeList.
+           * returns undefined if not checkbox and supports RadioNodeList/CheckBoxNodeList.
+           *
+           * - RadioNodeList
+           *   - all unchecked: true
+           *   - some checked: false
+           * - CheckBoxNodeList
+           *   - difference checked: true
+           *   - all checked/unchecked: false
            *
            * @descriptor get
            *
@@ -4873,6 +4931,18 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
           get $indeterminate() {
             if (this instanceof RadioNodeList) {
               return this.value === "";
+            }
+            if (this instanceof CheckBoxNodeList) {
+              if (this.length <= 1) {
+                return false;
+              }
+              const first = this[0].checked;
+              for (let i = 1; i < this.length; i++) {
+                if (first !== this[i].checked) {
+                  return true;
+                }
+              }
+              return false;
             }
             if (this.type !== "checkbox") {
               return void 0;
@@ -4909,6 +4979,10 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
               this.forEach((e) => e.checked = false);
               return;
             }
+            if (this instanceof CheckBoxNodeList) {
+              kQuery.logger.error(`CheckBoxNodeList's $indeterminate is readonly`);
+              return;
+            }
             if (this.type !== "checkbox") {
               return;
             }
@@ -4931,7 +5005,7 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
           }
         }
       ),
-      [[HTMLInputElement.name, HTMLTextAreaElement.name, HTMLSelectElement.name, $NodeList.name]]: (
+      [[HTMLInputElement.name, HTMLTextAreaElement.name, HTMLSelectElement.name, RadioNodeList.name, CheckBoxNodeList.name, $NodeList.name]]: (
         /** @lends HTMLInputLikeElement.prototype */
         {
           /**
@@ -4949,6 +5023,12 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
            * @return {null|String|Array}
            */
           get $defaultValue() {
+            if (this instanceof RadioNodeList) {
+              return Array.prototype.find.call(this, (radio) => radio.defaultChecked)?.$defaultValue ?? null;
+            }
+            if (this instanceof CheckBoxNodeList) {
+              return [...this].filter((checkbox) => checkbox.defaultChecked).map((checkbox) => checkbox.$defaultValue);
+            }
             if (["select-one"].includes(this.type)) {
               return Array.prototype.find.call(this.options, (option) => option.defaultSelected)?.value ?? null;
             }
@@ -4976,7 +5056,16 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
            * @descriptor set
            */
           set $defaultValue(value) {
-            if (["select-one"].includes(this.type)) {
+            if (this instanceof RadioNodeList) {
+              for (const radio of this) {
+                radio.$defaultValue = value;
+              }
+            } else if (this instanceof CheckBoxNodeList) {
+              const values = (value instanceof Array ? value : [value]).map((v) => "" + v);
+              for (const checkbox of this) {
+                checkbox.defaultChecked = values.includes(checkbox.value);
+              }
+            } else if (["select-one"].includes(this.type)) {
               value = "" + value;
               for (const option of this.options) {
                 option.defaultSelected = option.value === value;
@@ -5009,6 +5098,12 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
            * @return {null|String|Array|File|FileList}
            */
           get $value() {
+            if (this instanceof RadioNodeList) {
+              return this.value ? this.value : null;
+            }
+            if (this instanceof CheckBoxNodeList) {
+              return [...this].filter((checkbox) => checkbox.checked).map((checkbox) => checkbox.value);
+            }
             if (["select-one"].includes(this.type)) {
               return Array.prototype.find.call(this.options, (option) => option.selected)?.value ?? null;
             }
@@ -5041,6 +5136,20 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
            * @descriptor set
            */
           set $value(value) {
+            if (this instanceof RadioNodeList) {
+              for (const radio of this) {
+                radio.$value = value;
+              }
+              return;
+            }
+            if (this instanceof CheckBoxNodeList) {
+              const values = (value instanceof Array ? value : [value]).filter((v) => v !== null).map((v) => "" + v);
+              for (const checkbox of this) {
+                const index = values.indexOf(checkbox.value);
+                checkbox.$value = index === -1 ? null : values[index];
+              }
+              return;
+            }
             let changed = false;
             if (["select-one"].includes(this.type)) {
               if (this.value !== value) {
@@ -5090,6 +5199,29 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
             }
           },
           /**
+           * get change state
+           *
+           * @descriptor get
+           *
+           * @return {Boolean}
+           */
+          get $changed() {
+            const $value = this.$value;
+            const $defaultValue = this.$defaultValue;
+            if (!F.objectIsArrayLike($value, true)) {
+              return $value !== $defaultValue;
+            }
+            if ($value.length !== $defaultValue.length) {
+              return true;
+            }
+            for (let i = 0; i < $value.length; i++) {
+              if ($value[i] !== $defaultValue[i]) {
+                return true;
+              }
+            }
+            return false;
+          },
+          /**
            * clear input value
            *
            * clear doesn't mean reset. all input set blank, uncheck, unselect, empty file
@@ -5097,7 +5229,11 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
            * @return {this}
            */
           $clear() {
-            if (["select-one", "select-multiple"].includes(this.type)) {
+            if (this instanceof RadioNodeList) {
+              this.$value = null;
+            } else if (this instanceof CheckBoxNodeList) {
+              this.$value = null;
+            } else if (["select-one", "select-multiple"].includes(this.type)) {
               this.$value = null;
             } else if (["radio", "checkbox"].includes(this.type)) {
               this.$value = null;
@@ -5317,6 +5453,43 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
       [[HTMLFormElement.name, $NodeList.name]]: (
         /** @lends HTMLFormElement.prototype */
         {
+          /**
+           * get all input/select/textarea elements
+           *
+           * - radio is RadioNodeList
+           * - checkbox is CheckBoxNodeList
+           *
+           * @return {NodeList}
+           */
+          get $inputs() {
+            const checkboxNodes = {};
+            this.querySelectorAll('input[type="checkbox"][multiple]').forEach((e) => {
+              checkboxNodes[e.name] ??= [];
+              checkboxNodes[e.name].push(e);
+            });
+            const appended = {};
+            const inputs = Array.from(this.querySelectorAll("input,select,textarea")).flatMap((input) => {
+              if (input.name.length === 0) {
+                return [];
+              }
+              if (input.type === "radio") {
+                if (appended[input.name]) {
+                  return [];
+                }
+                appended[input.name] = true;
+                return [this.elements[input.name]];
+              }
+              if (input.type === "checkbox" && checkboxNodes[input.name]) {
+                if (appended[input.name]) {
+                  return [];
+                }
+                appended[input.name] = true;
+                return [F.iterableToNodeList(checkboxNodes[input.name], CheckBoxNodeList)];
+              }
+              return [input];
+            });
+            return F.iterableToNodeList(inputs);
+          },
           /**
            * writeback value to attribute
            *
