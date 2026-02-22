@@ -572,6 +572,17 @@ MIT
 - マイナー: 小規模な互換性破壊の際にアップします（引数の変更、小規模破壊を伴う修正など）
 - パッチ: 互換性破壊はありません（デフォルト引数の追加や、新たなクラスの追加、コードフォーマットなど）
 
+### 0.4.2
+
+- [feature] 入力値が変化したかを表す $changed を実装
+- [feature] Radio/CheckBoxNodeList の動作は input に合わせる
+- [feature] CheckBoxNodeList を導入
+
+### 0.4.1
+
+- [feature] $hash を追加
+- [feature] $selectedText を追加
+
 ### 0.4.0
 
 - [refactor] 型の強化
