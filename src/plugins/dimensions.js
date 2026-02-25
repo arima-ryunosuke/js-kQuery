@@ -6,6 +6,36 @@ import {$NodeList, F} from '../API.js';
  * @ignore
  */
 export function dimensions(kQuery) {
+    Object.assign(kQuery, /** @lends KQuery.prototype */{
+        sizePresets: {
+            '': {
+                scrollbar: true,
+            },
+            client: {
+                padding: true,
+            },
+            inner: {
+                padding: true,
+                scrollbar: true,
+            },
+            offset: {
+                padding: true,
+                border: true,
+            },
+            outer: {
+                padding: true,
+                border: true,
+                scrollbar: true,
+            },
+            margin: {
+                padding: true,
+                border: true,
+                margin: true,
+                scrollbar: true,
+            },
+        },
+    });
+
     const boxsize = function (element) {
         const backup = element.getAttribute('style');
 
@@ -251,34 +281,7 @@ export function dimensions(kQuery) {
              */
             $size(options = {}) {
                 if (typeof (options) === 'string') {
-                    const presets = {
-                        '': {
-                            scrollbar: true,
-                        },
-                        client: {
-                            padding: true,
-                        },
-                        inner: {
-                            padding: true,
-                            scrollbar: true,
-                        },
-                        offset: {
-                            padding: true,
-                            border: true,
-                        },
-                        outer: {
-                            padding: true,
-                            border: true,
-                            scrollbar: true,
-                        },
-                        margin: {
-                            padding: true,
-                            border: true,
-                            margin: true,
-                            scrollbar: true,
-                        },
-                    };
-                    options = presets[options];
+                    options = kQuery.sizePresets[options];
                 }
                 kQuery.logger.assertInstanceOf(options, Object)();
                 options = Object.assign({
@@ -320,7 +323,7 @@ export function dimensions(kQuery) {
              * @return {Number}
              */
             $width(options = {}) {
-                if (typeof (options) === 'number' || typeof (options) === 'string') {
+                if (typeof (options) === 'number' || (typeof (options) === 'string' && !(options in kQuery.sizePresets))) {
                     if (F.stringIsNaN(options)) {
                         kQuery.logger.error(`options(${options}) is NaN`);
                     }
@@ -343,7 +346,7 @@ export function dimensions(kQuery) {
              * @return {Number}
              */
             $height(options = {}) {
-                if (typeof (options) === 'number' || typeof (options) === 'string') {
+                if (typeof (options) === 'number' || (typeof (options) === 'string' && !(options in kQuery.sizePresets))) {
                     if (F.stringIsNaN(options)) {
                         kQuery.logger.error(`options(${options}) is NaN`);
                     }
