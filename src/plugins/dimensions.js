@@ -188,6 +188,42 @@ export function dimensions(kQuery) {
                 };
             },
             /**
+             * get/set left irrespective of css
+             *
+             * @param {Number|String|OffsetOptions} [options={}]
+             * @return {Number}
+             */
+            $left(options = {}) {
+                if (typeof (options) === 'number' || typeof (options) === 'string') {
+                    if (F.stringIsNaN(options)) {
+                        kQuery.logger.error(`options(${options}) is NaN`);
+                    }
+                    const size = this.$cssPixel(options);
+                    this.style.left = size + 'px';
+                    return size;
+                }
+
+                return this.$offset(options).left;
+            },
+            /**
+             * get/set top irrespective of css
+             *
+             * @param {Number|String|OffsetOptions} [options={}]
+             * @return {Number}
+             */
+            $top(options = {}) {
+                if (typeof (options) === 'number' || typeof (options) === 'string') {
+                    if (F.stringIsNaN(options)) {
+                        kQuery.logger.error(`options(${options}) is NaN`);
+                    }
+                    const size = this.$cssPixel(options);
+                    this.style.top = size + 'px';
+                    return size;
+                }
+
+                return this.$offset(options).top;
+            },
+            /**
              * get width/height irrespective of css
              *
              * ```
