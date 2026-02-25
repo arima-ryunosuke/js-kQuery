@@ -182,7 +182,7 @@
                     output.textContent = input.innerHTML;
                 });
                 container.$on('click', '.class-assign', function () {
-                    container.$$('input').$class = ['a2', 'b2', '', 'c2 d2', {x2: false, y2: true}];
+                    container.$$('input').$class = {'a2 b2 c2 d2': true, x2: false, y2: true};
                     container.$$('input').$class.x = (node, i) => i === 1;
                     output.textContent = input.innerHTML;
                 });
@@ -350,23 +350,23 @@
                 output.textContent = input.innerHTML;
 
                 container.$on('click', '.before', function () {
-                    container.$('.dom-container').$before('before-text\n', document.$createNodeListFromHTML('<strong>before-strong</strong>\n'));
+                    container.$('.dom-container').$before('before-text\n', document.$createNodeList('<strong>before-strong</strong>\n'));
                     output.textContent = input.innerHTML;
                 });
                 container.$on('click', '.prepend', function () {
-                    container.$('.dom-container').$prepend('prepend-text\n', document.$createNodeListFromHTML('<strong>prepend-strong</strong>\n'));
+                    container.$('.dom-container').$prepend('prepend-text\n', document.$createNodeList('<strong>prepend-strong</strong>\n'));
                     output.textContent = input.innerHTML;
                 });
                 container.$on('click', '.insert', function () {
-                    container.$('.dom-container').$insert(1, 'insert-text\n', document.$createNodeListFromHTML('<strong>insert-strong</strong>\n'));
+                    container.$('.dom-container').$insert(1, 'insert-text\n', document.$createNodeList('<strong>insert-strong</strong>\n'));
                     output.textContent = input.innerHTML;
                 });
                 container.$on('click', '.append', function () {
-                    container.$('.dom-container').$append('append-text\n', document.$createNodeListFromHTML('<strong>append-strong</strong>\n'));
+                    container.$('.dom-container').$append('append-text\n', document.$createNodeList('<strong>append-strong</strong>\n'));
                     output.textContent = input.innerHTML;
                 });
                 container.$on('click', '.after', function () {
-                    container.$('.dom-container').$after('after-text\n', document.$createNodeListFromHTML('<strong>after-strong</strong>\n'));
+                    container.$('.dom-container').$after('after-text\n', document.$createNodeList('<strong>after-strong</strong>\n'));
                     output.textContent = input.innerHTML;
                 });
                 container.$on('click', '.create', function () {
@@ -390,7 +390,7 @@
                     console.log(container.$('.input').$textNodes());
                 });
                 container.$on('click', '.replace', function () {
-                    container.$('.dom-container').$replace('replace-text\n', document.$createNodeListFromHTML('<strong>replace-strong</strong>\n'));
+                    container.$('.dom-container').$replace('replace-text\n', document.$createNodeList('<strong>replace-strong</strong>\n'));
                     output.textContent = input.innerHTML;
                 });
                 container.$on('click', '.trim', function () {
@@ -497,7 +497,7 @@
                 const output = container.$('.output');
 
                 const addrow = function () {
-                    const row = document.$createNodeListFromHTML(input.$('.row-template').innerHTML);
+                    const row = document.$createNodeList(input.$('.row-template').innerHTML);
                     input.$append(row);
                     row.$('.native-once-click').$on('click', function (e) {
                         console.log(e);
@@ -662,7 +662,7 @@
             <br>
             <button type="submit" class="request" name="submit" value="" form="form">request</button>
             <button type="submit" class="request" name="submit" value="get" form="form" formaction="response.php?method=get" formmethod="get" formenctype="application/x-www-form-urlencoded">request GET</button>
-            <button type="submit" class="request" name="submit" value="post" form="form" formaction="response.php?method=post" formmethod="post" formenctype="application/x-www-form-urlencoded">request POST</button>
+            <button type="submit" class="request" name="submit" value="post" form="form" formaction="response.php?method=post" formmethod="post" formenctype="multipart/form-data">request POST</button>
             <button type="submit" class="request" name="submit" value="post" form="form" formaction="response.php?method=post" formmethod="post" formenctype="application/json">request JSON</button>
             <br>
             <a href="response.php?a=1&amp;x[]=1&amp;x[]=2" class="postable" target="postable">postable</a>
@@ -716,6 +716,11 @@
             <br>
             <input name="file" type="file">
             <input name="files[]" type="file" multiple>
+            <span id="dropzone" style="
+              padding: 10px;
+              border: 4px dashed red;
+              border-radius: 10px;
+            ">drop file here</span>
             <br>
             <button name="submit" value="submit" formenctype="application/x-www-form-urlencoded">submit urlencoded</button>
             <button name="submit" value="submit" formenctype="multipart/form-data">submit form-data</button>
@@ -851,6 +856,18 @@
                 container.$on('click', '.show-dialog-b', async function (e) {
                     console.log(await container.$('.dialog-b').$showModal({escape: false, outside: false}));
                 });
+
+                let dropzone = document.getElementById("dropzone");
+                dropzone.addEventListener("dragover", (e) => {
+                    e.preventDefault();
+                });
+                dropzone.addEventListener("drop", async (e) => {
+                    e.preventDefault();
+
+                    const filelist = await e.dataTransfer.$files();
+                    $('[name="files[]"]').files = filelist;
+                    output.textContent = JSON.stringify(filelist.$object(file => `${file.size} byte`), null, 2);
+                });
             })();
         </script>
     </section>
@@ -859,6 +876,7 @@
         <h2>dimension</h2>
 
         <div>
+            <button type="button" class="offset-set">offset set</button>
             <button type="button" class="offset">offset</button>
             <button type="button" class="offset" data-box-margin="true">margin offset</button>
             <button type="button" class="offset" data-box-relative="true">relative offset</button>
@@ -885,7 +903,7 @@
 
         <div class="input">
             <div style="position:relative;top:1px;left:1px;width:600px;">
-                <div class="box" style="margin:3px; border:red 5px solid; padding:7px; width:200px;overflow:scroll; scrollbar-width:thin; background:blue;">
+                <div class="box" style="position:relative;margin:3px; border:red 5px solid; padding:7px; width:200px;overflow:scroll; scrollbar-width:thin; background:blue;">
                     <div style="background:green;">
                         <span style="margin:3px; border:red 5px solid; padding:7px;">a<br>bb<br>ccc</span>
                         <div style="box-sizing:border-box; width:500px;"> zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz</div>
@@ -919,6 +937,11 @@
                 const input = container.$('.input');
                 const output = container.$('.output');
 
+                container.$on('click', '.offset-set', function (e) {
+                    const box = input.$('.box');
+                    output.textContent += `$left(${JSON.stringify('3em')}): ${JSON.stringify(box.$left('3em'))}\n`;
+                    output.textContent += `$top(${JSON.stringify('4em')}): ${JSON.stringify(box.$top('4em'))}\n`;
+                });
                 container.$on('click', '.offset', function (e) {
                     const box = input.$('.box');
                     const options = {
@@ -1214,6 +1237,11 @@
         <div>
             <button type="button" class="window-open">window open</button>
             <br>
+            <span class="watch-target">watch target1</span>
+            <span class="watch-target">watch target2</span>
+            <button type="button" class="add-class" data-class="hoge">add .hoge</button>
+            <button type="button" class="add-class" data-class="fuga">add .fuga</button>
+            <br>
             <input class="total-checkbox" type="checkbox"><br>
             <input class="parent1-checkbox" type="checkbox">
             <input class="child1-checkbox" type="checkbox">
@@ -1304,6 +1332,17 @@
 
                 container.$on('click', '.window-open', async function () {
                     window.$open({url: document.location.href});
+                });
+                const spans = container.$$('.watch-target');
+                spans.$wait((node) => node.classList.contains('hoge')).then(function () {
+                    output.textContent += `spans was added .hoge\n`;
+                });
+                spans[1].$wait((node) => node.classList.contains('fuga')).then(function () {
+                    output.textContent += `spans[1] was added .fuga\n`;
+                });
+                container.$on('click', '.add-class', async function (e) {
+                    const spans = container.$$('.watch-target');
+                    spans.classList.add(e.target.dataset.class);
                 });
                 container.$on('click', '.value-as-date', async function (e) {
                     const input = e.target.$prevElement('input');

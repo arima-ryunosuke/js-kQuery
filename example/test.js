@@ -353,6 +353,16 @@ document.addEventListener('DOMContentLoaded', function () {
                     expect(API.F.stringIsNaN(123)).toEqual(false);
                     expect(API.F.stringIsNaN(123.456)).toEqual(false);
                 });
+                it('F.stringCompressAndBase64', async function () {
+                    expect(await API.F.stringCompressAndBase64("マルチバイト１２", "deflate-raw", {
+                        alphabet: "base64",
+                        omitPadding: false,
+                    })).toEqual('ARgA5//jg57jg6vjg4Hjg5DjgqTjg4jvvJHvvJI=');
+                    expect(await API.F.stringCompressAndBase64("マルチバイト３４", "deflate", {
+                        alphabet: "base64url",
+                        omitPadding: true,
+                    })).toEqual('eJwBGADn_-ODnuODq-ODgeODkOOCpOODiO-8k--8lMudEGc');
+                });
                 it('F.stringRender', async function () {
                     expect(API.F.stringRender('${this.hoge}, ${this.fuga}, ${this.piyo ?? "default"}', {
                         hoge: 'hoge',
@@ -1889,9 +1899,9 @@ document.addEventListener('DOMContentLoaded', function () {
             });
 
             describe('Document', function () {
-                it('$createNodeListFromHTML', async function () {
-                    const nodelist = document.$createNodeListFromHTML('A<div><span>S</span></div>Z');
-                    expect(nodelist + '').toEqual('A<div><span>S</span></div>Z');
+                it('$createNodeList', async function () {
+                    const nodelist = document.$createNodeList('A<div><span>S</span></div>Z', new Image(10, 20));
+                    expect(nodelist + '').toEqual('A<div><span>S</span></div>Z<img width="10" height="20">');
                 });
                 it('$createElement', async function () {
                     const element = document.$createElement('div', {hidden: true, title: 'value'}, 'child1', 'child2');
@@ -2317,6 +2327,17 @@ document.addEventListener('DOMContentLoaded', function () {
 
                     expect(form.$('[type=text]').$radioNodeList).toEqual(undefined);
                 });
+                it('$wait', async function () {
+                    const span = document.$createElement('span');
+                    setTimeout(() => {
+                        span.classList.add('hoge');
+                    }, 200);
+                    const waitMsec = await span.$wait(function () {
+                        return this.classList.contains('hoge');
+                    })
+                    expect(waitMsec).toBeGreaterThan(200);
+                    expect(waitMsec).toBeLessThan(300);
+                });
             });
 
             describe('Element', function () {
@@ -2350,6 +2371,23 @@ document.addEventListener('DOMContentLoaded', function () {
                     this.parent.remove();
                 });
 
+                it('$toggleAttributes', async function () {
+                    this.element.$toggleAttributes({
+                        hoge: "HOGE",
+                        fuga: "FUGA",
+                        piyo: "PIYO",
+                        keep: "KEEP",
+                        style: null,
+                    });
+                    expect(this.element.$outerTag(false)).toEqual('<span hoge="HOGE" fuga="FUGA" piyo="PIYO" keep="KEEP">');
+
+                    this.element.$toggleAttributes({
+                        hoge: "HOGE2",
+                        fuga: false,
+                        piyo: null,
+                    });
+                    expect(this.element.$outerTag(false)).toEqual('<span hoge="HOGE2" keep="KEEP">');
+                });
                 it('$attrs', async function () {
                     expect('hoge' in this.element.$attrs).toEqual(false);
 
@@ -2800,6 +2838,9 @@ document.addEventListener('DOMContentLoaded', function () {
                     expect(this.box.$('div').$offset({margin: true})).toEqual({left: 6, top: 6});
                     expect(this.box.$('div').$offset({relative: true})).toEqual({left: 1, top: 1});
                     expect(this.box.$('div').$offset({relative: true, margin: true})).toEqual({left: 4, top: 4});
+
+                    expect(this.box.$('div').$left('3em')).toEqual(54);
+                    expect(this.box.$('div').$top('4em')).toEqual(72);
                 });
                 const cit = window.navigator.userAgent.includes('Chrome') ? window.it : window.xit;
                 cit('get $width/$height', async function () {
@@ -2812,6 +2853,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     expect(this.box.$('div').$width({scrollbar: true, padding: true})).toEqual(width += padding * 2);
                     expect(this.box.$('div').$width({scrollbar: true, padding: true, border: true})).toEqual(width += border * 2);
                     expect(this.box.$('div').$width({scrollbar: true, padding: true, border: true, margin: true})).toEqual(width += margin * 2);
+                    expect(this.box.$('div').$width('margin')).toBeCloseTo(width);
 
                     let height = 116;
                     expect(this.box.$('div').$height({})).toEqual(height);
@@ -2819,6 +2861,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     expect(this.box.$('div').$height({scrollbar: true, padding: true})).toEqual(height += padding * 2);
                     expect(this.box.$('div').$height({scrollbar: true, padding: true, border: true})).toBeCloseTo(height += border * 2, 0);
                     expect(this.box.$('div').$height({scrollbar: true, padding: true, border: true, margin: true})).toBeCloseTo(height += margin * 2, 0);
+                    expect(this.box.$('div').$height('margin')).toBeCloseTo(height, 0);
 
                     expect(this.box.$('span').$size({})).toEqual({width: 27, height: 78});
                     expect(this.box.$('span').$size({scrollbar: true})).toEqual({width: 27, height: 78});
@@ -3760,12 +3803,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
             describe('HTMLFormElement', function () {
                 beforeEach(function () {
-                    this.inputForm = $(`<form>
+                    this.inputForm = $(`<form action="index.html">
                         <input name="text" type="text" value="text">
                         <input name="checkbox" type="checkbox" value="c">
-                        <input name="checkboxes" type="checkbox" value="ca" multiple>
-                        <input name="checkboxes" type="checkbox" value="cb" multiple>
-                        <input name="radio" type="radio" value="ra">
+                        <input name="checkboxes[]" type="checkbox" value="ca" multiple checked>
+                        <input name="checkboxes[]" type="checkbox" value="cb" multiple checked>
+                        <input name="radio" type="radio" value="ra" checked>
                         <input name="radio" type="radio" value="rb">
                         <textarea name="textarea">textarea</textarea>
                     <form>`);
@@ -3797,6 +3840,12 @@ document.addEventListener('DOMContentLoaded', function () {
                     url.port = '8080';
                     this.form.$URL = url;
                     expect(this.form.action).toContain(':8080/path2?a=a2&x=X');
+                });
+                it('$href', async function () {
+                    expect(await this.inputForm.$href()).toContain('?text=text&checkboxes%5B%5D=ca+cb&radio=ra&textarea=textarea');
+                    expect(await this.form.$href()).toContain('?test=test');
+                    this.form.method = 'post';
+                    expect(await this.form.$href()).not.toContain('?test=test');
                 });
                 it('$request', async function () {
                     let response;
@@ -3938,6 +3987,14 @@ document.addEventListener('DOMContentLoaded', function () {
                     expect(that_url.toString()).toEqual('http://example.com:8080/path/to/test?query2=b&query3=c#hash');
                     expect(this.url.toString()).toEqual('http://example.com:8080/path/to/test?query2=b&query3=c#hash');
                 });
+                it('$toString', async function () {
+                    this.url.searchParams.append('multiple[]', 1);
+                    this.url.searchParams.append('multiple[]', 2);
+                    this.url.searchParams.append('space', 'ho ge');
+                    this.url.searchParams.append('multiple[]', 3);
+                    expect(await this.url.$toString()).toEqual('http://example.com:8080/path/to/test?query1=a&query2=b&multiple%5B%5D=1+2+3&space=ho+ge#hash');
+                    expect(await this.url.$toString({compress: "c"})).toEqual('http://example.com:8080/path/to/test?c=KyxNLao0tE1UKwQxjGyT1HJLc0oyC3JSVU2dVE1dbA21jbSN1YoLEpNTbTPytdNTAQ#hash');
+                });
             });
 
             describe('URLSearchParams', function () {
@@ -3980,6 +4037,15 @@ document.addEventListener('DOMContentLoaded', function () {
                     expect(this.searchParams.toString()).toEqual('query1=a&query2=b&query3=c&queryX%5B%5D=X&query1=a2');
                     this.searchParams.$clear();
                     expect(this.searchParams.toString()).toEqual('');
+                });
+                it('$toString', async function () {
+                    this.searchParams.append('multiple[]', 1);
+                    this.searchParams.append('multiple[]', 2);
+                    this.searchParams.append('space', 'ho ge');
+                    this.searchParams.append('multiple[]', 3);
+                    expect(await this.searchParams.$toString()).toEqual('query1=a&query2=b&query3=c&queryX%5B%5D=X&multiple%5B%5D=1+2+3&space=ho+ge');
+                    expect(await this.searchParams.$toString({delimiter: ',', space: '%20'})).toEqual('query1=a&query2=b&query3=c&queryX%5B%5D=X&multiple%5B%5D=1%2C2%2C3&space=ho%20ge');
+                    expect(await this.searchParams.$toString({compress: "c"})).toEqual('c=KyxNLao0tE1UKwQxjGyTIAxj22QII0LV1EnV1MU2Qi23NKcksyAnFSpgqG2kbaxWXJCYnGqbka-dngoA');
                 });
             });
 
