@@ -35,7 +35,7 @@ export function manipulation(kQuery) {
              *
              * @param {String|Array|Node|NodeList|HTMLCollection} selectorFn
              * @param {?Document} [ownerDocument]
-             * @return {Node|NodeList}
+             * @return {Element|Node|NodeList}
              */
             $query(selectorFn, ownerDocument = null) {
                 ownerDocument ??= (this ?? globalThis).document;
