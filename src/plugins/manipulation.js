@@ -452,6 +452,15 @@ export function manipulation(kQuery) {
                 return this;
             },
             /**
+             * remove self
+             *
+             * @return {this}
+             */
+            $remove() {
+                this.remove();
+                return this;
+            },
+            /**
              * trim whitespace textnode
              *
              * @return {this}
