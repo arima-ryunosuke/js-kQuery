@@ -10,7 +10,7 @@ export function miscellaneous(kQuery) {
     const documentChange = function (e) {
         for (const [parent, selector] of interlockings.entries()) {
             if (e.target.$matches(selector)) {
-                parent.$indeterminate = window.$query(selector).$filter('[type=checkbox]').checked;
+                parent.$indeterminate = parent.$document.$$(selector).$filter('[type=checkbox]').checked;
             }
         }
     };
@@ -277,18 +277,18 @@ export function miscellaneous(kQuery) {
                         throw new Error(this + ' is not have child selector');
                     }
 
-                    this.$indeterminate = window.$query(selector).$filter('[type=checkbox]').checked;
+                    this.$indeterminate = this.$document.$$(selector).$filter('[type=checkbox]').checked;
                 }
                 // initialize mode
                 else {
                     interlockings.set(this, selector);
-                    this.$indeterminate = window.$query(selector).$filter('[type=checkbox]').checked;
+                    this.$indeterminate = this.$document.$$(selector).$filter('[type=checkbox]').checked;
 
                     ['change', '$change'].forEach(e => {
                         this.$document.addEventListener(e, documentChange);
                         this.addEventListener(e, (e) => {
                             const parent = e.target;
-                            const children = window.$query(selector).$filter('[type=checkbox]');
+                            const children = this.$document.$$(selector).$filter('[type=checkbox]');
                             for (const child of children) {
                                 child.$value = parent.checked ? child.value : null;
                             }
