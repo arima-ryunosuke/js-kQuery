@@ -1035,6 +1035,14 @@ export class Collection extends null {
                     Logger.instance.notice(`Tried to manipulate empty list, but mostly a bug. Please check selectors etc. if not intended`);
                 }
 
+                if (value instanceof Array) {
+                    for (const [i, v] of value.entries()) {
+                        if (v !== undefined && i in array) {
+                            Reflect.set(array[i], property, v);
+                        }
+                    }
+                    return true;
+                }
                 array.forEach((e, i) => F.functionToCallbackable(v => Reflect.set(e, property, v), e, ancestor?.[i], i)(value));
                 return true;
             },

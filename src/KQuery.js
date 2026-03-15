@@ -86,6 +86,14 @@ export class KQuery {
                                     return new API.Collection(mapped, name, this);
                                 },
                                 set(value) {
+                                    if (value instanceof Array) {
+                                        for (const [i, v] of value.entries()) {
+                                            if (v !== undefined && i in this && name in this[i]) {
+                                                this[i][name] = v;
+                                            }
+                                        }
+                                        return true;
+                                    }
                                     return API.F.objectToEntries(this).forEach(([i, e]) => {
                                         if (name in e) {
                                             API.F.functionToCallbackable(v => e[name] = v, this, e, i)(value);
