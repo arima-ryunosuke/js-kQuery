@@ -121,6 +121,62 @@ export function forms(kQuery) {
                 });
                 return JSON.stringify(object);
             },
+            /**
+             * to multipart/form-data
+             *
+             * @internal
+             *
+             * @param {?String} [boundary]
+             * @return {Promise<?{body: Blob, contentType: String}>}
+             */
+            async $multipart(boundary = null) {
+                let flag = false;
+                for (const value of this.values()) {
+                    if (value instanceof File && value.webkitRelativePath) {
+                        // webkitRelativePath is readonly, but $files rewrites property descriptor
+                        if (value.hasOwnProperty('webkitRelativePath')) {
+                            flag = true;
+                            break;
+                        }
+                    }
+                }
+                if (!flag) {
+                    return null;
+                }
+
+                boundary ??= `----kQueryFormBoundary${Math.random().toString(36).substring(2)}${Math.random().toString(36).substring(2)}`;
+
+                const encoder = new TextEncoder();
+                const parts = [];
+
+                for (const [name, value] of this.entries()) {
+                    let header = `--${boundary}\r\n`;
+                    header += `Content-Disposition: form-data; name="${name}"`;
+
+                    if (value instanceof Blob) {
+                        const fname = value.webkitRelativePath || value.name || (value instanceof File ? '' : 'blob');
+                        header += `; filename="${fname}"\r\n`;
+                        header += `Content-Type: ${value.type || 'application/octet-stream'}\r\n\r\n`;
+
+                        parts.push(encoder.encode(header));
+                        parts.push(await value.arrayBuffer());
+                    }
+                    else {
+                        header += `\r\n\r\n`;
+                        parts.push(encoder.encode(header));
+                        parts.push(encoder.encode(value));
+                    }
+
+                    parts.push(encoder.encode(`\r\n`));
+                }
+
+                parts.push(encoder.encode(`--${boundary}--\r\n`));
+
+                return {
+                    contentType: `multipart/form-data; boundary=${boundary}`,
+                    body: new Blob(parts),
+                };
+            },
         },
         [[HTMLInputElement.name, $NodeList.name]]: /** @lends HTMLInputElement.prototype */{
             /**

@@ -443,8 +443,15 @@ export function networks(kQuery) {
                         options.body = formData.$toSearchParams();
                     }
                     else if (enctype.startsWith('multipart/form-data')) {
-                        options.headers.delete('content-type'); // for boundary
-                        options.body = formData;
+                        const customMultipart = await formData.$multipart();
+                        if (customMultipart) {
+                            options.headers.set('content-type', customMultipart.contentType);
+                            options.body = customMultipart.body;
+                        }
+                        else {
+                            options.headers.delete('content-type'); // for boundary
+                            options.body = formData;
+                        }
                     }
                     else if (enctype.startsWith('application/json')) {
                         options.body = await formData.$json(options.fileConverter);

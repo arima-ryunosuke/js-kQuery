@@ -634,6 +634,119 @@ export function data(kQuery) {
                 return reader.promise();
             },
         },
+        [[FileList.name]]: /** @lends FileList.prototype */{
+            /**
+             * get plain object{path: File}
+             *
+             * @param {?Function} [valueMap]
+             * @return {Object<String, File|any>}
+             */
+            $object(valueMap) {
+                valueMap ??= file => file;
+
+                const result = Object.create(null);
+
+                for (const file of this) {
+                    result[file.webkitRelativePath || file.name] = valueMap(file);
+                }
+
+                return result;
+            },
+            /**
+             * get entries[path, File]
+             *
+             * @param {?Function} [valueMap]
+             * @return {[String, File|any][]}
+             */
+            $entries(valueMap) {
+                return Object.entries(this.$object(valueMap));
+            },
+        },
+        [[DataTransfer.name]]: /** @lends DataTransfer.prototype */{
+            /**
+             * get FileList with webkitRelativePath
+             *
+             * DataTransferItem is volatile, it is only within drop event
+             * Therefore, async function must be performed in batches
+             *
+             * @param {?Function} [filterFn]
+             * @return {Promise<FileList>}
+             */
+            async $files(filterFn) {
+                const promises = [];
+                for (const item of this.items) {
+                    promises.push(item.$files(filterFn));
+                }
+
+                const result = new DataTransfer();
+                for (const files of await Promise.all(promises)) {
+                    for (const file of files ?? []) {
+                        result.items.add(file);
+                    }
+                }
+                return result.files;
+            },
+        },
+        [[DataTransferItem.name]]: /** @lends DataTransferItem.prototype */{
+            /**
+             * get FileList with webkitRelativePath
+             *
+             * @param {?Function} [filterFn]
+             * @return {Promise<?FileList>}
+             */
+            async $files(filterFn) {
+                if (this.kind !== 'file') {
+                    return undefined;
+                }
+
+                filterFn ??= file => true;
+
+                // DirectoryReader.readEntries has max limit 100 entry, must be recursion
+                const readAllEntries = async (directoryReader) => {
+                    let allEntries = [];
+
+                    const readEntries = async () => {
+                        const entries = await new Promise((resolve, reject) => directoryReader.readEntries(resolve, reject));
+
+                        if (entries.length > 0) {
+                            allEntries = allEntries.concat(entries);
+                            await readEntries();
+                        }
+                    };
+                    await readEntries();
+
+                    return allEntries;
+                };
+
+                const result = new DataTransfer();
+
+                const scanFiles = async function (entry) {
+                    if (entry.isDirectory) {
+                        for (const child of await readAllEntries(entry.createReader())) {
+                            await scanFiles(child, entry.fullPath);
+                        }
+                    }
+                    else {
+                        const file = await new Promise((resolve, reject) => entry.file(resolve, reject));
+                        // console.log(Object.getOwnPropertyDescriptor(File.prototype, 'webkitRelativePath'));
+                        Object.defineProperty(file, 'webkitRelativePath', {
+                            value: entry.fullPath.substring(1),
+                            writable: false,
+                            configurable: true,
+                            enumerable: true
+                        });
+                        if (filterFn(file)) {
+                            result.items.add(file);
+                        }
+                    }
+                };
+                // Note: This function is implemented as webkitGetAsEntry() in non-WebKit browsers including Firefox at this time; it may be renamed to getAsEntry() in the future, so you should code defensively, looking for both.
+                const getAsEntry = this.getAsEntry ?? this.webkitGetAsEntry;
+                await scanFiles(getAsEntry.call(this));
+
+                return result.files;
+            },
+        },
         [[Storage.name]]: /** @lends Storage.prototype */{
             /**
              * get item as JSON
