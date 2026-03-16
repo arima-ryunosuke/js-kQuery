@@ -522,7 +522,7 @@ export function networks(kQuery) {
                 }
 
                 const response = await F.fetch(url, options);
-                let nodes = this.$document.$createNodeListFromHTML(await response.text());
+                let nodes = this.$document.$createNodeList(await response.text());
                 if (selector) {
                     nodes = nodes.$$(selector);
                 }

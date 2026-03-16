@@ -54,7 +54,7 @@ export function manipulation(kQuery) {
                 }
 
                 if (typeof (selectorFn) === 'string' && selectorFn.trim().charAt(0) === '<') {
-                    const nodes = ownerDocument.$createNodeListFromHTML(selectorFn.trim());
+                    const nodes = ownerDocument.$createNodeList(selectorFn.trim());
                     return nodes.length === 1 ? nodes[0] : nodes;
                 }
 
@@ -69,17 +69,43 @@ export function manipulation(kQuery) {
              * @param {String} html
              * @return {NodeList}
              *
+             * @deprecated use $createNodeList
+             *
              * @example
              * document.$createNodeListFromHTML('<span>SPAN</span>Text<div>DIV</div>');
              * // NodeList(3)[<span>SPAN</span>, Text, <div>DIV</div>]
              */
             $createNodeListFromHTML(html) {
-                kQuery.logger.assertInstanceOf(html, String)();
+                return this.$createNodeList(html);
+            },
+            /**
+             * create NodeList from html, node
+             *
+             * @param {...(String|Node)} sources
+             * @return {NodeList}
+             *
+             * @example
+             * document.$createNodeList('<span>SPAN</span>Text<div>DIV</div>', new Image(10, 20));
+             * // NodeList(4)[<span>SPAN</span>, Text, <div>DIV</div>, <img width=10 height=20>]
+             */
+            $createNodeList(...sources) {
+                let template;
 
-                const template = this.createElement('template');
-                template.innerHTML = html;
-                // childNodes is living NodeList
-                return F.iterableToNodeList([...template.content.childNodes]);
+                const result = [];
+                for (const source of sources) {
+                    kQuery.logger.assertInstanceOf(source, Node, String)();
+
+                    if (source instanceof Node) {
+                        result.push(source);
+                    }
+                    else {
+                        template ??= this.createElement('template');
+                        template.innerHTML = source;
+                        result.push(...template.content.childNodes);
+                    }
+                }
+
+                return F.iterableToNodeList(result);
             },
             /**
              * create Element from tag, attributes, children
@@ -258,7 +284,7 @@ export function manipulation(kQuery) {
                         kQuery.logger.assert(() => fragment.$contains(e => !e.$isMetadataContent))();
                         const template = [...fragment.childNodes].join('');
                         const html = F.stringRender(template, value, tag);
-                        const nodes = this.$document.$createNodeListFromHTML(html);
+                        const nodes = this.$document.$createNodeList(html);
 
                         if (options.logical) {
                             for (const node of nodes.$$$('*')) {
