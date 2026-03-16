@@ -160,6 +160,15 @@ $$('input').disabled = true;
 console.log($$('input').disabled); // [true, true, ..., true]
 ```
 
+値として配列を与えるとそれぞれで設定されます。
+このとき、長さのチェックは行われず、足りなくても長すぎてもそれらの分は何もしません。
+
+```js
+// 3要素だとして最後の true は無視される
+$$('input').disabled = [true, false, false, true];
+console.log($$('input').disabled); // [true, false, false]
+```
+
 このとき、関数を代入するとその関数がそれぞれの要素でコールバックされます。
 NodeList ではない Node でもこの関数代入は使えます。基本的に既存のプロトタイプは書き換えない思想ですが、これだけは例外です。
 これは主に記述の統一のためです。「NodeList には関数代入が使えるが Node では使えない」は記述の一貫性を欠くため、デスクリプタを書き換えています。
@@ -571,6 +580,21 @@ MIT
 - メジャー: 大規模な互換性破壊の際にアップします（アーキテクチャ、クラス構造の変更など）
 - マイナー: 小規模な互換性破壊の際にアップします（引数の変更、小規模破壊を伴う修正など）
 - パッチ: 互換性破壊はありません（デフォルト引数の追加や、新たなクラスの追加、コードフォーマットなど）
+
+### 0.5.0
+
+- [feature] 属性を一括で切り替える $toggleAttribute(s) を追加
+- [feature] URL のカスタムビルド機能
+- [feature] 指定条件を満たすまで待機する $wait メソッド
+- [feature] createNodeListFromHTML 改め createNodeList
+- [*feature] List オブジェクトに配列を与えるとそれぞれで設定される機能
+- [feature] File 系の強化
+- [fixbug] window resize イベントで $on が使えない不具合
+- [fixbug] $interlock でチェックボックスが1つしかないときに $filter エラーが出る不具合
+- [fixbug] $width,$height で preset 名が使えない不具合
+- [feature] $offset から $left,$top を分離
+- [feature] $remove を追加
+- [refactor] window.$query の返り値に Element を追加
 
 ### 0.4.2
 
