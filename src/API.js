@@ -1451,6 +1451,64 @@ export class Timer extends EventTarget {
 }
 
 /**
+ * TimerPool
+ *
+ * - least interval resolution be 10ms
+ * - reuse same interval timer
+ *
+ * @private
+ */
+export class TimerPool {
+    static Timers = {};
+
+    static get(interval) {
+        interval = Math.floor(interval / 10) * 10;
+
+        const timer = TimerPool.Timers[interval] ??= new TimerPool(interval);
+        timer.start();
+        return timer;
+    }
+
+    constructor(interval) {
+        this.targets = new WeakMap();
+        this.interval = interval;
+        this.timerId = null;
+    }
+
+    start() {
+        if (this.timerId != null) {
+            return this.timerId;
+        }
+        Logger.instance.debug(`start timer ${this.interval}`);
+        return this.timerId = setInterval(async () => {
+            for (const [target, objects] of this.targets.entries()) {
+                const bools = await Promise.all(objects.map(({start, callback}) => callback.call(target, start)));
+                const newobjects = objects.filter((_, i) => !bools[i]);
+                if (newobjects.length) {
+                    this.targets.set(target, newobjects);
+                }
+                else {
+                    Logger.instance.debug(`end timer of `, target);
+                    this.targets.delete(target);
+                }
+            }
+            if (!this.targets.size) {
+                Logger.instance.debug(`stop timer ${this.interval}(id: ${this.timerId})`);
+                clearInterval(this.timerId);
+                this.timerId = null;
+            }
+        }, this.interval);
+    }
+
+    append(target, callback) {
+        this.targets.getOrSet(target, () => []).push({
+            start: new Date(),
+            callback: callback,
+        });
+    }
+}
+
+/**
  * Options
  *
  * - fixed key

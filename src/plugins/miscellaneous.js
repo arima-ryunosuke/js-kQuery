@@ -1,4 +1,4 @@
-import {$NodeList, F, IntersectionObserver, Nullable, Promise, Timer, WeakMap} from '../API.js';
+import {$NodeList, F, IntersectionObserver, Nullable, Promise, Timer, TimerPool, WeakMap} from '../API.js';
 
 /**
  * @param {KQuery} kQuery
@@ -97,6 +97,40 @@ export function miscellaneous(kQuery) {
                 kQuery.logger.debug(`windowFeature`, feature);
 
                 return this.open(url, target, feature);
+            },
+        },
+        [[Node.name, $NodeList.name]]: /** @lends Node.prototype */{
+            /**
+             * wait callback condition
+             *
+             * @example
+             * setTimeout(() => $('span').classList.add('hoge'), 100);
+             * // wait 100ms
+             * await $('span').$wait(function () {
+             *     return this.classList.contains('hoge');
+             * });
+             *
+             * @param {Function} condition
+             * @param {Object} [options]
+             * @return {Promise<Number>}
+             */
+            async $wait(condition, options) {
+                options = Object.assign({
+                    initial: null,
+                    interval: 100,
+                }, options);
+
+                const initial = options.initial ?? await condition.call(this, this);
+
+                return new Promise((resolve, reject) => {
+                    TimerPool.get(options.interval).append(this, async (start) => {
+                        if (await condition.call(this, this) === initial) {
+                            return false;
+                        }
+                        resolve(new Date() - start);
+                        return true;
+                    });
+                });
             },
         },
         [[Element.name, $NodeList.name]]: /** @lends Element.prototype */{
