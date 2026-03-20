@@ -34,6 +34,7 @@
     ResizeObserver: () => ResizeObserver,
     Timer: () => Timer,
     TimerObserver: () => TimerObserver,
+    TimerPool: () => TimerPool,
     Vector2: () => Vector2,
     WeakMap: () => WeakMap
   });
@@ -180,6 +181,18 @@
     },
     stringIsNaN(string) {
       return Number.isNaN(parseFloat(string));
+    },
+    async stringCompressAndBase64(string, format, options) {
+      const formats = {
+        zlib: "deflate"
+      };
+      format = formats[format] ?? format;
+      const blob = new Blob([string]);
+      const stream = blob.stream();
+      const compressedStream = stream.pipeThrough(new CompressionStream(format));
+      const buffer = await new Response(compressedStream).arrayBuffer();
+      const bytes = new Uint8Array(buffer);
+      return bytes.toBase64(options);
     },
     stringRender: /* @__PURE__ */ function() {
       const cache = {};
@@ -913,6 +926,14 @@
           if (array.length === 0) {
             Logger.instance.notice(`Tried to manipulate empty list, but mostly a bug. Please check selectors etc. if not intended`);
           }
+          if (value instanceof Array) {
+            for (const [i, v] of value.entries()) {
+              if (v !== void 0 && i in array) {
+                Reflect.set(array[i], property, v);
+              }
+            }
+            return true;
+          }
           array.forEach((e, i) => F.functionToCallbackable((v) => Reflect.set(e, property, v), e, ancestor?.[i], i)(value));
           return true;
         },
@@ -1230,6 +1251,52 @@
     stop() {
       clearTimeout(this.id);
       this.id = null;
+    }
+  };
+  var TimerPool = class _TimerPool {
+    static {
+      __name(this, "TimerPool");
+    }
+    static Timers = {};
+    static get(interval) {
+      interval = Math.floor(interval / 10) * 10;
+      const timer = _TimerPool.Timers[interval] ??= new _TimerPool(interval);
+      timer.start();
+      return timer;
+    }
+    constructor(interval) {
+      this.targets = new WeakMap();
+      this.interval = interval;
+      this.timerId = null;
+    }
+    start() {
+      if (this.timerId != null) {
+        return this.timerId;
+      }
+      Logger.instance.debug(`start timer ${this.interval}`);
+      return this.timerId = setInterval(async () => {
+        for (const [target, objects] of this.targets.entries()) {
+          const bools = await Promise2.all(objects.map(({ start, callback }) => callback.call(target, start)));
+          const newobjects = objects.filter((_, i) => !bools[i]);
+          if (newobjects.length) {
+            this.targets.set(target, newobjects);
+          } else {
+            Logger.instance.debug(`end timer of `, target);
+            this.targets.delete(target);
+          }
+        }
+        if (!this.targets.size) {
+          Logger.instance.debug(`stop timer ${this.interval}(id: ${this.timerId})`);
+          clearInterval(this.timerId);
+          this.timerId = null;
+        }
+      }, this.interval);
+    }
+    append(target, callback) {
+      this.targets.getOrSet(target, () => []).push({
+        start: /* @__PURE__ */ new Date(),
+        callback
+      });
     }
   };
   var Options = class _Options {
@@ -1650,6 +1717,14 @@
                     return new Collection(mapped, name, this);
                   },
                   set(value) {
+                    if (value instanceof Array) {
+                      for (const [i, v] of value.entries()) {
+                        if (v !== void 0 && i in this && name in this[i]) {
+                          this[i][name] = v;
+                        }
+                      }
+                      return true;
+                    }
                     return F.objectToEntries(this).forEach(([i, e]) => {
                       if (name in e) {
                         F.functionToCallbackable((v) => e[name] = v, this, e, i)(value);
@@ -1990,7 +2065,10 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
         return [t, n.filter((e) => e.length)];
       });
     }, "eachType");
-    const internalEventName = /* @__PURE__ */ __name(function(type) {
+    const internalEventName = /* @__PURE__ */ __name(function(that, type) {
+      if (that instanceof Window && type === "resize") {
+        return type;
+      }
       if (type in kQuery.customEvents) {
         type = kQuery.config.customEventPrefix + type;
       }
@@ -2250,7 +2328,7 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
               } else {
                 internalOptions.signal = eventData.abortController.signal;
               }
-              this.addEventListener(internalEventName(type), handler, internalOptions);
+              this.addEventListener(internalEventName(this, type), handler, internalOptions);
               eventData.destructor = function() {
                 kQuery.logger.debug(`Release of `, type, selector, options);
                 eventData.collectors.forEach((collector) => collector());
@@ -2302,7 +2380,7 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
                 if (options?.capture !== eventData.options.capture) {
                   return true;
                 }
-                this.removeEventListener(internalEventName(eventData.type), eventData.handler.deref(), eventData.options);
+                this.removeEventListener(internalEventName(this, eventData.type), eventData.handler.deref(), eventData.options);
                 eventData.destructor();
                 return false;
               }));
@@ -2326,7 +2404,7 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
             let result = true;
             for (const [type, namespaces] of eachType(false, types)) {
               const event = kQuery.wellknownEvents[type] ?? CustomEvent;
-              const eventObject = new event(internalEventName(type), Object.assign({
+              const eventObject = new event(internalEventName(this, type), Object.assign({
                 bubbles: true,
                 cancelable: true,
                 composed: true

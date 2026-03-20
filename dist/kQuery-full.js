@@ -34,6 +34,7 @@
     ResizeObserver: () => ResizeObserver,
     Timer: () => Timer,
     TimerObserver: () => TimerObserver,
+    TimerPool: () => TimerPool,
     Vector2: () => Vector2,
     WeakMap: () => WeakMap
   });
@@ -180,6 +181,18 @@
     },
     stringIsNaN(string) {
       return Number.isNaN(parseFloat(string));
+    },
+    async stringCompressAndBase64(string, format, options) {
+      const formats = {
+        zlib: "deflate"
+      };
+      format = formats[format] ?? format;
+      const blob = new Blob([string]);
+      const stream = blob.stream();
+      const compressedStream = stream.pipeThrough(new CompressionStream(format));
+      const buffer = await new Response(compressedStream).arrayBuffer();
+      const bytes = new Uint8Array(buffer);
+      return bytes.toBase64(options);
     },
     stringRender: /* @__PURE__ */ function() {
       const cache = {};
@@ -913,6 +926,14 @@
           if (array.length === 0) {
             Logger.instance.notice(`Tried to manipulate empty list, but mostly a bug. Please check selectors etc. if not intended`);
           }
+          if (value instanceof Array) {
+            for (const [i, v] of value.entries()) {
+              if (v !== void 0 && i in array) {
+                Reflect.set(array[i], property, v);
+              }
+            }
+            return true;
+          }
           array.forEach((e, i) => F.functionToCallbackable((v) => Reflect.set(e, property, v), e, ancestor?.[i], i)(value));
           return true;
         },
@@ -1230,6 +1251,52 @@
     stop() {
       clearTimeout(this.id);
       this.id = null;
+    }
+  };
+  var TimerPool = class _TimerPool {
+    static {
+      __name(this, "TimerPool");
+    }
+    static Timers = {};
+    static get(interval) {
+      interval = Math.floor(interval / 10) * 10;
+      const timer = _TimerPool.Timers[interval] ??= new _TimerPool(interval);
+      timer.start();
+      return timer;
+    }
+    constructor(interval) {
+      this.targets = new WeakMap();
+      this.interval = interval;
+      this.timerId = null;
+    }
+    start() {
+      if (this.timerId != null) {
+        return this.timerId;
+      }
+      Logger.instance.debug(`start timer ${this.interval}`);
+      return this.timerId = setInterval(async () => {
+        for (const [target, objects] of this.targets.entries()) {
+          const bools = await Promise2.all(objects.map(({ start, callback }) => callback.call(target, start)));
+          const newobjects = objects.filter((_, i) => !bools[i]);
+          if (newobjects.length) {
+            this.targets.set(target, newobjects);
+          } else {
+            Logger.instance.debug(`end timer of `, target);
+            this.targets.delete(target);
+          }
+        }
+        if (!this.targets.size) {
+          Logger.instance.debug(`stop timer ${this.interval}(id: ${this.timerId})`);
+          clearInterval(this.timerId);
+          this.timerId = null;
+        }
+      }, this.interval);
+    }
+    append(target, callback) {
+      this.targets.getOrSet(target, () => []).push({
+        start: /* @__PURE__ */ new Date(),
+        callback
+      });
     }
   };
   var Options = class _Options {
@@ -2051,6 +2118,14 @@
                     return new Collection(mapped, name, this);
                   },
                   set(value) {
+                    if (value instanceof Array) {
+                      for (const [i, v] of value.entries()) {
+                        if (v !== void 0 && i in this && name in this[i]) {
+                          this[i][name] = v;
+                        }
+                      }
+                      return true;
+                    }
                     return F.objectToEntries(this).forEach(([i, e]) => {
                       if (name in e) {
                         F.functionToCallbackable((v) => e[name] = v, this, e, i)(value);
@@ -2391,7 +2466,10 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
         return [t, n.filter((e) => e.length)];
       });
     }, "eachType");
-    const internalEventName = /* @__PURE__ */ __name(function(type) {
+    const internalEventName = /* @__PURE__ */ __name(function(that, type) {
+      if (that instanceof Window && type === "resize") {
+        return type;
+      }
       if (type in kQuery.customEvents) {
         type = kQuery.config.customEventPrefix + type;
       }
@@ -2651,7 +2729,7 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
               } else {
                 internalOptions.signal = eventData.abortController.signal;
               }
-              this.addEventListener(internalEventName(type), handler, internalOptions);
+              this.addEventListener(internalEventName(this, type), handler, internalOptions);
               eventData.destructor = function() {
                 kQuery.logger.debug(`Release of `, type, selector, options);
                 eventData.collectors.forEach((collector) => collector());
@@ -2703,7 +2781,7 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
                 if (options?.capture !== eventData.options.capture) {
                   return true;
                 }
-                this.removeEventListener(internalEventName(eventData.type), eventData.handler.deref(), eventData.options);
+                this.removeEventListener(internalEventName(this, eventData.type), eventData.handler.deref(), eventData.options);
                 eventData.destructor();
                 return false;
               }));
@@ -2727,7 +2805,7 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
             let result = true;
             for (const [type, namespaces] of eachType(false, types)) {
               const event = kQuery.wellknownEvents[type] ?? CustomEvent;
-              const eventObject = new event(internalEventName(type), Object.assign({
+              const eventObject = new event(internalEventName(this, type), Object.assign({
                 bubbles: true,
                 cancelable: true,
                 composed: true
@@ -2890,6 +2968,41 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
       [[Element.name, $NodeList.name]]: (
         /** @lends Element.prototype */
         {
+          /**
+           * set attribute
+           *
+           * - value is bool: toggleAttribute
+           * - value is null: removeAttribute
+           * - value is other: setAttribute
+           *
+           * @param {String} name
+           * @param {null|String|Boolean} value
+           * @returns {Element}
+           */
+          $toggleAttribute(name, value) {
+            if (value == null) {
+              this.removeAttribute(name);
+            } else if (typeof value === "boolean") {
+              this.toggleAttribute(name, value);
+            } else {
+              this.setAttribute(name, value);
+            }
+            return this;
+          },
+          /**
+           * set attributes
+           *
+           * @see Element.$toggleAttribute
+           *
+           * @param {Dictionary} values
+           * @returns {Element}
+           */
+          $toggleAttributes(values) {
+            for (const [name, value] of F.objectToEntries(values)) {
+              this.$toggleAttribute(name, value);
+            }
+            return this;
+          },
           /**
            * simple accessor to NamedNodeMap(attribute)
            *
@@ -3257,6 +3370,20 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
           $params(params) {
             kQuery.logger.assertInstanceOf(params, Dictionary)();
             return this.$assign({ searchParams: params });
+          },
+          /**
+           * special toString
+           *
+           * @see URLSearchParams.$toString()
+           *
+           * @param {URLOptions} [options]
+           * @return {Promise<String>}
+           */
+          async $toString(options) {
+            kQuery.logger.assertInstanceOf(options, Nullable, Dictionary)();
+            const base = this.href.split("?")[0].split("#")[0];
+            const query = await this.searchParams.$toString(options);
+            return `${base}${query ? `?${query}` : ""}${this.hash}`;
           }
         }
       ),
@@ -3306,6 +3433,47 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
               this.delete(key);
             }
             return this;
+          },
+          /**
+           * special toString
+           *
+           * available:
+           * - compress to one string
+           * - param[] to csv
+           *
+           * @param {URLOptions} [options]
+           * @return {Promise<String>}
+           */
+          async $toString(options) {
+            kQuery.logger.assertInstanceOf(options, Nullable, Dictionary)();
+            options = Object.assign({
+              compress: null,
+              delimiter: " ",
+              space: "+"
+            }, options);
+            const keys = new Set(this.keys());
+            const result = new URLSearchParams();
+            for (const key of keys) {
+              if (options.delimiter && key.match(/\[]$/)) {
+                result.set(key, this.getAll(key).join(options.delimiter));
+              } else {
+                for (const value of this.getAll(key)) {
+                  result.append(key, value);
+                }
+              }
+            }
+            if (options.compress == null) {
+              if (options.space && options.space !== "+") {
+                return result.toString().replaceAll("+", options.space);
+              }
+              return result.toString();
+            }
+            const result2 = new URLSearchParams();
+            result2.set(options.compress, await F.stringCompressAndBase64(result.toString(), "deflate-raw", {
+              alphabet: "base64url",
+              omitPadding: true
+            }));
+            return result2.toString();
           }
         }
       ),
@@ -3754,6 +3922,21 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
            */
           set $URL(url) {
             this.action = url;
+          },
+          /**
+           * special toString
+           *
+           * @see URLSearchParams.$toString()
+           *
+           * @param {URLOptions} [options]
+           * @returns {Promise<String>}
+           */
+          async $href(options) {
+            const url = this.$URL;
+            if (this.method.toUpperCase() === "GET") {
+              url.searchParams.$appendFromEntries(new FormData(this).$toSearchParams());
+            }
+            return await url.$toString(options);
           }
         }
       ),
@@ -3826,6 +4009,112 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
           }
         }
       ),
+      [[FileList.name]]: (
+        /** @lends FileList.prototype */
+        {
+          /**
+           * get plain object{path: File}
+           *
+           * @param {?Function} [valueMap]
+           * @return {Object<String, File|any>}
+           */
+          $object(valueMap) {
+            valueMap ??= /* @__PURE__ */ __name((file) => file, "valueMap");
+            const result = /* @__PURE__ */ Object.create(null);
+            for (const file of this) {
+              result[file.webkitRelativePath || file.name] = valueMap(file);
+            }
+            return result;
+          },
+          /**
+           * get entries[path, File]
+           *
+           * @param {?Function} [valueMap]
+           * @return {[String, File|any][]}
+           */
+          $entries(valueMap) {
+            return Object.entries(this.$object(valueMap));
+          }
+        }
+      ),
+      [[DataTransfer.name]]: (
+        /** @lends DataTransfer.prototype */
+        {
+          /**
+           * get FileList with webkitRelativePath
+           *
+           * DataTransferItem is volatile, it is only within drop event
+           * Therefore, async function must be performed in batches
+           *
+           * @param {?Function} [filterFn]
+           * @return {Promise<FileList>}
+           */
+          async $files(filterFn) {
+            const promises = [];
+            for (const item of this.items) {
+              promises.push(item.$files(filterFn));
+            }
+            const result = new DataTransfer();
+            for (const files of await Promise2.all(promises)) {
+              for (const file of files ?? []) {
+                result.items.add(file);
+              }
+            }
+            return result.files;
+          }
+        }
+      ),
+      [[DataTransferItem.name]]: (
+        /** @lends DataTransferItem.prototype */
+        {
+          /**
+           * get FileList with webkitRelativePath
+           *
+           * @param {?Function} [filterFn]
+           * @return {Promise<?FileList>}
+           */
+          async $files(filterFn) {
+            if (this.kind !== "file") {
+              return void 0;
+            }
+            filterFn ??= /* @__PURE__ */ __name((file) => true, "filterFn");
+            const readAllEntries = /* @__PURE__ */ __name(async (directoryReader) => {
+              let allEntries = [];
+              const readEntries = /* @__PURE__ */ __name(async () => {
+                const entries = await new Promise2((resolve, reject) => directoryReader.readEntries(resolve, reject));
+                if (entries.length > 0) {
+                  allEntries = allEntries.concat(entries);
+                  await readEntries();
+                }
+              }, "readEntries");
+              await readEntries();
+              return allEntries;
+            }, "readAllEntries");
+            const result = new DataTransfer();
+            const scanFiles = /* @__PURE__ */ __name(async function(entry) {
+              if (entry.isDirectory) {
+                for (const child of await readAllEntries(entry.createReader())) {
+                  await scanFiles(child, entry.fullPath);
+                }
+              } else {
+                const file = await new Promise2((resolve, reject) => entry.file(resolve, reject));
+                Object.defineProperty(file, "webkitRelativePath", {
+                  value: entry.fullPath.substring(1),
+                  writable: false,
+                  configurable: true,
+                  enumerable: true
+                });
+                if (filterFn(file)) {
+                  result.items.add(file);
+                }
+              }
+            }, "scanFiles");
+            const getAsEntry = this.getAsEntry ?? this.webkitGetAsEntry;
+            await scanFiles(getAsEntry.call(this));
+            return result.files;
+          }
+        }
+      ),
       [[Storage.name]]: (
         /** @lends Storage.prototype */
         {
@@ -3870,6 +4159,39 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
 
   // src/plugins/dimensions.js
   function dimensions(kQuery) {
+    Object.assign(
+      kQuery,
+      /** @lends KQuery.prototype */
+      {
+        sizePresets: {
+          "": {
+            scrollbar: true
+          },
+          client: {
+            padding: true
+          },
+          inner: {
+            padding: true,
+            scrollbar: true
+          },
+          offset: {
+            padding: true,
+            border: true
+          },
+          outer: {
+            padding: true,
+            border: true,
+            scrollbar: true
+          },
+          margin: {
+            padding: true,
+            border: true,
+            margin: true,
+            scrollbar: true
+          }
+        }
+      }
+    );
     const boxsize = /* @__PURE__ */ __name(function(element) {
       const backup = element.getAttribute("style");
       try {
@@ -4036,6 +4358,40 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
             };
           },
           /**
+           * get/set left irrespective of css
+           *
+           * @param {Number|String|OffsetOptions} [options={}]
+           * @return {Number}
+           */
+          $left(options = {}) {
+            if (typeof options === "number" || typeof options === "string") {
+              if (F.stringIsNaN(options)) {
+                kQuery.logger.error(`options(${options}) is NaN`);
+              }
+              const size = this.$cssPixel(options);
+              this.style.left = size + "px";
+              return size;
+            }
+            return this.$offset(options).left;
+          },
+          /**
+           * get/set top irrespective of css
+           *
+           * @param {Number|String|OffsetOptions} [options={}]
+           * @return {Number}
+           */
+          $top(options = {}) {
+            if (typeof options === "number" || typeof options === "string") {
+              if (F.stringIsNaN(options)) {
+                kQuery.logger.error(`options(${options}) is NaN`);
+              }
+              const size = this.$cssPixel(options);
+              this.style.top = size + "px";
+              return size;
+            }
+            return this.$offset(options).top;
+          },
+          /**
            * get width/height irrespective of css
            *
            * ```
@@ -4063,34 +4419,7 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
            */
           $size(options = {}) {
             if (typeof options === "string") {
-              const presets = {
-                "": {
-                  scrollbar: true
-                },
-                client: {
-                  padding: true
-                },
-                inner: {
-                  padding: true,
-                  scrollbar: true
-                },
-                offset: {
-                  padding: true,
-                  border: true
-                },
-                outer: {
-                  padding: true,
-                  border: true,
-                  scrollbar: true
-                },
-                margin: {
-                  padding: true,
-                  border: true,
-                  margin: true,
-                  scrollbar: true
-                }
-              };
-              options = presets[options];
+              options = kQuery.sizePresets[options];
             }
             kQuery.logger.assertInstanceOf(options, Object)();
             options = Object.assign({
@@ -4128,7 +4457,7 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
            * @return {Number}
            */
           $width(options = {}) {
-            if (typeof options === "number" || typeof options === "string") {
+            if (typeof options === "number" || typeof options === "string" && !(options in kQuery.sizePresets)) {
               if (F.stringIsNaN(options)) {
                 kQuery.logger.error(`options(${options}) is NaN`);
               }
@@ -4150,7 +4479,7 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
            * @return {Number}
            */
           $height(options = {}) {
-            if (typeof options === "number" || typeof options === "string") {
+            if (typeof options === "number" || typeof options === "string" && !(options in kQuery.sizePresets)) {
               if (F.stringIsNaN(options)) {
                 kQuery.logger.error(`options(${options}) is NaN`);
               }
@@ -4766,6 +5095,60 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
               return value;
             });
             return JSON.stringify(object);
+          },
+          /**
+           * to multipart/form-data
+           *
+           * @internal
+           *
+           * @param {?String} [boundary]
+           * @return {Promise<?{body: Blob, contentType: String}>}
+           */
+          async $multipart(boundary = null) {
+            let flag = false;
+            for (const value of this.values()) {
+              if (value instanceof File && value.webkitRelativePath) {
+                if (value.hasOwnProperty("webkitRelativePath")) {
+                  flag = true;
+                  break;
+                }
+              }
+            }
+            if (!flag) {
+              return null;
+            }
+            boundary ??= `----kQueryFormBoundary${Math.random().toString(36).substring(2)}${Math.random().toString(36).substring(2)}`;
+            const encoder = new TextEncoder();
+            const parts = [];
+            for (const [name, value] of this.entries()) {
+              let header = `--${boundary}\r
+`;
+              header += `Content-Disposition: form-data; name="${name}"`;
+              if (value instanceof Blob) {
+                const fname = value.webkitRelativePath || value.name || (value instanceof File ? "" : "blob");
+                header += `; filename="${fname}"\r
+`;
+                header += `Content-Type: ${value.type || "application/octet-stream"}\r
+\r
+`;
+                parts.push(encoder.encode(header));
+                parts.push(await value.arrayBuffer());
+              } else {
+                header += `\r
+\r
+`;
+                parts.push(encoder.encode(header));
+                parts.push(encoder.encode(value));
+              }
+              parts.push(encoder.encode(`\r
+`));
+            }
+            parts.push(encoder.encode(`--${boundary}--\r
+`));
+            return {
+              contentType: `multipart/form-data; boundary=${boundary}`,
+              body: new Blob(parts)
+            };
           }
         }
       ),
@@ -5538,7 +5921,7 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
            *
            * @param {String|Array|Node|NodeList|HTMLCollection} selectorFn
            * @param {?Document} [ownerDocument]
-           * @return {Node|NodeList}
+           * @return {Element|Node|NodeList}
            */
           $query(selectorFn, ownerDocument = null) {
             ownerDocument ??= (this ?? globalThis).document;
@@ -5554,7 +5937,7 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
               return nodes2.length === 1 ? nodes2[0] : F.iterableToNodeList(nodes2);
             }
             if (typeof selectorFn === "string" && selectorFn.trim().charAt(0) === "<") {
-              const nodes2 = ownerDocument.$createNodeListFromHTML(selectorFn.trim());
+              const nodes2 = ownerDocument.$createNodeList(selectorFn.trim());
               return nodes2.length === 1 ? nodes2[0] : nodes2;
             }
             const nodes = ownerDocument.$$(selectorFn);
@@ -5571,15 +5954,39 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
            * @param {String} html
            * @return {NodeList}
            *
+           * @deprecated use $createNodeList
+           *
            * @example
            * document.$createNodeListFromHTML('<span>SPAN</span>Text<div>DIV</div>');
            * // NodeList(3)[<span>SPAN</span>, Text, <div>DIV</div>]
            */
           $createNodeListFromHTML(html) {
-            kQuery.logger.assertInstanceOf(html, String)();
-            const template = this.createElement("template");
-            template.innerHTML = html;
-            return F.iterableToNodeList([...template.content.childNodes]);
+            return this.$createNodeList(html);
+          },
+          /**
+           * create NodeList from html, node
+           *
+           * @param {...(String|Node)} sources
+           * @return {NodeList}
+           *
+           * @example
+           * document.$createNodeList('<span>SPAN</span>Text<div>DIV</div>', new Image(10, 20));
+           * // NodeList(4)[<span>SPAN</span>, Text, <div>DIV</div>, <img width=10 height=20>]
+           */
+          $createNodeList(...sources) {
+            let template;
+            const result = [];
+            for (const source of sources) {
+              kQuery.logger.assertInstanceOf(source, Node, String)();
+              if (source instanceof Node) {
+                result.push(source);
+              } else {
+                template ??= this.createElement("template");
+                template.innerHTML = source;
+                result.push(...template.content.childNodes);
+              }
+            }
+            return F.iterableToNodeList(result);
           },
           /**
            * create Element from tag, attributes, children
@@ -5742,7 +6149,7 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
                 kQuery.logger.assert(() => fragment.$contains((e) => !e.$isMetadataContent))();
                 const template = [...fragment.childNodes].join("");
                 const html = F.stringRender(template, value, tag);
-                const nodes = this.$document.$createNodeListFromHTML(html);
+                const nodes = this.$document.$createNodeList(html);
                 if (options.logical) {
                   for (const node of nodes.$$$("*")) {
                     for (const attribute of Array.from(node.attributes)) {
@@ -5927,6 +6334,15 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
             return this;
           },
           /**
+           * remove self
+           *
+           * @return {this}
+           */
+          $remove() {
+            this.remove();
+            return this;
+          },
+          /**
            * trim whitespace textnode
            *
            * @return {this}
@@ -6027,7 +6443,7 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
     const documentChange = /* @__PURE__ */ __name(function(e) {
       for (const [parent, selector] of interlockings.entries()) {
         if (e.target.$matches(selector)) {
-          parent.$indeterminate = window.$query(selector).$filter("[type=checkbox]").checked;
+          parent.$indeterminate = parent.$document.$$(selector).$filter("[type=checkbox]").checked;
         }
       }
     }, "documentChange");
@@ -6108,6 +6524,41 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
             const feature = F.objectJoin(options, ",");
             kQuery.logger.debug(`windowFeature`, feature);
             return this.open(url, target, feature);
+          }
+        }
+      ),
+      [[Node.name, $NodeList.name]]: (
+        /** @lends Node.prototype */
+        {
+          /**
+           * wait callback condition
+           *
+           * @example
+           * setTimeout(() => $('span').classList.add('hoge'), 100);
+           * // wait 100ms
+           * await $('span').$wait(function () {
+           *     return this.classList.contains('hoge');
+           * });
+           *
+           * @param {Function} condition
+           * @param {Object} [options]
+           * @return {Promise<Number>}
+           */
+          async $wait(condition, options) {
+            options = Object.assign({
+              initial: null,
+              interval: 100
+            }, options);
+            const initial = options.initial ?? await condition.call(this, this);
+            return new Promise2((resolve, reject) => {
+              TimerPool.get(options.interval).append(this, async (start) => {
+                if (await condition.call(this, this) === initial) {
+                  return false;
+                }
+                resolve(/* @__PURE__ */ new Date() - start);
+                return true;
+              });
+            });
           }
         }
       ),
@@ -6282,15 +6733,15 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
               if (selector2 == null) {
                 throw new Error(this + " is not have child selector");
               }
-              this.$indeterminate = window.$query(selector2).$filter("[type=checkbox]").checked;
+              this.$indeterminate = this.$document.$$(selector2).$filter("[type=checkbox]").checked;
             } else {
               interlockings.set(this, selector);
-              this.$indeterminate = window.$query(selector).$filter("[type=checkbox]").checked;
+              this.$indeterminate = this.$document.$$(selector).$filter("[type=checkbox]").checked;
               ["change", "$change"].forEach((e) => {
                 this.$document.addEventListener(e, documentChange);
                 this.addEventListener(e, (e2) => {
                   const parent = e2.target;
-                  const children = window.$query(selector).$filter("[type=checkbox]");
+                  const children = this.$document.$$(selector).$filter("[type=checkbox]");
                   for (const child of children) {
                     child.$value = parent.checked ? child.value : null;
                   }
@@ -6807,8 +7258,14 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
                 options.headers.delete("content-type");
                 options.body = formData.$toSearchParams();
               } else if (enctype.startsWith("multipart/form-data")) {
-                options.headers.delete("content-type");
-                options.body = formData;
+                const customMultipart = await formData.$multipart();
+                if (customMultipart) {
+                  options.headers.set("content-type", customMultipart.contentType);
+                  options.body = customMultipart.body;
+                } else {
+                  options.headers.delete("content-type");
+                  options.body = formData;
+                }
               } else if (enctype.startsWith("application/json")) {
                 options.body = await formData.$json(options.fileConverter);
               } else {
@@ -6873,7 +7330,7 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
               options.body = new URLSearchParams(dataEntries);
             }
             const response = await F.fetch(url, options);
-            let nodes = this.$document.$createNodeListFromHTML(await response.text());
+            let nodes = this.$document.$createNodeList(await response.text());
             if (selector) {
               nodes = nodes.$$(selector);
             }
@@ -7459,6 +7916,15 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
  *     noopener?: String,
  *     noreferrer?: String,
  * }} WindowOpenOptions
+ * @ignore
+ * @preserve
+ */
+/**
+ * @typedef {{
+ *     compress?: String,
+ *     delimiter?: String,
+ *     space?: String,
+ * }} URLOptions
  * @ignore
  * @preserve
  */
