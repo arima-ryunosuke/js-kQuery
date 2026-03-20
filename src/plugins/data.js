@@ -23,7 +23,8 @@ export function data(kQuery) {
                 for (const [key, value] of F.objectToEntries(parts)) {
                     if (key === 'searchParams') {
                         this[key].$assign(value);
-                    } else if (key in this) {
+                    }
+                    else if (key in this) {
                         this[key] = value;
                     }
                 }
@@ -97,12 +98,14 @@ export function data(kQuery) {
                 for (const [name, value] of F.objectToEntries(params)) {
                     if (value == null) {
                         this.delete(name);
-                    } else if (value instanceof Array) {
+                    }
+                    else if (value instanceof Array) {
                         this.delete(name);
                         for (const e of value) {
                             this.append(name, e);
                         }
-                    } else {
+                    }
+                    else {
                         this.set(name, value);
                     }
                 }
@@ -197,8 +200,7 @@ export function data(kQuery) {
              * document.$cookie.$defaultAttributes = {path: '/'}; // mass assign default attributes(delete other)
              */
             get $cookie() {
-                return documentCookie.getOrSet(this, (document) => new Proxy(function $Cookie() {
-                }, {
+                return documentCookie.getOrSet(this, (document) => new Proxy(function $Cookie() {}, {
                     has(target, property) {
                         return this.get(target, property) != null;
                     },
@@ -348,8 +350,7 @@ export function data(kQuery) {
              */
             get $bag() {
                 const bag = {};
-                return nodeBag.getOrSet(this, () => new Proxy(function $Bag() {
-                }, {
+                return nodeBag.getOrSet(this, () => new Proxy(function $Bag() {}, {
                     has(target, property) {
                         return Reflect.has(bag, property);
                     },
@@ -417,7 +418,8 @@ export function data(kQuery) {
                 let contents;
                 if (this instanceof HTMLLinkElement) {
                     contents = await (await F.fetch(this.href)).text();
-                } else {
+                }
+                else {
                     contents = this.textContent;
                 }
 
@@ -473,7 +475,8 @@ export function data(kQuery) {
                 let contents;
                 if (this.src) {
                     contents = await (await F.fetch(this.src)).text();
-                } else {
+                }
+                else {
                     contents = this.textContent;
                 }
 

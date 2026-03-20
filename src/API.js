@@ -1876,6 +1876,7 @@ export class CheckBoxNodeList extends GT.NodeList {
     get name() {
         return this[0]?.name;
     }
+
     /**
      * set name of CheckBoxNodeList
      *
@@ -1888,6 +1889,7 @@ export class CheckBoxNodeList extends GT.NodeList {
             e.name = name;
         });
     }
+
     /**
      * get name of CheckBoxNodeList
      *
@@ -1898,6 +1900,7 @@ export class CheckBoxNodeList extends GT.NodeList {
     get value() {
         return this.$value;
     }
+
     /**
      * set name of CheckBoxNodeList
      *
