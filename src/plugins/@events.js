@@ -40,7 +40,11 @@ export function events(kQuery) {
             });
     };
 
-    const internalEventName = function (type) {
+    const internalEventName = function (that, type) {
+        // special treat
+        if (that instanceof Window && type === 'resize') {
+            return type;
+        }
         if (type in kQuery.customEvents) {
             type = kQuery.config.customEventPrefix + type;
         }
@@ -326,7 +330,7 @@ export function events(kQuery) {
                     else {
                         internalOptions.signal = eventData.abortController.signal;
                     }
-                    this.addEventListener(internalEventName(type), handler, internalOptions);
+                    this.addEventListener(internalEventName(this, type), handler, internalOptions);
 
                     // if once:true, the handler can be retrieved by the GC
                     // at that time, $off is not called so have to call by finalizer
@@ -385,7 +389,7 @@ export function events(kQuery) {
                             return true;
                         }
 
-                        this.removeEventListener(internalEventName(eventData.type), eventData.handler.deref(), eventData.options);
+                        this.removeEventListener(internalEventName(this, eventData.type), eventData.handler.deref(), eventData.options);
                         eventData.destructor();
                         return false;
                     }));
@@ -411,7 +415,7 @@ export function events(kQuery) {
                 let result = true;
                 for (const [type, namespaces] of eachType(false, types)) {
                     const event = kQuery.wellknownEvents[type] ?? CustomEvent;
-                    const eventObject = new event(internalEventName(type), Object.assign({
+                    const eventObject = new event(internalEventName(this, type), Object.assign({
                         bubbles: true,
                         cancelable: true,
                         composed: true,
