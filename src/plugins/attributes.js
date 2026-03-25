@@ -117,6 +117,43 @@ export function attributes(kQuery) {
     return {
         [[Element.name, $NodeList.name]]: /** @lends Element.prototype */{
             /**
+             * set attribute
+             *
+             * - value is bool: toggleAttribute
+             * - value is null: removeAttribute
+             * - value is other: setAttribute
+             *
+             * @param {String} name
+             * @param {null|String|Boolean} value
+             * @returns {Element}
+             */
+            $toggleAttribute(name, value) {
+                if (value == null) {
+                    this.removeAttribute(name);
+                }
+                else if (typeof (value) === 'boolean') {
+                    this.toggleAttribute(name, value);
+                }
+                else {
+                    this.setAttribute(name, value);
+                }
+                return this;
+            },
+            /**
+             * set attributes
+             *
+             * @see Element.$toggleAttribute
+             *
+             * @param {Dictionary} values
+             * @returns {Element}
+             */
+            $toggleAttributes(values) {
+                for (const [name, value] of F.objectToEntries(values)) {
+                    this.$toggleAttribute(name, value);
+                }
+                return this;
+            },
+            /**
              * simple accessor to NamedNodeMap(attribute)
              *
              * @descriptor get
