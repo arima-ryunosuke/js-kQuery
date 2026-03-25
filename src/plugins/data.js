@@ -51,6 +51,22 @@ export function data(kQuery) {
 
                 return this.$assign({searchParams: params});
             },
+            /**
+             * special toString
+             *
+             * @see URLSearchParams.$toString()
+             *
+             * @param {URLOptions} [options]
+             * @return {Promise<String>}
+             */
+            async $toString(options) {
+                kQuery.logger.assertInstanceOf(options, Nullable, Dictionary)();
+
+                const base = this.href.split('?')[0].split('#')[0];
+                const query = await this.searchParams.$toString(options);
+
+                return `${base}${query ? `?${query}` : ''}${this.hash}`;
+            },
         },
         [[URLSearchParams.name]]: /** @lends URLSearchParams.prototype */{
             /**
@@ -97,6 +113,51 @@ export function data(kQuery) {
                     this.delete(key);
                 }
                 return this;
+            },
+            /**
+             * special toString
+             *
+             * available:
+             * - compress to one string
+             * - param[] to csv
+             *
+             * @param {URLOptions} [options]
+             * @return {Promise<String>}
+             */
+            async $toString(options) {
+                kQuery.logger.assertInstanceOf(options, Nullable, Dictionary)();
+
+                options = Object.assign({
+                    compress: null,
+                    delimiter: ' ',
+                    space: '+',
+                }, options);
+
+                const keys = new Set(this.keys());
+                const result = new URLSearchParams();
+                for (const key of keys) {
+                    if (options.delimiter && key.match(/\[]$/)) {
+                        result.set(key, this.getAll(key).join(options.delimiter));
+                    }
+                    else {
+                        for (const value of this.getAll(key)) {
+                            result.append(key, value);
+                        }
+                    }
+                }
+                if (options.compress == null) {
+                    if (options.space && options.space !== '+') {
+                        return result.toString().replaceAll('+', options.space);
+                    }
+                    return result.toString();
+                }
+
+                const result2 = new URLSearchParams();
+                result2.set(options.compress, await F.stringCompressAndBase64(result.toString(), 'deflate-raw', {
+                    alphabet: "base64url",
+                    omitPadding: true,
+                }));
+                return result2.toString();
             },
         },
         [[Document.name]]: /** @lends Document.prototype */{
@@ -558,6 +619,21 @@ export function data(kQuery) {
              */
             set $URL(url) {
                 this.action = url;
+            },
+            /**
+             * special toString
+             *
+             * @see URLSearchParams.$toString()
+             *
+             * @param {URLOptions} [options]
+             * @returns {Promise<String>}
+             */
+            async $href(options) {
+                const url = this.$URL;
+                if (this.method.toUpperCase() === 'GET') {
+                    url.searchParams.$appendFromEntries(new FormData(this).$toSearchParams());
+                }
+                return await url.$toString(options);
             },
         },
         [[Blob.name, $FileList.name]]: /** @lends Blob.prototype */{

@@ -45,6 +45,15 @@ import {traversing} from './src/plugins/traversing.js';
  * @preserve
  */
 /**
+ * @typedef {{
+ *     compress?: String,
+ *     delimiter?: String,
+ *     space?: String,
+ * }} URLOptions
+ * @ignore
+ * @preserve
+ */
+/**
  * @typedef {(url:String, options?:RequestInit) => Promise<Response>} HttpRequest
  * @ignore
  * @preserve

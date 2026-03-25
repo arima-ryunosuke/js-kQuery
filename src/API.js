@@ -156,6 +156,20 @@ export const F = {
     stringIsNaN(string) {
         return Number.isNaN(parseFloat(string));
     },
+    async stringCompressAndBase64(string, format, options) {
+        const formats = {
+            zlib: "deflate",
+        };
+        format = formats[format] ?? format;
+
+        const blob = new Blob([string]);
+        const stream = blob.stream();
+        const compressedStream = stream.pipeThrough(new CompressionStream(format));
+        const buffer = await new Response(compressedStream).arrayBuffer();
+        const bytes = new Uint8Array(buffer);
+
+        return bytes.toBase64(options);
+    },
     stringRender: function () {
         const cache = {};
         return function (template, values, tag = null) {
