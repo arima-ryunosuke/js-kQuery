@@ -515,6 +515,24 @@
       };
       return Object.create(nodeListType.prototype, properties);
     },
+    arrayTranspose(array) {
+      const rowLength = array.length;
+      if (rowLength === 0) {
+        return [];
+      }
+      const colLength = array.reduce((max, row) => Math.max(max, row.length), 0);
+      if (colLength === 0) {
+        return [];
+      }
+      const result = new Array(colLength);
+      for (let c = 0; c < colLength; c++) {
+        result[c] = new Array(rowLength);
+        for (let r = 0; r < rowLength; r++) {
+          result[c][r] = array[r][c];
+        }
+      }
+      return result;
+    },
     arrayLikeToArrayRecursive(object, requireLength = true) {
       for (const [key, value] of F.objectToEntries(object)) {
         if (typeof value === "object") {
@@ -2158,13 +2176,14 @@
       HTMLDListElement: ["compact"],
       HTMLDirectoryElement: ["*"],
       HTMLDivElement: ["align"],
-      HTMLElement: ["attributeStyleMap", "editContext", "onabort", "onanimationend", "onanimationiteration", "onanimationstart", "onauxclick", "onbeforeinput", "onbeforematch", "onbeforetoggle", "onbeforexrselect", "onblur", "oncancel", "oncanplay", "oncanplaythrough", "onchange", "onclick", "onclose", "oncommand", "oncontentvisibilityautostatechange", "oncontextlost", "oncontextmenu", "oncontextrestored", "oncopy", "oncuechange", "oncut", "ondblclick", "ondrag", "ondragend", "ondragenter", "ondragleave", "ondragover", "ondragstart", "ondrop", "ondurationchange", "onemptied", "onended", "onerror", "onfocus", "onformdata", "ongotpointercapture", "oninput", "oninvalid", "onkeydown", "onkeypress", "onkeyup", "onload", "onloadeddata", "onloadedmetadata", "onloadstart", "onlostpointercapture", "onmousedown", "onmouseenter", "onmouseleave", "onmousemove", "onmouseout", "onmouseover", "onmouseup", "onmousewheel", "onpaste", "onpause", "onplay", "onplaying", "onpointercancel", "onpointerdown", "onpointerenter", "onpointerleave", "onpointermove", "onpointerout", "onpointerover", "onpointerrawupdate", "onpointerup", "onprogress", "onratechange", "onreset", "onresize", "onscroll", "onscrollend", "onscrollsnapchange", "onscrollsnapchanging", "onsecuritypolicyviolation", "onseeked", "onseeking", "onselect", "onselectionchange", "onselectstart", "onslotchange", "onstalled", "onsubmit", "onsuspend", "ontimeupdate", "ontoggle", "ontransitioncancel", "ontransitionend", "ontransitionrun", "ontransitionstart", "onvolumechange", "onwaiting", "onwheel", "virtualKeyboardPolicy", "writingSuggestions"],
+      HTMLElement: ["attributeStyleMap", "editContext", "onabort", "onanimationend", "onanimationcancel", "onanimationiteration", "onanimationstart", "onauxclick", "onbeforeinput", "onbeforematch", "onbeforetoggle", "onbeforexrselect", "onblur", "oncancel", "oncanplay", "oncanplaythrough", "onchange", "onclick", "onclose", "oncommand", "oncontentvisibilityautostatechange", "oncontextlost", "oncontextmenu", "oncontextrestored", "oncopy", "oncuechange", "oncut", "ondblclick", "ondrag", "ondragend", "ondragenter", "ondragleave", "ondragover", "ondragstart", "ondrop", "ondurationchange", "onemptied", "onended", "onerror", "onfocus", "onformdata", "ongotpointercapture", "oninput", "oninvalid", "onkeydown", "onkeypress", "onkeyup", "onload", "onloadeddata", "onloadedmetadata", "onloadstart", "onlostpointercapture", "onmousedown", "onmouseenter", "onmouseleave", "onmousemove", "onmouseout", "onmouseover", "onmouseup", "onmousewheel", "onpaste", "onpause", "onplay", "onplaying", "onpointercancel", "onpointerdown", "onpointerenter", "onpointerleave", "onpointermove", "onpointerout", "onpointerover", "onpointerrawupdate", "onpointerup", "onprogress", "onratechange", "onreset", "onresize", "onscroll", "onscrollend", "onscrollsnapchange", "onscrollsnapchanging", "onsecuritypolicyviolation", "onseeked", "onseeking", "onselect", "onselectionchange", "onselectstart", "onslotchange", "onstalled", "onsubmit", "onsuspend", "ontimeupdate", "ontoggle", "ontransitioncancel", "ontransitionend", "ontransitionrun", "ontransitionstart", "onvolumechange", "onwaiting", "onwheel", "virtualKeyboardPolicy", "writingSuggestions"],
       HTMLEmbedElement: ["align", "name"],
       HTMLFencedFrameElement: ["*"],
       HTMLFontElement: ["color", "face", "size"],
       HTMLFormElement: ["requestAutocomplete"],
       HTMLFrameElement: ["*"],
       HTMLFrameSetElement: ["cols", "onafterprint", "onbeforeprint", "onbeforeunload", "onblur", "onerror", "onfocus", "ongamepadconnected", "ongamepaddisconnected", "onhashchange", "onlanguagechange", "onload", "onmessage", "onmessageerror", "onoffline", "ononline", "onpagehide", "onpageshow", "onpopstate", "onrejectionhandled", "onresize", "onscroll", "onstorage", "onunhandledrejection", "onunload", "rows"],
+      HTMLGeolocationElement: ["onlocation", "onpromptaction", "onpromptdismiss", "onvalidationstatuschange"],
       HTMLHRElement: ["align", "color", "noShade", "size", "width"],
       HTMLHeadingElement: ["align"],
       HTMLHtmlElement: ["version"],
@@ -2192,13 +2211,14 @@
       HTMLTableRowElement: ["align", "bgColor", "ch", "chOff", "vAlign"],
       HTMLTableSectionElement: ["align", "ch", "chOff", "vAlign"],
       HTMLUListElement: ["compact", "type"],
+      HTMLUserMediaElement: ["oncancel", "onerror", "onstream"],
       HTMLVideoElement: ["cancelVideoFrameCallback", "onenterpictureinpicture", "onleavepictureinpicture", "playsInline", "requestPictureInPicture", "requestVideoFrameCallback"]
     };
     const targetProperties = {
       // https://developer.mozilla.org/docs/Web/API/Blob
-      Blob: ["arrayBuffer", "bytes", "size", "slice", "stream", "text", "type"],
+      Blob: ["arrayBuffer", "bytes", "size", "slice", "stream", "text", "textStream", "type"],
       // https://developer.mozilla.org/docs/Web/API/Element
-      Element: ["after", "animate", "append", "ariaActiveDescendantElement", "ariaAtomic", "ariaAutoComplete", "ariaBrailleLabel", "ariaBrailleRoleDescription", "ariaBusy", "ariaChecked", "ariaColCount", "ariaColIndex", "ariaColIndexText", "ariaColSpan", "ariaControlsElements", "ariaCurrent", "ariaDescribedByElements", "ariaDescription", "ariaDetailsElements", "ariaDisabled", "ariaErrorMessageElements", "ariaExpanded", "ariaFlowToElements", "ariaHasPopup", "ariaHidden", "ariaInvalid", "ariaKeyShortcuts", "ariaLabel", "ariaLabelledByElements", "ariaLevel", "ariaLive", "ariaModal", "ariaMultiLine", "ariaMultiSelectable", "ariaNotify", "ariaOrientation", "ariaPlaceholder", "ariaPosInSet", "ariaPressed", "ariaReadOnly", "ariaRelevant", "ariaRequired", "ariaRoleDescription", "ariaRowCount", "ariaRowIndex", "ariaRowIndexText", "ariaRowSpan", "ariaSelected", "ariaSetSize", "ariaSort", "ariaValueMax", "ariaValueMin", "ariaValueNow", "ariaValueText", "assignedSlot", "attachShadow", "attributes", "before", "checkVisibility", "childElementCount", "children", "classList", "className", "clientHeight", "clientLeft", "clientTop", "clientWidth", "closest", "currentCSSZoom", "firstElementChild", "getAnimations", "getAttribute", "getAttributeNS", "getAttributeNames", "getAttributeNode", "getAttributeNodeNS", "getBoundingClientRect", "getClientRects", "getElementsByClassName", "getElementsByTagName", "getElementsByTagNameNS", "getHTML", "hasAttribute", "hasAttributeNS", "hasAttributes", "hasPointerCapture", "id", "innerHTML", "insertAdjacentElement", "insertAdjacentHTML", "insertAdjacentText", "lastElementChild", "localName", "matches", "moveBefore", "namespaceURI", "nextElementSibling", "outerHTML", "part", "prefix", "prepend", "previousElementSibling", "querySelector", "querySelectorAll", "releasePointerCapture", "remove", "removeAttribute", "removeAttributeNS", "removeAttributeNode", "replaceChildren", "replaceWith", "requestFullscreen", "requestPointerLock", "role", "scroll", "scrollBy", "scrollHeight", "scrollIntoView", "scrollLeft", "scrollTo", "scrollTop", "scrollWidth", "setAttribute", "setAttributeNS", "setAttributeNode", "setAttributeNodeNS", "setHTMLUnsafe", "setPointerCapture", "shadowRoot", "slot", "tagName", "toggleAttribute"],
+      Element: ["activeViewTransition", "after", "animate", "append", "ariaActionsElements", "ariaActiveDescendantElement", "ariaAtomic", "ariaAutoComplete", "ariaBrailleLabel", "ariaBrailleRoleDescription", "ariaBusy", "ariaChecked", "ariaColCount", "ariaColIndex", "ariaColIndexText", "ariaColSpan", "ariaControlsElements", "ariaCurrent", "ariaDescribedByElements", "ariaDescription", "ariaDetailsElements", "ariaDisabled", "ariaErrorMessageElements", "ariaExpanded", "ariaFlowToElements", "ariaHasPopup", "ariaHidden", "ariaInvalid", "ariaKeyShortcuts", "ariaLabel", "ariaLabelledByElements", "ariaLevel", "ariaLive", "ariaModal", "ariaMultiLine", "ariaMultiSelectable", "ariaNotify", "ariaOrientation", "ariaPlaceholder", "ariaPosInSet", "ariaPressed", "ariaReadOnly", "ariaRelevant", "ariaRequired", "ariaRoleDescription", "ariaRowCount", "ariaRowIndex", "ariaRowIndexText", "ariaRowSpan", "ariaSelected", "ariaSetSize", "ariaSort", "ariaValueMax", "ariaValueMin", "ariaValueNow", "ariaValueText", "assignedSlot", "attachShadow", "attributes", "before", "checkVisibility", "childElementCount", "children", "classList", "className", "clientHeight", "clientLeft", "clientTop", "clientWidth", "closest", "currentCSSZoom", "customElementRegistry", "firstElementChild", "getAnimations", "getAttribute", "getAttributeNS", "getAttributeNames", "getAttributeNode", "getAttributeNodeNS", "getBoundingClientRect", "getClientRects", "getElementsByClassName", "getElementsByTagName", "getElementsByTagNameNS", "getHTML", "hasAttribute", "hasAttributeNS", "hasAttributes", "hasPointerCapture", "id", "innerHTML", "insertAdjacentElement", "insertAdjacentHTML", "insertAdjacentText", "lastElementChild", "localName", "matches", "moveBefore", "namespaceURI", "nextElementSibling", "outerHTML", "part", "prefix", "prepend", "previousElementSibling", "pseudo", "querySelector", "querySelectorAll", "releasePointerCapture", "remove", "removeAttribute", "removeAttributeNS", "removeAttributeNode", "replaceChildren", "replaceWith", "requestFullscreen", "requestPointerLock", "role", "scroll", "scrollBy", "scrollHeight", "scrollIntoView", "scrollLeft", "scrollTo", "scrollTop", "scrollWidth", "setAttribute", "setAttributeNS", "setAttributeNode", "setAttributeNodeNS", "setHTML", "setHTMLUnsafe", "setPointerCapture", "shadowRoot", "slot", "startViewTransition", "tagName", "toggleAttribute"],
       // https://developer.mozilla.org/docs/Web/API/EventTarget
       EventTarget: ["addEventListener", "removeEventListener", "when"],
       // https://developer.mozilla.org/docs/Web/API/File
@@ -2222,7 +2242,7 @@
       // https://developer.mozilla.org/docs/Web/API/HTMLDialogElement
       HTMLDialogElement: ["close", "closedBy", "open", "requestClose", "returnValue", "show", "showModal"],
       // https://developer.mozilla.org/docs/Web/API/HTMLElement
-      HTMLElement: ["accessKey", "attachInternals", "autocapitalize", "autofocus", "blur", "click", "contentEditable", "dataset", "dir", "draggable", "enterKeyHint", "focus", "hidden", "hidePopover", "inert", "innerText", "inputMode", "isContentEditable", "lang", "nonce", "offsetHeight", "offsetLeft", "offsetParent", "offsetTop", "offsetWidth", "outerText", "popover", "showPopover", "spellcheck", "style", "tabIndex", "title", "togglePopover", "translate"],
+      HTMLElement: ["accessKey", "attachInternals", "autocapitalize", "autofocus", "blur", "click", "contentEditable", "dataset", "dir", "draggable", "enterKeyHint", "focus", "focusGroup", "focusGroupStart", "hidden", "hidePopover", "inert", "innerText", "inputMode", "isContentEditable", "lang", "nonce", "offsetHeight", "offsetLeft", "offsetParent", "offsetTop", "offsetWidth", "outerText", "popover", "showPopover", "spellcheck", "style", "tabIndex", "title", "togglePopover", "translate"],
       // https://developer.mozilla.org/docs/Web/API/HTMLEmbedElement
       HTMLEmbedElement: ["getSVGDocument", "height", "src", "type", "width"],
       // https://developer.mozilla.org/docs/Web/API/HTMLFieldSetElement
@@ -2230,13 +2250,13 @@
       // https://developer.mozilla.org/docs/Web/API/HTMLFormElement
       HTMLFormElement: ["acceptCharset", "action", "autocomplete", "checkValidity", "elements", "encoding", "enctype", "length", "method", "name", "noValidate", "rel", "relList", "reportValidity", "requestSubmit", "reset", "submit", "target"],
       // https://developer.mozilla.org/docs/Web/API/HTMLGeolocationElement
-      HTMLGeolocationElement: ["accuracymode", "autolocate", "error", "initialPermissionStatus", "invalidReason", "isValid", "onlocation", "onpromptaction", "onpromptdismiss", "onvalidationstatuschange", "permissionStatus", "position", "watch"],
+      HTMLGeolocationElement: ["accuracymode", "autolocate", "error", "initialPermissionStatus", "invalidReason", "isValid", "permissionStatus", "position", "watch"],
       // https://developer.mozilla.org/docs/Web/API/HTMLIFrameElement
       HTMLIFrameElement: ["allow", "allowFullscreen", "contentDocument", "contentWindow", "getSVGDocument", "height", "loading", "name", "referrerPolicy", "sandbox", "src", "srcdoc", "width"],
       // https://developer.mozilla.org/docs/Web/API/HTMLImageElement
       HTMLImageElement: ["alt", "complete", "crossOrigin", "currentSrc", "decode", "decoding", "height", "isMap", "loading", "lowsrc", "naturalHeight", "naturalWidth", "referrerPolicy", "sizes", "src", "srcset", "useMap", "width", "x", "y"],
       // https://developer.mozilla.org/docs/Web/API/HTMLInputElement
-      HTMLInputElement: ["accept", "alt", "autocomplete", "checkValidity", "checked", "defaultChecked", "defaultValue", "dirName", "disabled", "files", "form", "formAction", "formEnctype", "formMethod", "formNoValidate", "formTarget", "height", "indeterminate", "labels", "list", "max", "maxLength", "min", "minLength", "multiple", "name", "pattern", "placeholder", "popoverTargetAction", "popoverTargetElement", "readOnly", "reportValidity", "required", "select", "selectionDirection", "selectionEnd", "selectionStart", "setCustomValidity", "setRangeText", "setSelectionRange", "showPicker", "size", "src", "step", "stepDown", "stepUp", "type", "validationMessage", "validity", "value", "valueAsDate", "valueAsNumber", "width", "willValidate"],
+      HTMLInputElement: ["accept", "alt", "autocomplete", "checkValidity", "checked", "createValueRange", "defaultChecked", "defaultValue", "dirName", "disabled", "files", "form", "formAction", "formEnctype", "formMethod", "formNoValidate", "formTarget", "height", "indeterminate", "labels", "list", "max", "maxLength", "min", "minLength", "multiple", "name", "pattern", "placeholder", "popoverTargetAction", "popoverTargetElement", "readOnly", "reportValidity", "required", "select", "selectionDirection", "selectionEnd", "selectionStart", "setCustomValidity", "setRangeText", "setSelectionRange", "showPicker", "size", "src", "step", "stepDown", "stepUp", "type", "validationMessage", "validity", "value", "valueAsDate", "valueAsNumber", "width", "willValidate"],
       // https://developer.mozilla.org/docs/Web/API/HTMLLIElement
       HTMLLIElement: ["value"],
       // https://developer.mozilla.org/docs/Web/API/HTMLLabelElement
@@ -2248,7 +2268,7 @@
       // https://developer.mozilla.org/docs/Web/API/HTMLMapElement
       HTMLMapElement: ["areas", "name"],
       // https://developer.mozilla.org/docs/Web/API/HTMLMediaElement
-      HTMLMediaElement: ["addTextTrack", "autoplay", "buffered", "canPlayType", "controls", "crossOrigin", "currentSrc", "currentTime", "defaultMuted", "defaultPlaybackRate", "duration", "ended", "error", "load", "loop", "mediaKeys", "muted", "networkState", "pause", "paused", "play", "playbackRate", "played", "preload", "preservesPitch", "readyState", "seekable", "seeking", "setMediaKeys", "src", "srcObject", "textTracks", "volume"],
+      HTMLMediaElement: ["addTextTrack", "autoplay", "buffered", "canPlayType", "controls", "crossOrigin", "currentSrc", "currentTime", "defaultMuted", "defaultPlaybackRate", "duration", "ended", "error", "load", "loading", "loop", "mediaKeys", "muted", "networkState", "pause", "paused", "play", "playbackRate", "played", "preload", "preservesPitch", "readyState", "seekable", "seeking", "setMediaKeys", "src", "srcObject", "textTracks", "volume"],
       // https://developer.mozilla.org/docs/Web/API/HTMLMetaElement
       HTMLMetaElement: ["content", "httpEquiv", "media", "name"],
       // https://developer.mozilla.org/docs/Web/API/HTMLMeterElement
@@ -2270,7 +2290,7 @@
       // https://developer.mozilla.org/docs/Web/API/HTMLQuoteElement
       HTMLQuoteElement: ["cite"],
       // https://developer.mozilla.org/docs/Web/API/HTMLScriptElement
-      HTMLScriptElement: ["async", "crossOrigin", "defer", "htmlFor", "integrity", "noModule", "referrerPolicy", "src", "text", "type"],
+      HTMLScriptElement: ["async", "crossOrigin", "defer", "htmlFor", "innerText", "integrity", "noModule", "referrerPolicy", "src", "text", "textContent", "type"],
       // https://developer.mozilla.org/docs/Web/API/HTMLSelectElement
       HTMLSelectElement: ["add", "autocomplete", "checkValidity", "disabled", "form", "item", "labels", "length", "multiple", "name", "namedItem", "options", "remove", "reportValidity", "required", "selectedIndex", "selectedOptions", "setCustomValidity", "showPicker", "size", "type", "validationMessage", "validity", "value", "willValidate"],
       // https://developer.mozilla.org/docs/Web/API/HTMLSlotElement
@@ -2288,15 +2308,17 @@
       // https://developer.mozilla.org/docs/Web/API/HTMLTableSectionElement
       HTMLTableSectionElement: ["deleteRow", "insertRow", "rows"],
       // https://developer.mozilla.org/docs/Web/API/HTMLTemplateElement
-      HTMLTemplateElement: ["content", "shadowRootClonable", "shadowRootDelegatesFocus", "shadowRootMode", "shadowRootSerializable"],
+      HTMLTemplateElement: ["content", "htmlFor", "shadowRootClonable", "shadowRootCustomElementRegistry", "shadowRootDelegatesFocus", "shadowRootMode", "shadowRootReferenceTarget", "shadowRootSerializable", "shadowRootSlotAssignment"],
       // https://developer.mozilla.org/docs/Web/API/HTMLTextAreaElement
-      HTMLTextAreaElement: ["autocomplete", "checkValidity", "cols", "defaultValue", "dirName", "disabled", "form", "labels", "maxLength", "minLength", "name", "placeholder", "readOnly", "reportValidity", "required", "rows", "select", "selectionDirection", "selectionEnd", "selectionStart", "setCustomValidity", "setRangeText", "setSelectionRange", "textLength", "type", "validationMessage", "validity", "value", "willValidate", "wrap"],
+      HTMLTextAreaElement: ["autocomplete", "checkValidity", "cols", "createValueRange", "defaultValue", "dirName", "disabled", "form", "labels", "maxLength", "minLength", "name", "placeholder", "readOnly", "reportValidity", "required", "rows", "select", "selectionDirection", "selectionEnd", "selectionStart", "setCustomValidity", "setRangeText", "setSelectionRange", "textLength", "type", "validationMessage", "validity", "value", "willValidate", "wrap"],
       // https://developer.mozilla.org/docs/Web/API/HTMLTimeElement
       HTMLTimeElement: ["dateTime"],
       // https://developer.mozilla.org/docs/Web/API/HTMLTitleElement
       HTMLTitleElement: ["text"],
       // https://developer.mozilla.org/docs/Web/API/HTMLTrackElement
       HTMLTrackElement: ["default", "kind", "label", "readyState", "src", "srclang", "track"],
+      // https://developer.mozilla.org/docs/Web/API/HTMLUserMediaElement
+      HTMLUserMediaElement: ["error", "setConstraints", "stream"],
       // https://developer.mozilla.org/docs/Web/API/HTMLVideoElement
       HTMLVideoElement: ["disablePictureInPicture", "getVideoPlaybackQuality", "height", "poster", "videoHeight", "videoWidth", "width"],
       // https://developer.mozilla.org/docs/Web/API/Node
@@ -5152,6 +5174,31 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
           }
         }
       ),
+      [[HTMLInputElement.name, HTMLTextAreaElement.name, HTMLSelectElement.name, HTMLButtonElement.name, HTMLMeterElement.name, HTMLOutputElement.name, HTMLProgressElement.name, $NodeList.name]]: (
+        /** @lends HTMLLabeledElement.prototype */
+        {
+          /**
+           * get input labels
+           *
+           * [type=hidden] returns correct labels(native is null)
+           *
+           * @descriptor get
+           *
+           * @return {NodeList}
+           */
+          get $labels() {
+            if (this.type !== "hidden") {
+              return this.labels;
+            }
+            const labels = Array.from(this.$parents("label"));
+            if (this.id) {
+              labels.push(...this.$document.$$(`label[for=${this.id}]`));
+            }
+            labels.sort((a, b) => a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_PRECEDING ? 1 : -1);
+            return F.iterableToNodeList(labels);
+          }
+        }
+      ),
       [[HTMLInputElement.name, $NodeList.name]]: (
         /** @lends HTMLInputElement.prototype */
         {
@@ -6516,6 +6563,9 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
             const url = options.url;
             const target = options.target;
             F.objectWalkRecursive(options, function(v, k) {
+              if (k === "popup") {
+                return v;
+              }
               if (["url", "target", "window"].includes(k) || v === false) {
                 return void 0;
               }
@@ -6708,6 +6758,39 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
               timeouter?.start(options.timeout);
               observer.observe(this);
             });
+          }
+        }
+      ),
+      [[HTMLAnchorElement.name, $NodeList.name]]: (
+        /** @lends HTMLAnchorElement.prototype */
+        {
+          /**
+           * open window by using attributes
+           *
+           * @param {WindowOpenOptions} options
+           * @return {WindowProxy}
+           */
+          $open(options) {
+            options = Object.assign({
+              // string
+              url: void 0,
+              // string
+              target: void 0,
+              // bool
+              noreferrer: void 0,
+              // bool
+              noopener: void 0,
+              // bool
+              attributionSrc: void 0,
+              // WindowOpenOptions
+              popup: false
+            }, options);
+            options.url ??= this.href;
+            options.target ??= this.target || "_self";
+            options.noreferrer ??= this.relList.contains("noreferrer");
+            options.noopener ??= this.relList.contains("noopener") || !this.relList.contains("opener") && this.target === "_blank";
+            options.attributionSrc ??= this.attributionSrc || void 0;
+            return this.$window.$open(options);
           }
         }
       ),
@@ -7873,6 +7956,73 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
             }
           }
         }
+      ),
+      [[HTMLTableElement.name, HTMLTableSectionElement.name, $NodeList.name]]: (
+        /** @lends HTMLTableSectionLikeElement.prototype */
+        {
+          /**
+           * get grid(th/td's array of array)
+           *
+           * @param {Boolean} padSpannedCell
+           * @return {HTMLTableCellElement[][]}
+           */
+          $grid(padSpannedCell = false) {
+            if (this.rows.length === 0) {
+              return [];
+            }
+            const grid = [];
+            let maxCols = 0;
+            for (let rIndex = 0; rIndex < this.rows.length; rIndex++) {
+              const row = this.rows[rIndex];
+              grid[rIndex] ??= [];
+              let cIndex = 0;
+              for (let x = 0; x < row.cells.length; x++) {
+                const cell = row.cells[x];
+                while (cIndex in grid[rIndex]) {
+                  cIndex++;
+                }
+                const colspan = cell.colSpan;
+                const rowspan = cell.rowSpan || this.rows.length - rIndex;
+                for (let y = 0; y < rowspan; y++) {
+                  const targetRow = rIndex + y;
+                  if (targetRow >= this.rows.length) {
+                    break;
+                  }
+                  grid[targetRow] ??= [];
+                  for (let c = 0; c < colspan; c++) {
+                    grid[targetRow][cIndex + c] = padSpannedCell || y === 0 && c === 0 ? cell : null;
+                  }
+                }
+                cIndex += colspan;
+                maxCols = Math.max(maxCols, cIndex);
+              }
+            }
+            for (let y = 0; y < this.rows.length; y++) {
+              for (let c = 0; c < maxCols; c++) {
+                if (!(c in grid[y])) {
+                  grid[y][c] = void 0;
+                }
+              }
+            }
+            return grid;
+          },
+          /**
+           * get horizontal cells in light of row/colspan
+           *
+           * @return {NodeList<?HTMLTableCellElement>[]}
+           */
+          get $rows() {
+            return this.$grid().map((cells) => F.iterableToNodeList(cells));
+          },
+          /**
+           * get vertical cells in light of row/colspan
+           *
+           * @return {NodeList<?HTMLTableCellElement>}
+           */
+          get $cols() {
+            return F.arrayTranspose(this.$grid()).map((cells) => F.iterableToNodeList(cells));
+          }
+        }
       )
     };
   }
@@ -7908,13 +8058,14 @@ ${name}: ${JSON.stringify(result2[name])},`).join("\n"));
  * @typedef {{
  *     url?: String,
  *     target?: String,
- *     window?: Boolean,
+ *     window?: Boolean|Window,
  *     left?: String|Number,
  *     top?: String|Number,
  *     width?: String|Number,
  *     height?: String|Number,
  *     noopener?: String,
  *     noreferrer?: String,
+ *     attributionSrc?: String,
  * }} WindowOpenOptions
  * @ignore
  * @preserve
