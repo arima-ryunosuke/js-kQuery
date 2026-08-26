@@ -265,6 +265,12 @@ import {traversing} from './src/plugins/traversing.js';
  * @typedef {FormData} FormData
  */
 /**
+ * @typedef {DataTransfer} DataTransfer
+ */
+/**
+ * @typedef {DataTransferItem} DataTransferItem
+ */
+/**
  * @typedef {Blob} Blob
  */
 /**
