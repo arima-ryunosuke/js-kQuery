@@ -178,6 +178,29 @@ export function forms(kQuery) {
                 };
             },
         },
+        [[HTMLInputElement.name, HTMLTextAreaElement.name, HTMLSelectElement.name, HTMLButtonElement.name, HTMLMeterElement.name, HTMLOutputElement.name, HTMLProgressElement.name, $NodeList.name]]: /** @lends HTMLLabeledElement.prototype */{
+            /**
+             * get input labels
+             *
+             * [type=hidden] returns correct labels(native is null)
+             *
+             * @descriptor get
+             *
+             * @return {NodeList}
+             */
+            get $labels() {
+                if (this.type !== 'hidden') {
+                    return this.labels;
+                }
+
+                const labels = Array.from(this.$parents('label'));
+                if (this.id) {
+                    labels.push(...this.$document.$$(`label[for=${this.id}]`));
+                }
+                labels.sort((a, b) => a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_PRECEDING ? 1 : -1);
+                return F.iterableToNodeList(labels);
+            },
+        },
         [[HTMLInputElement.name, $NodeList.name]]: /** @lends HTMLInputElement.prototype */{
             /**
              * get input value as date
