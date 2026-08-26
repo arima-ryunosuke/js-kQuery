@@ -33,13 +33,14 @@ import {traversing} from './src/plugins/traversing.js';
  * @typedef {{
  *     url?: String,
  *     target?: String,
- *     window?: Boolean,
+ *     window?: Boolean|Window,
  *     left?: String|Number,
  *     top?: String|Number,
  *     width?: String|Number,
  *     height?: String|Number,
  *     noopener?: String,
  *     noreferrer?: String,
+ *     attributionSrc?: String,
  * }} WindowOpenOptions
  * @ignore
  * @preserve

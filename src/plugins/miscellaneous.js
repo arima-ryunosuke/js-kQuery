@@ -88,6 +88,9 @@ export function miscellaneous(kQuery) {
                 const target = options.target;
 
                 F.objectWalkRecursive(options, function (v, k) {
+                    if (k === 'popup') {
+                        return v;
+                    }
                     if (['url', 'target', 'window'].includes(k) || v === false) {
                         return undefined;
                     }
@@ -285,6 +288,38 @@ export function miscellaneous(kQuery) {
                     timeouter?.start(options.timeout);
                     observer.observe(this);
                 });
+            },
+        },
+        [[HTMLAnchorElement.name, $NodeList.name]]: /** @lends HTMLAnchorElement.prototype */{
+            /**
+             * open window by using attributes
+             *
+             * @param {WindowOpenOptions} options
+             * @return {WindowProxy}
+             */
+            $open(options) {
+                options = Object.assign({
+                    // string
+                    url: undefined,
+                    // string
+                    target: undefined,
+                    // bool
+                    noreferrer: undefined,
+                    // bool
+                    noopener: undefined,
+                    // bool
+                    attributionSrc: undefined,
+                    // WindowOpenOptions
+                    popup: false,
+                }, options);
+
+                options.url ??= this.href;
+                options.target ??= this.target || '_self';
+                options.noreferrer ??= this.relList.contains('noreferrer');
+                options.noopener ??= this.relList.contains('noopener') || (!this.relList.contains('opener') && this.target === '_blank');
+                options.attributionSrc ??= this.attributionSrc || undefined;
+
+                return this.$window.$open(options);
             },
         },
         [[HTMLInputElement.name, $NodeList.name]]: /** @lends HTMLInputElement.prototype */{
