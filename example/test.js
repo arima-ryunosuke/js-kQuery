@@ -631,6 +631,40 @@ document.addEventListener('DOMContentLoaded', function () {
                     // descriptor(enumerable)
                     expect(Object.keys(created)).toEqual(Object.keys(builtin));
                 });
+                it('F.arrayTranspose', async function () {
+                    expect(API.F.arrayTranspose([
+                        [1, 2, 3],
+                        [4, 5, 6],
+                        [7, 8, 9],
+                    ])).toEqual([
+                        [1, 4, 7],
+                        [2, 5, 8],
+                        [3, 6, 9],
+                    ]);
+                    expect(API.F.arrayTranspose([
+                        [1, 2, 3],
+                        [4, 5],
+                        [7],
+                    ])).toEqual([
+                        [1, 4, 7],
+                        [2, 5, undefined],
+                        [3, undefined, undefined],
+                    ]);
+                    expect(API.F.arrayTranspose([
+                        [1],
+                        [4, 5],
+                        [7, 8, 9],
+                    ])).toEqual([
+                        [1, 4, 7],
+                        [undefined, 5, 8],
+                        [undefined, undefined, 9],
+                    ]);
+                    expect(API.F.arrayTranspose([
+                        [],
+                        [],
+                    ])).toEqual([]);
+                    expect(API.F.arrayTranspose([])).toEqual([]);
+                });
                 it('F.arrayLikeToArrayRecursive', async function () {
                     expect(API.F.arrayLikeToArrayRecursive({
                         0: [1, 2, 3],
@@ -3199,8 +3233,34 @@ document.addEventListener('DOMContentLoaded', function () {
                         <input id="month" type="month" step="">
                         <input id="week" type="week" step="">
                     <form>`);
+                    this.labeledInputs = $(`<form>
+                        <label>textLabel<input id="label-text1" type="text"></label>
+                        <label>hiddenLabel<input id="label-hidden1" type="hidden"></label>
+                        
+                        <label for="label-text2">textLabelA</label>
+                        <label for="label-text2">textLabelB</label>
+                        <input id="label-text2" type="text">
+                        
+                        <label for="label-hidden2">hiddenLabelA</label>
+                        <label for="label-hidden2">hiddenLabelB</label>
+                        <input id="label-hidden2" type="hidden">
+                        
+                        <label for="label-nest" data-label="nestLabelA"></label>
+                        <label data-label="nestLabelB"><label data-label="nestLabelC"><input id="label-nest" type="hidden"></label></label>
+                    </form>`);
+                    document.body.append(this.labeledInputs);
+                });
+                afterEach(function () {
+                    this.labeledInputs.remove();
                 });
 
+                it('$labels', async function () {
+                    expect(this.labeledInputs.$('#label-text1').$labels.textContent).toEqual(['textLabel']);
+                    expect(this.labeledInputs.$('#label-hidden1').$labels.textContent).toEqual(['hiddenLabel']);
+                    expect(this.labeledInputs.$('#label-text2').$labels.textContent).toEqual(['textLabelA', 'textLabelB']);
+                    expect(this.labeledInputs.$('#label-hidden2').$labels.textContent).toEqual(['hiddenLabelA', 'hiddenLabelB']);
+                    expect(this.labeledInputs.$('#label-nest').$labels.$data.label).toEqual(['nestLabelA', 'nestLabelB', 'nestLabelC']);
+                });
                 it('$valueAsDate', async function () {
                     const format = function (date) {
                         return date.toLocaleString('sv-SE') + '.' + ('' + date.getMilliseconds()).padStart(3, '0');
@@ -3948,6 +4008,87 @@ document.addEventListener('DOMContentLoaded', function () {
                 });
             });
 
+            describe('HTMLTableElement', function () {
+                beforeEach(function () {
+                    this.table = $(`<table><tbody>
+                    <tr>
+                        <th rowspan="1">A</th>               <th rowspan="1">B</th>               <th rowspan="1">C</th>
+                    </tr>
+                    <tr>
+                        <td rowspan="3">A1-3</td>            <td rowspan="1" colspan="2">BC1</td> <!-- empty -->
+                    </tr>
+                    <tr>
+                        <!-- empty -->                       <td rowspan="3">B2-4</td>            <td rowspan="1">C2</td>
+                    </tr>
+                    <tr>
+                        <!-- empty -->                       <!-- empty -->                       <td rowspan="1">C3</td>
+                    </tr>
+                    <tr>
+                        <td rowspan="1">A4</td>              <!-- empty -->                       <td rowspan="1">C4</td>
+                    </tr>
+                    <tr>
+                        <td rowspan="1" colspan="2">AB5</td> <!-- empty -->                       <td rowspan="1">C5</td>
+                    </tr>
+                    </tbody></table>`);
+                    document.body.append(this.table);
+                });
+                afterEach(function () {
+                    this.table.remove();
+                });
+
+                it('$cols', async function () {
+                    const $cols = this.table.$cols;
+
+                    expect($cols[0] + '').toEqual([
+                        '<th rowspan="1">A</th>',
+                        '<td rowspan="3">A1-3</td>',
+                        null,
+                        null,
+                        '<td rowspan="1">A4</td>',
+                        '<td rowspan="1" colspan="2">AB5</td>',
+                    ].join(''));
+                    expect($cols[1] + '').toEqual([
+                        '<th rowspan="1">B</th>',
+                        '<td rowspan="1" colspan="2">BC1</td>',
+                        '<td rowspan="3">B2-4</td>',
+                        null,
+                        null,
+                        null,
+                    ].join(''));
+                    expect($cols[2] + '').toEqual([
+                        '<th rowspan="1">C</th>',
+                        null,
+                        '<td rowspan="1">C2</td>',
+                        '<td rowspan="1">C3</td>',
+                        '<td rowspan="1">C4</td>',
+                        '<td rowspan="1">C5</td>',
+                    ].join(''));
+                });
+
+                it('$rows', async function () {
+                    const $rows = this.table.$rows;
+
+                    expect($rows[0] + '').toEqual(
+                        '<th rowspan="1">A</th><th rowspan="1">B</th><th rowspan="1">C</th>',
+                    );
+                    expect($rows[1] + '').toEqual(
+                        '<td rowspan="3">A1-3</td><td rowspan="1" colspan="2">BC1</td>',
+                    );
+                    expect($rows[2] + '').toEqual(
+                        '<td rowspan="3">B2-4</td><td rowspan="1">C2</td>',
+                    );
+                    expect($rows[3] + '').toEqual(
+                        '<td rowspan="1">C3</td>',
+                    );
+                    expect($rows[4] + '').toEqual(
+                        '<td rowspan="1">A4</td><td rowspan="1">C4</td>',
+                    );
+                    expect($rows[5] + '').toEqual(
+                        '<td rowspan="1" colspan="2">AB5</td><td rowspan="1">C5</td>',
+                    );
+                });
+            });
+
             describe('URL', function () {
                 beforeEach(function () {
                     this.url = new URL('http://example.com:8080/path/to/test?query1=a&query2=b#hash');
@@ -4679,6 +4820,18 @@ after-text`);
                     this.container.$('.postable-async').click();
                     await sleep(1000);
                     expect(this.output.textContent).toContain('"method": "POST"');
+                });
+            });
+
+            describe('table', function () {
+                beforeEach(function () {
+                    this.container = document.$('.table');
+                    this.output = this.container.$('.output');
+                });
+
+                it('$rows(3)', async function () {
+                    this.container.$('.rows[data-section="tbody"][data-index="3"]').click();
+                    expect(this.output.textContent).toContain('(empty) | (empty) | <td rowspan="1" class="attract">bodyC3</td>');
                 });
             });
 

@@ -872,6 +872,120 @@
         </script>
     </section>
 
+    <section class="table">
+        <h2>table</h2>
+
+        <div>
+            <button type="button" class="grid" data-section="table">table grid</button>
+            <button type="button" class="grid" data-section="thead">thead grid</button>
+            <button type="button" class="grid" data-section="tbody">tbody grid</button>
+            <br>
+            <button type="button" class="cols" data-section="table" data-index="1">table cols[1]</button>
+            <button type="button" class="cols" data-section="thead" data-index="2">thead cols[2]</button>
+            <button type="button" class="cols" data-section="tbody" data-index="3">tbody cols[3]</button>
+            <br>
+            <button type="button" class="rows" data-section="table" data-index="1">table rows[1]</button>
+            <button type="button" class="rows" data-section="thead" data-index="1">thead rows[1]</button>
+            <button type="button" class="rows" data-section="tbody" data-index="1">tbody rows[1]</button>
+            <br>
+            <button type="button" class="rows" data-section="table" data-index="2">table rows[2]</button>
+            <button type="button" class="rows" data-section="thead" data-index="2">thead rows[2]</button>
+            <button type="button" class="rows" data-section="tbody" data-index="2">tbody rows[2]</button>
+            <br>
+            <button type="button" class="rows" data-section="table" data-index="3">table rows[3]</button>
+            <button type="button" class="rows" data-section="thead" data-index="3">thead rows[3]</button>
+            <button type="button" class="rows" data-section="tbody" data-index="3">tbody rows[3]</button>
+            <br>
+            <button type="button" class="rows" data-section="table" data-index="4">table rows[4]</button>
+            <button type="button" class="rows" data-section="thead" data-index="4">thead rows[4]</button>
+            <button type="button" class="rows" data-section="tbody" data-index="4">tbody rows[4]</button>
+            <br>
+            <button type="button" class="rows" data-section="table" data-index="5">table rows[5]</button>
+            <button type="button" class="rows" data-section="thead" data-index="5">thead rows[5]</button>
+            <button type="button" class="rows" data-section="tbody" data-index="5">tbody rows[5]</button>
+        </div>
+
+        <div class="input">
+            <style>
+                @scope {
+                    td, th {
+                        border: 1px solid black;
+                        &.attract {
+                            color: red;
+                        }
+                    }
+                }
+            </style>
+            <table>
+                <thead>
+                <tr>
+                    <th rowspan="3">headA1-3</th>
+                    <th rowspan="2">headB1-2</th>
+                    <th rowspan="1">headC1</th>
+                </tr>
+                <tr>
+                    <th rowspan="1">headC2</th>
+                </tr>
+                <tr>
+                    <th rowspan="1">headB3</th>
+                    <th rowspan="1">headC3</th>
+                </tr>
+                <tr>
+                    <th rowspan="1" colspan="2">headAB4</th>
+                    <th rowspan="1">headC4</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr>
+                    <td rowspan="3">bodyA1-3</td>
+                    <td rowspan="1" colspan="2">bodyBC1</td>
+                </tr>
+                <tr>
+                    <td rowspan="3">bodyB2-4</td>
+                    <td rowspan="1">bodyC2</td>
+                </tr>
+                <tr>
+                    <td rowspan="1">bodyC3</td>
+                </tr>
+                <tr>
+                    <td rowspan="1">bodyA4</td>
+                    <td rowspan="1">bodyC4</td>
+                </tr>
+                <tr>
+                    <td rowspan="1" colspan="2">bodyAB5</td>
+                    <td rowspan="1">bodyC5</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <output class="output"></output>
+
+        <script type="module">
+            (async function () {
+                const container = document.$('.table');
+                const input = container.$('.input');
+                const output = container.$('.output');
+
+                container.$on('click', '.grid', async function (e) {
+                    output.innerText = input.$(e.target.dataset.section).$grid().map(cells => cells.map(cell => cell ?? '(empty)').join(" | ")).join("\n");
+                });
+                container.$on('click', '.cols', async function (e) {
+                    const cells = input.$(e.target.dataset.section).$cols[e.target.dataset.index - 1];
+                    input.$$('table th,td').classList.remove('attract');
+                    cells.classList.add('attract');
+                    output.innerText = Array.from(cells).map(cell => cell ?? '(empty)').join("\n");
+                });
+                container.$on('click', '.rows', async function (e) {
+                    const cells = input.$(e.target.dataset.section).$rows[e.target.dataset.index - 1];
+                    input.$$('table th,td').classList.remove('attract');
+                    cells.classList.add('attract');
+                    output.innerText = Array.from(cells).map(cell => cell ?? '(empty)').join(" | ");
+                });
+            })();
+        </script>
+    </section>
+
     <section class="dimension">
         <h2>dimension</h2>
 
@@ -1236,6 +1350,9 @@
 
         <div>
             <button type="button" class="window-open">window open</button>
+            <a href="." class="a-open">a open(default)</a>
+            <a href="." class="a-open" target="_blank">a open(blank)</a>
+            <a href="." class="a-open" target="_blank" data-popup="1">a open(popup)</a>
             <br>
             <span class="watch-target">watch target1</span>
             <span class="watch-target">watch target2</span>
@@ -1332,6 +1449,10 @@
 
                 container.$on('click', '.window-open', async function () {
                     window.$open({url: document.location.href});
+                });
+                container.$on('click', '.a-open', async function (e) {
+                    e.preventDefault();
+                    e.target.$open({popup: !!e.target.dataset.popup});
                 });
                 const spans = container.$$('.watch-target');
                 spans.$wait((node) => node.classList.contains('hoge')).then(function () {
