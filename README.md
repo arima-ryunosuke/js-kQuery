@@ -581,6 +581,13 @@ MIT
 - マイナー: 小規模な互換性破壊の際にアップします（引数の変更、小規模破壊を伴う修正など）
 - パッチ: 互換性破壊はありません（デフォルト引数の追加や、新たなクラスの追加、コードフォーマットなど）
 
+### 0.5.1
+
+- [feature] autoproperties の再生成
+- [feature] table の span を考慮したグリッド操作
+- [feature] アンカータグを利用して Window を開く $open を追加
+- [feature] $labels を追加
+
 ### 0.5.0
 
 - [feature] 属性を一括で切り替える $toggleAttribute(s) を追加
