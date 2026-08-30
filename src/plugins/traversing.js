@@ -484,5 +484,81 @@ export function traversing(kQuery) {
                 }
             },
         },
+        [[HTMLTableElement.name, HTMLTableSectionElement.name, $NodeList.name]]: /** @lends HTMLTableSectionLikeElement.prototype */{
+            /**
+             * get grid(th/td's array of array)
+             *
+             * @param {Boolean} padSpannedCell
+             * @return {HTMLTableCellElement[][]}
+             */
+            $grid(padSpannedCell = false) {
+                if (this.rows.length === 0) {
+                    return [];
+                }
+
+                const grid = [];
+                let maxCols = 0;
+
+                for (let rIndex = 0; rIndex < this.rows.length; rIndex++) {
+                    const row = this.rows[rIndex];
+
+                    grid[rIndex] ??= [];
+                    let cIndex = 0;
+
+                    for (let x = 0; x < row.cells.length; x++) {
+                        const cell = row.cells[x];
+
+                        while (cIndex in grid[rIndex]) {
+                            cIndex++;
+                        }
+
+                        const colspan = cell.colSpan; // colspan is not allowed 0
+                        const rowspan = cell.rowSpan || this.rows.length - rIndex; // rowspan is allowed 0(means max rowsize)
+
+                        for (let y = 0; y < rowspan; y++) {
+                            const targetRow = rIndex + y;
+                            if (targetRow >= this.rows.length) {
+                                break;
+                            }
+
+                            grid[targetRow] ??= [];
+
+                            for (let c = 0; c < colspan; c++) {
+                                grid[targetRow][cIndex + c] = padSpannedCell || (y === 0 && c === 0) ? cell : null;
+                            }
+                        }
+
+                        cIndex += colspan;
+                        maxCols = Math.max(maxCols, cIndex);
+                    }
+                }
+
+                for (let y = 0; y < this.rows.length; y++) {
+                    for (let c = 0; c < maxCols; c++) {
+                        if (!(c in grid[y])) {
+                            grid[y][c] = undefined;
+                        }
+                    }
+                }
+
+                return grid;
+            },
+            /**
+             * get horizontal cells in light of row/colspan
+             *
+             * @return {NodeList<?HTMLTableCellElement>[]}
+             */
+            get $rows() {
+                return this.$grid().map(cells => F.iterableToNodeList(cells));
+            },
+            /**
+             * get vertical cells in light of row/colspan
+             *
+             * @return {NodeList<?HTMLTableCellElement>}
+             */
+            get $cols() {
+                return F.arrayTranspose(this.$grid()).map(cells => F.iterableToNodeList(cells));
+            },
+        },
     };
 }

@@ -566,6 +566,26 @@ export const F = {
         };
         return Object.create(nodeListType.prototype, properties);
     },
+    arrayTranspose(array) {
+        const rowLength = array.length;
+        if (rowLength === 0) {
+            return [];
+        }
+        const colLength = array.reduce((max, row) => Math.max(max, row.length), 0);
+        if (colLength === 0) {
+            return [];
+        }
+
+        const result = new Array(colLength);
+        for (let c = 0; c < colLength; c++) {
+            result[c] = new Array(rowLength);
+            for (let r = 0; r < rowLength; r++) {
+                result[c][r] = array[r][c];
+            }
+        }
+
+        return result;
+    },
     arrayLikeToArrayRecursive(object, requireLength = true) {
         for (const [key, value] of F.objectToEntries(object)) {
             if (typeof (value) === 'object') {

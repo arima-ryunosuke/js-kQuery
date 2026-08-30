@@ -239,6 +239,9 @@ import {traversing} from './src/plugins/traversing.js';
  * @typedef {HTMLFormElement} HTMLFormElement
  */
 /**
+ * @typedef {HTMLTableElement|HTMLTableSectionElement} HTMLTableSectionLikeElement
+ */
+/**
  * @typedef {HTMLInputElement|HTMLTextAreaElement|HTMLSelectElement|HTMLButtonElement|HTMLMeterElement|HTMLOutputElement|HTMLProgressElement} HTMLLabeledElement
  */
 /**
